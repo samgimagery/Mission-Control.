@@ -9,3 +9,6 @@ data/projects.json
 data/session-stats.json
 data/snapshots/
 .DS_Store
+*.log
+.env
+server.py

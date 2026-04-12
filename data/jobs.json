@@ -3712,5 +3712,63 @@
     "startedAt": null,
     "completedAt": 1775995326556,
     "qcResult": null
+  },
+  {
+    "id": "job_1775995774614_5412",
+    "number": "REQ-047",
+    "title": "Clean up MC repo \u2014 remove stale files, update docs, push to GitHub",
+    "description": "1. Delete CLAUDE.md and HOSTING.md from repo (stale/outdated)\n2. Remove any other dead files (pycache, old docs, unused assets)\n3. If CLAUDE.md is worth keeping, rewrite it to reflect current state\n4. Clean .gitignore to be thorough\n5. Force push clean state to GitHub",
+    "details": "1. Delete CLAUDE.md and HOSTING.md from repo (stale/outdated)\n2. Remove any other dead files (pycache, old docs, unused assets)\n3. If CLAUDE.md is worth keeping, rewrite it to reflect current state\n4. Clean .gitignore to be thorough\n5. Force push clean state to GitHub",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "todo",
+    "jobStatus": "active",
+    "phase": "todo",
+    "source": "manual",
+    "needsRewrite": true,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Audit repo \u2014 identify stale/unnecessary files",
+        "status": "in-progress"
+      },
+      {
+        "id": "st2",
+        "title": "Delete CLAUDE.md and HOSTING.md",
+        "status": "todo"
+      },
+      {
+        "id": "st3",
+        "title": "Remove other dead files (pycache, old docs, unused assets)",
+        "status": "todo"
+      },
+      {
+        "id": "st4",
+        "title": "Update .gitignore thoroughly",
+        "status": "todo"
+      },
+      {
+        "id": "st5",
+        "title": "Commit and force push clean repo to GitHub",
+        "status": "todo"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775995774614,
+        "event": "created",
+        "by": "Sam"
+      }
+    ],
+    "createdAt": 1775995774614,
+    "updatedAt": 1775995774614,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
   }
 ]
