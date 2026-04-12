@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+data/alfred-status.json
+data/jobs.json
+data/messages.json
+data/mission-control-state.json
+data/projects.json
+data/session-stats.json
+data/snapshots/
+.DS_Store
