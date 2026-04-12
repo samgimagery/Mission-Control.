@@ -1,0 +1,6 @@
+{
+  "compactions": 8,
+  "contextUsed": 100000,
+  "contextWindow": 203000,
+  "updatedAt": "2026-04-10T21:55:17.259725+00:00"
+}

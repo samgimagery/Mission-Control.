@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cosmic Engine Growth Dashboard</title>
+  <link rel="stylesheet" href="./src/styles.css?v=20260302a" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Cosmic Engine — Growth Dashboard</h1>
+      <p>High-level strategy, current state, and execution charts</p>
+    </div>
+    <div class="controls">
+      <button id="themeToggle" class="pill action">Dark mode</button>
+      <span class="pill">Market: US + Canada</span>
+      <span class="pill">Focus: EN / FR</span>
+      <span class="pill" id="updatedAt">Updated: —</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- PROJECTION SIMULATOR (NEW) -->
+    <section class="card" id="simulator">
+      <div class="sim-head">
+        <h3>Campaign Investment Simulator</h3>
+        <p class="muted">Drag to adjust total budget and see projected outcomes based on target CAC (CAD 28).</p>
+      </div>
+      
+      <div class="sim-controls">
+        <div class="input-group">
+          <label for="budgetSlider">Total Investment: <strong id="budgetValue">CAD 100,000</strong></label>
+          <input type="range" id="budgetSlider" min="10000" max="250000" step="5000" value="100000">
+          <div class="slider-marks">
+            <span>10k</span>
+            <span>50k</span>
+            <span class="active-mark">100k</span>
+            <span>150k</span>
+            <span>200k</span>
+            <span>250k</span>
+          </div>
+        </div>
+        
+        <div class="metrics-row">
+          <div class="sim-metric">
+            <span class="label">Projected Paid Users</span>
+            <span class="value" id="projUsers">—</span>
+          </div>
+          <div class="sim-metric">
+            <span class="label">Estimated Annual Revenue (ARR)</span>
+            <span class="value" id="projARR">—</span>
+          </div>
+          <div class="sim-metric">
+            <span class="label">Projected LTV (Total Value)</span>
+            <span class="value" id="projLTV">—</span>
+          </div>
+          <div class="sim-metric">
+            <span class="label">Efficiency Multiplier (LTV/CAC)</span>
+            <span class="value" id="projROI">4.7x</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="livePanel">
+      <div class="live-head">
+        <h3>Current live activity</h3>
+        <div class="toggle-row" id="rangeToggle">
+          <button class="seg active" data-range="today">Today</button>
+          <button class="seg" data-range="7d">7d</button>
+          <button class="seg" data-range="30d">30d</button>
+        </div>
+      </div>
+      <div class="live-grid" id="liveGrid"></div>
+    </section>
+
+    <section class="kpis" id="kpis"></section>
+
+    <section class="board">
+      <article class="card">
+        <h3>Goals (12 months)</h3>
+        <ul>
+          <li>12,000 paying users run-rate</li>
+          <li>~CAD 1.44M annualized run-rate</li>
+          <li>CAC ≤ CAD 28 with scalable channels</li>
+          <li>LTV ≥ CAD 132 and churn under control</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h3>Current position</h3>
+        <ul>
+          <li>TAM estimate: ~CAD 1.12B (US+CA paid astrology/spiritual spend)</li>
+          <li>Initial SAM: ~CAD 142M with EN/FR positioning</li>
+          <li>Pricing baseline: CAD 14.99 monthly / CAD 89.99 annual</li>
+          <li>Main edge: FR-Canada localization + fast creative iteration</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h3>Execution now (next 14 days)</h3>
+        <ol>
+          <li>Lock annual-first paywall and full-funnel instrumentation</li>
+          <li>Run EN vs FR pilot in Canada before US scale-up</li>
+          <li>Ship 12–18 ad creatives and optimize by CAC + retention quality</li>
+        </ol>
+      </article>
+    </section>
+
+    <section class="charts" id="charts"></section>
+    <section id="glossary"></section>
+  </main>
+
+  <script type="module" src="./src/app.js?v=20260302a"></script>
+</body>
+</html>

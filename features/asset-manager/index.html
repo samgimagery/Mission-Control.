@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creative Asset Library</title>
+  <link rel="stylesheet" href="./src/styles.css?v=20260304g" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Creative Asset Library</h1>
+      <p>Minimal, searchable media memory</p>
+    </div>
+    <div class="controls">
+      <button id="detailsBtn">Details</button>
+            <button id="refreshBtn">Refresh</button>
+            <button id="zoomOutBtn">−</button>
+      <button id="zoomInBtn">+</button>
+      <button id="importNewBtn">Import New</button>
+      <button id="dashboardBtn" onclick="window.open('/dashboard/', '_blank')">Dashboard</button>
+      <button id="missionControlBtn" onclick="window.open('/', '_blank')">Mission Control</button>
+      <button id="themeToggle">Dark mode</button>
+    </div>
+  </header>
+
+  <section class="filters">
+    <select id="typeFilter">
+      <option value="">All types</option>
+      <option>image</option><option>video</option><option>screenshot</option><option>doc</option><option>audio</option>
+    </select>
+    <select id="folderFilter">
+      <option value="">All folders</option>
+    </select>
+    <select id="statusFilter">
+      <option value="active" selected>Active</option>
+      <option value="all">All</option>
+      <option value="approved">Approved</option>
+      <option value="draft">Draft</option>
+      <option value="archived">Archived</option>
+    </select>
+  </section>
+
+  
+
+  <main class="layout">
+    <section class="grid-wrap" id="gridWrap">
+      <div id="grid" class="grid"></div>
+      <div class="load-more-wrap">
+        <button id="loadMoreBtn" class="load-more" hidden>Load more</button>
+      </div>
+    </section>
+    <aside id="detail" class="detail">
+      <p class="muted">Select an asset to preview.</p>
+    </aside>
+  </main>
+
+  <script type="module" src="./src/app.js?v=20260304h"></script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+{
+  "ok": true,
+  "timestamp": 1775426958329,
+  "stats": {
+    "assetsCount": 254,
+    "sessionsCount": 3,
+    "recentFilesCount": 24
+  },
+  "agents": [
+    {
+      "id": "agent:main:telegram:direct:7926668784",
+      "name": "7926668784",
+      "role": "direct \u00b7 gpt-5.3-codex",
+      "zone": "working",
+      "updatedAt": 1775426923267,
+      "ageMs": 35062,
+      "task": "Session agent:main:telegram:direct:7926668784",
+      "key": "agent:main:telegram:direct:7926668784"
+    },
+    {
+      "id": "agent:main:main",
+      "name": "main",
+      "role": "direct \u00b7 gpt-5.3-codex",
+      "zone": "working",
+      "updatedAt": 1775426885224,
+      "ageMs": 73105,
+      "task": "Session agent:main:main",
+      "key": "agent:main:main"
+    },
+    {
+      "id": "agent:main:telegram:slash:7926668784",
+      "name": "7926668784",
+      "role": "direct \u00b7 gpt-5.3-codex",
+      "zone": "done",
+      "updatedAt": 1775376597365,
+      "ageMs": 50360964,
+      "task": "Session agent:main:telegram:slash:7926668784",
+      "key": "agent:main:telegram:slash:7926668784"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task::agent:main:telegram:direct:7926668784",
+      "title": "Session agent:main:telegram:direct:7926668784",
+      "zone": "working",
+      "meta": "direct \u00b7 gpt-5.3-codex"
+    },
+    {
+      "id": "task::agent:main:main",
+      "title": "Session agent:main:main",
+      "zone": "working",
+      "meta": "direct \u00b7 gpt-5.3-codex"
+    },
+    {
+      "id": "task::agent:main:telegram:slash:7926668784",
+      "title": "Session agent:main:telegram:slash:7926668784",
+      "zone": "done",
+      "meta": "direct \u00b7 gpt-5.3-codex"
+    }
+  ],
+  "recentFiles": [
+    {
+      "path": "mission-control/index.html",
+      "mtime": 1775426942,
+      "size": 9287
+    },
+    {
+      "path": "mission-control/data/mission-control-state.json",
+      "mtime": 1775426896,
+      "size": 4322
+    },
+    {
+      "path": "mission-control/data/alfred-profile.json",
+      "mtime": 1775426896,
+      "size": 2035
+    },
+    {
+      "path": "mission-control/app.js",
+      "mtime": 1775426604,
+      "size": 19854
+    },
+    {
+      "path": "mission-control/styles.css",
+      "mtime": 1775426583,
+      "size": 10397
+    },
+    {
+      "path": "mission-control/tools/sync_snapshot.py",
+      "mtime": 1775386000,
+      "size": 7176
+    },
+    {
+      "path": "asset-manager/tools/__pycache__/dev_server.cpython-314.pyc",
+      "mtime": 1775385677,
+      "size": 33378
+    },
+    {
+      "path": "asset-manager/tools/dev_server.py",
+      "mtime": 1775385663,
+      "size": 20919
+    },
+    {
+      "path": "asset-manager/mission-control.bak/index.html",
+      "mtime": 1775381250,
+      "size": 3034
+    },
+    {
+      "path": "asset-manager/mission-control.bak/styles.css",
+      "mtime": 1775381250,
+      "size": 3804
+    },
+    {
+      "path": "asset-manager/mission-control.bak/app.js",
+      "mtime": 1775380627,
+      "size": 3685
+    },
+    {
+      "path": "market-dashboard/index.html",
+      "mtime": 1775380054,
+      "size": 4162
+    },
+    {
+      "path": "market-dashboard/.gitignore",
+      "mtime": 1775380054,
+      "size": 78
+    },
+    {
+      "path": "market-dashboard/src/styles.css",
+      "mtime": 1775380054,
+      "size": 3647
+    },
+    {
+      "path": "market-dashboard/src/app.js",
+      "mtime": 1775380054,
+      "size": 9217
+    },
+    {
+      "path": "asset-manager/src/app.js",
+      "mtime": 1775379860,
+      "size": 17108
+    },
+    {
+      "path": "asset-manager/data/assets.json",
+      "mtime": 1775379104,
+      "size": 189330
+    },
+    {
+      "path": "asset-manager/data/library-config.json",
+      "mtime": 1775379095,
+      "size": 52
+    },
+    {
+      "path": "asset-manager/tools/import_assets.py",
+      "mtime": 1775378965,
+      "size": 7057
+    },
+    {
+      "path": "asset-manager/README.md",
+      "mtime": 1775378528,
+      "size": 859
+    },
+    {
+      "path": "asset-manager/tools/apply_export.sh",
+      "mtime": 1775378460,
+      "size": 532
+    },
+    {
+      "path": "asset-manager/src/styles.css",
+      "mtime": 1775378354,
+      "size": 6462
+    },
+    {
+      "path": "asset-manager/index.html",
+      "mtime": 1775378346,
+      "size": 1900
+    },
+    {
+      "path": ".DS_Store",
+      "mtime": 1775369899,
+      "size": 8196
+    }
+  ]
+}

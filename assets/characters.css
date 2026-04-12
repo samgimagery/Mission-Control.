@@ -1,0 +1,38 @@
+/* Character Sprites & Layout */
+.character {
+  position: absolute;
+  transition: left 1.2s ease, top 1.2s ease;
+  image-rendering: pixelated;
+  z-index: 3;
+}
+
+.character.alfred { width: 48px; height: 60px; }
+.character.gemma { width: 44px; height: 56px; }
+.character.jackson { width: 46px; height: 58px; }
+
+.chat-bubble {
+  position: absolute;
+  z-index: 5;
+  min-width: 30px;
+  height: 26px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #8db6ff;
+  background: rgba(14, 26, 52, .94);
+  display: grid;
+  place-items: center;
+  font-size: .84rem;
+  opacity: 0;
+  transform: translateY(3px) scale(.95);
+  transition: opacity .22s ease, transform .22s ease;
+  pointer-events: none;
+}
+
+.chat-bubble.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.chat-bubble.stack {
+  margin-top: -6px;
+}

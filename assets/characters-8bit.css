@@ -1,0 +1,377 @@
+/* Mission Control 8-bit Character Pass (v2)
+   Office Redesign: Warm cozy aesthetic with updated agent sprites
+*/
+
+:root {
+  --px-ink: #0e162d;
+  --px-outline: #1b2b50;
+  --px-shadow: rgba(6, 10, 22, .55);
+
+  /* Legacy colors (kept for compatibility) */
+  --alfred-coat: #2f4f90;
+  --alfred-coat-hi: #5572be;
+  --alfred-skin: #f0cfaa;
+  --alfred-hair: #3c2d24;
+
+  --jackson-hoodie: #2f3f63;
+  --jackson-hoodie-hi: #516288;
+  --jackson-skin: #8f6147;
+  --jackson-hair: #171717;
+
+  --gemma-cardigan: #7552ab;
+  --gemma-cardigan-hi: #9879cc;
+  --gemma-skin: #f3d3b4;
+  --gemma-hair: #f1cd71;
+
+  /* New Office Redesign Colors */
+  --alfred-new-base: #d4853f;
+  --alfred-new-light: #f5a85c;
+  --alfred-new-skin: #f5d4b8;
+  --alfred-new-hair: #4a3728;
+  --alfred-new-accent: #f6d175;
+
+  --jackson-new-base: #4a7c59;
+  --jackson-new-light: #6ba374;
+  --jackson-new-skin: #c49a7c;
+  --jackson-new-hair: #2d2d2d;
+  --jackson-new-accent: #e8dcc8;
+
+  --gemma-new-base: #7c5aa3;
+  --gemma-new-light: #a686c9;
+  --gemma-new-skin: #f8e4d4;
+  --gemma-new-hair: #e8d9a8;
+  --gemma-new-accent: #b8d4e3;
+
+  /* Environment */
+  --office-wall: #e8dcc8;
+  --office-wall-dark: #d4c4b0;
+  --office-floor: #b8a894;
+  --office-floor-dark: #a0907c;
+}
+
+.office-stage {
+  image-rendering: pixelated;
+}
+
+.agent-sprite {
+  width: 84px;
+  transition: left .5s steps(4, end), top .5s steps(4, end);
+  filter: drop-shadow(0 6px 0 var(--px-shadow));
+}
+
+.agent-character {
+  width: 52px;
+  height: 68px;
+  margin: 0 auto;
+  position: relative;
+  image-rendering: pixelated;
+  animation: spriteIdle 1.4s steps(2, end) infinite;
+}
+
+.agent-character::before,
+.agent-character::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  image-rendering: pixelated;
+}
+
+/* Common face + body scaffold */
+.agent-character::before {
+  background:
+    linear-gradient(var(--px-ink), var(--px-ink)) 18px 8px / 4px 4px no-repeat,
+    linear-gradient(var(--px-ink), var(--px-ink)) 30px 8px / 4px 4px no-repeat,
+    linear-gradient(var(--px-ink), var(--px-ink)) 22px 14px / 8px 4px no-repeat,
+    linear-gradient(var(--char-skin), var(--char-skin)) 16px 4px / 20px 18px no-repeat,
+    linear-gradient(var(--char-jacket-hi), var(--char-jacket-hi)) 14px 24px / 24px 12px no-repeat,
+    linear-gradient(var(--char-jacket), var(--char-jacket)) 10px 34px / 32px 20px no-repeat,
+    linear-gradient(var(--px-outline), var(--px-outline)) 10px 54px / 10px 4px no-repeat,
+    linear-gradient(var(--px-outline), var(--px-outline)) 32px 54px / 10px 4px no-repeat;
+
+  box-shadow:
+    inset 0 0 0 2px var(--px-outline),
+    0 0 0 2px var(--px-ink);
+  border-radius: 2px;
+}
+
+/* Hair / accessory layer */
+.agent-character::after {
+  background:
+    linear-gradient(var(--char-hair), var(--char-hair)) 14px 0 / 24px 8px no-repeat,
+    linear-gradient(var(--char-hair-hi), var(--char-hair-hi)) 18px 0 / 16px 4px no-repeat,
+    linear-gradient(var(--char-accent), var(--char-accent)) 6px 30px / 6px 14px no-repeat,
+    linear-gradient(var(--char-accent), var(--char-accent)) 40px 30px / 6px 14px no-repeat;
+}
+
+#char-alfred .agent-character {
+  --char-jacket: var(--alfred-new-base);
+  --char-jacket-hi: var(--alfred-new-light);
+  --char-skin: var(--alfred-new-skin);
+  --char-hair: var(--alfred-new-hair);
+  --char-hair-hi: #6a5547;
+  --char-accent: var(--alfred-new-accent);
+}
+
+#char-jackson .agent-character {
+  --char-jacket: var(--jackson-new-base);
+  --char-jacket-hi: var(--jackson-new-light);
+  --char-skin: var(--jackson-new-skin);
+  --char-hair: var(--jackson-new-hair);
+  --char-hair-hi: #4a4a4a;
+  --char-accent: var(--jackson-new-accent);
+}
+
+#char-gemma .agent-character {
+  --char-jacket: var(--gemma-new-base);
+  --char-jacket-hi: var(--gemma-new-light);
+  --char-skin: var(--gemma-new-skin);
+  --char-hair: var(--gemma-new-hair);
+  --char-hair-hi: #f5ebd8;
+  --char-accent: var(--gemma-new-accent);
+}
+
+.agent-label {
+  margin-top: 6px;
+  font-size: .68rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+  color: #5a5045;
+}
+
+.chat-bubble {
+  border-radius: 0;
+  font-family: "Press Start 2P", "VT323", ui-monospace, monospace;
+  text-transform: uppercase;
+  font-size: .58rem;
+  line-height: 1.35;
+  border: 2px solid #f5f0e8;
+  box-shadow: 0 0 0 2px #8a7a68;
+  background: rgba(245, 240, 232, .98);
+  color: #4a4035;
+}
+
+@keyframes spriteIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+/* ============================================================
+   OFFICE REDESIGN - New Character Sprites
+   Pure CSS pixel art with 4px grid consistency
+   ============================================================ */
+
+/* Base class for new office character sprites */
+.agent-character-new {
+  width: 52px;
+  height: 68px;
+  position: relative;
+  image-rendering: pixelated;
+  animation: spriteIdle 1.4s steps(2, end) infinite;
+}
+
+.agent-character-new::before,
+.agent-character-new::after {
+  content: '';
+  position: absolute;
+  image-rendering: pixelated;
+}
+
+/* === ALFRED 🛎️ - Standing Butler, Center Position === */
+.agent-character.alfred-new {
+  --char-base: var(--alfred-new-base);
+  --char-light: var(--alfred-new-light);
+  --char-skin: var(--alfred-new-skin);
+  --char-hair: var(--alfred-new-hair);
+  --char-accent: var(--alfred-new-accent);
+}
+
+.agent-character.alfred-new::before {
+  /* Body - standing butler pose */
+  background:
+    /* Face - warm skin tone */
+    linear-gradient(var(--char-skin), var(--char-skin)) 16px 4px / 20px 16px no-repeat,
+    /* Eyes */
+    linear-gradient(var(--px-ink), var(--px-ink)) 18px 10px / 4px 4px no-repeat,
+    linear-gradient(var(--px-ink), var(--px-ink)) 30px 10px / 4px 4px no-repeat,
+    /* Smile */
+    linear-gradient(var(--px-ink), var(--px-ink)) 22px 16px / 8px 2px no-repeat,
+    /* Hair */
+    linear-gradient(var(--char-hair), var(--char-hair)) 14px 0 / 24px 6px no-repeat,
+    linear-gradient(var(--char-hair), var(--char-hair)) 16px 2px / 20px 4px no-repeat,
+    /* Jacket/Coat - warm orange/beige */
+    linear-gradient(var(--char-light), var(--char-light)) 12px 20px / 28px 12px no-repeat,
+    linear-gradient(var(--char-base), var(--char-base)) 10px 32px / 32px 24px no-repeat,
+    /* Arms */
+    linear-gradient(var(--char-skin), var(--char-skin)) 6px 28px / 6px 18px no-repeat,
+    linear-gradient(var(--char-skin), var(--char-skin)) 40px 28px / 6px 18px no-repeat,
+    /* Legs/Pants - dark */
+    linear-gradient(var(--px-outline), var(--px-outline)) 16px 56px / 8px 12px no-repeat,
+    linear-gradient(var(--px-outline), var(--px-outline)) 28px 56px / 8px 12px no-repeat;
+  
+  box-shadow:
+    inset 0 0 0 1px var(--px-outline),
+    0 0 0 1px var(--px-ink);
+}
+
+.agent-character.alfred-new::after {
+  /* Bell accent and details */
+  background:
+    /* Gold bell on chest */
+    linear-gradient(var(--char-accent), var(--char-accent)) 22px 36px / 8px 8px no-repeat,
+    linear-gradient(#c9a84c, #c9a84c) 24px 34px / 4px 4px no-repeat,
+    /* Collar details */
+    linear-gradient(#fff8e7, #fff8e7)) 18px 22px / 4px 4px no-repeat,
+    linear-gradient(#fff8e7, #fff8e7)) 30px 22px / 4px 4px no-repeat;
+}
+
+/* === JACKSON 🛠️ - Seated Worker, Left Position === */
+.agent-character.jackson-new {
+  --char-base: var(--jackson-new-base);
+  --char-light: var(--jackson-new-light);
+  --char-skin: var(--jackson-new-skin);
+  --char-hair: var(--jackson-new-hair);
+  --char-accent: var(--jackson-new-accent);
+}
+
+.agent-character.jackson-new::before {
+  /* Body - seated worker pose */
+  background:
+    /* Face - warm skin tone */
+    linear-gradient(var(--char-skin), var(--char-skin)) 16px 4px / 20px 16px no-repeat,
+    /* Eyes */
+    linear-gradient(var(--px-ink), var(--px-ink)) 18px 10px / 4px 4px no-repeat,
+    linear-gradient(var(--px-ink), var(--px-ink)) 30px 10px / 4px 4px no-repeat,
+    /* Concentrated expression */
+    linear-gradient(var(--px-ink), var(--px-ink)) 22px 16px / 8px 2px no-repeat,
+    /* Hair - dark */
+    linear-gradient(var(--char-hair), var(--char-hair)) 14px 0 / 24px 6px no-repeat,
+    linear-gradient(var(--char-hair), var(--char-hair)) 12px 2px / 28px 4px no-repeat,
+    /* Hoodie/Workwear - sage green */
+    linear-gradient(var(--char-light), var(--char-light)) 12px 20px / 28px 14px no-repeat,
+    linear-gradient(var(--char-base), var(--char-base)) 10px 34px / 32px 22px no-repeat,
+    /* Arms - working position */
+    linear-gradient(var(--char-skin), var(--char-skin)) 6px 32px / 6px 14px no-repeat,
+    linear-gradient(var(--char-skin), var(--char-skin)) 40px 32px / 6px 14px no-repeat,
+    /* Seated - no visible legs */
+    linear-gradient(var(--char-base), var(--char-base)) 14px 56px / 24px 8px no-repeat;
+  
+  box-shadow:
+    inset 0 0 0 1px var(--px-outline),
+    0 0 0 1px var(--px-ink);
+}
+
+.agent-character.jackson-new::after {
+  /* Tool accent */
+  background:
+    /* Wrench/tool symbol on chest */
+    linear-gradient(var(--char-accent), var(--char-accent)) 8px 38px / 4px 12px no-repeat,
+    linear-gradient(var(--char-accent), var(--char-accent)) 6px 42px / 8px 4px no-repeat,
+    /* Hoodie drawstrings */
+    linear-gradient(var(--char-accent), var(--char-accent)) 22px 24px / 2px 8px no-repeat,
+    linear-gradient(var(--char-accent), var(--char-accent)) 28px 24px / 2px 8px no-repeat;
+}
+
+/* === GEMMA 🔎 - Seated Analyst, Right Position === */
+.agent-character.gemma-new {
+  --char-base: var(--gemma-new-base);
+  --char-light: var(--gemma-new-light);
+  --char-skin: var(--gemma-new-skin);
+  --char-hair: var(--gemma-new-hair);
+  --char-accent: var(--gemma-new-accent);
+}
+
+.agent-character.gemma-new::before {
+  /* Body - seated analyst pose */
+  background:
+    /* Face - warm skin tone */
+    linear-gradient(var(--char-skin), var(--char-skin)) 16px 4px / 20px 16px no-repeat,
+    /* Eyes - focused */
+    linear-gradient(var(--px-ink), var(--px-ink)) 18px 10px / 4px 4px no-repeat,
+    linear-gradient(var(--px-ink), var(--px-ink)) 30px 10px / 4px 4px no-repeat,
+    /* Thoughtful smile */
+    linear-gradient(var(--px-ink), var(--px-ink)) 22px 16px / 8px 2px no-repeat,
+    /* Hair - soft blonde/warm */
+    linear-gradient(var(--char-hair), var(--char-hair)) 12px 0 / 28px 8px no-repeat,
+    linear-gradient(var(--char-hair), var(--char-hair)) 14px 2px / 24px 6px no-repeat,
+    /* Cardigan/Sweater - soft lavender */
+    linear-gradient(var(--char-light), var(--char-light)) 12px 20px / 28px 14px no-repeat,
+    linear-gradient(var(--char-base), var(--char-base)) 10px 34px / 32px 22px no-repeat,
+    /* Arms - typing/writing position */
+    linear-gradient(var(--char-skin), var(--char-skin)) 6px 34px / 6px 12px no-repeat,
+    linear-gradient(var(--char-skin), var(--char-skin)) 40px 34px / 6px 12px no-repeat,
+    /* Seated */
+    linear-gradient(var(--char-base), var(--char-base)) 14px 56px / 24px 8px no-repeat;
+  
+  box-shadow:
+    inset 0 0 0 1px var(--px-outline),
+    0 0 0 1px var(--px-ink);
+}
+
+.agent-character.gemma-new::after {
+  /* Magnifying glass accent */
+  background:
+    /* Magnifying glass handle and rim */
+    linear-gradient(var(--char-accent), var(--char-accent)) 6px 44px / 4px 8px no-repeat,
+    linear-gradient(#8cb4c9, #8cb4c9)) 4px 40px / 8px 8px no-repeat,
+    /* Cardigan buttons */
+    linear-gradient(#f0e6d2, #f0e6d2)) 25px 38px / 2px 2px no-repeat,
+    linear-gradient(#f0e6d2, #f0e6d2)) 25px 44px / 2px 2px no-repeat;
+}
+
+/* Office positioning for new layout */
+.office-lounge .agent-character.alfred-new {
+  position: absolute;
+  left: calc(50% - 26px);
+  top: 180px;
+  z-index: 10;
+}
+
+.office-lounge .agent-character.jackson-new {
+  position: absolute;
+  left: 120px;
+  top: 160px;
+  z-index: 10;
+}
+
+.office-lounge .agent-character.gemma-new {
+  position: absolute;
+  right: 120px;
+  top: 160px;
+  z-index: 10;
+}
+
+/* Labels for new characters */
+.agent-character-new + .agent-label {
+  margin-top: 4px;
+  font-size: .65rem;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+  color: #4a4035;
+  text-align: center;
+}
+
+/* Agent container for new layout */
+.agent-sprite-new {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: left .5s ease, top .5s ease;
+}
+
+.agent-sprite-new.alfred {
+  left: calc(50% - 26px);
+  top: 170px;
+}
+
+.agent-sprite-new.jackson {
+  left: 100px;
+  top: 150px;
+}
+
+.agent-sprite-new.gemma {
+  right: 100px;
+  top: 150px;
+}

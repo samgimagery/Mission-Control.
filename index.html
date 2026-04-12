@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mission Control</title>
+  <link rel="stylesheet" href="./styles.css?v=20260412n" />
+</head>
+<body>
+
+  <div class="mobile-header"><span class="mobile-title">Mission Control</span><button class="mobile-menu-btn">☰</button></div>
+  <button class="mobile-menu-btn" id="mobileMenuBtn" title="Menu">☰</button>
+  <div class="app">
+    <!-- Left Navigation -->
+    <nav class="sidebar">
+      <div class="brand">
+        <span class="brand-mark"><span>Mission</span><span class="brand-mark-line">Control<button id="themeToggle" class="theme-toggle-dot" title="Refresh">●</button></span></span>
+      </div>
+
+      <div class="nav-section">
+        <button class="nav-item active" data-view="overview">Overview</button>
+        <button class="nav-item" data-view="system">System</button>
+        <button class="nav-item" data-view="pulse">Pulse</button>
+      </div>
+
+      <div class="nav-footer">
+        <div id="serverInfo" class="status-row" style="font-size:10px"></div>
+      </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+      <button id="addTaskBtn" class="fab" title="Add new job">+</button>
+      <main class="main-viewport">
+
+        <!-- Overview = Job Board -->
+        <section id="overview" class="view active">
+          <header class="page-header">
+            <div class="page-header-row">
+              <div>
+                <h1 class="page-title">Overview</h1>
+                <p class="page-subtitle">Jobs & Activity</p>
+              </div>
+            </div>
+          </header>
+
+          <!-- Approvals Strip -->
+          <div id="approvalsStrip" class="approvals-strip" style="display:none"></div>
+
+          <!-- Up Next -->
+          <div id="upNextSection" class="up-next-section" style="display:none">
+            <h3 class="production-section-title">Up Next</h3>
+            <div id="upNextList" class="up-next-list"></div>
+          </div>
+
+          <!-- To Do Grid -->
+          <div class="production-section">
+            <h3 class="production-section-title" id="todoTitle">To Do</h3>
+            <div id="todoGrid" class="todo-grid"></div>
+          </div>
+
+          <!-- Done Row -->
+          <div class="production-section">
+            <div class="production-section-title-row">
+              <h3 class="production-section-title">Done</h3>
+              <button id="discardAllBtn" class="discard-all-btn" title="Discard all finished jobs">Discard All Finished</button>
+            </div>
+            <div id="doneRow" class="done-row"></div>
+          </div>
+        </section>
+
+        <!-- System = Dashboard -->
+        <section id="system" class="view">
+          <header class="page-header">
+            <div class="page-header-row">
+              <div>
+                <h1 class="page-title">System</h1>
+                <p class="page-subtitle">System Status</p>
+              </div>
+            </div>
+          </header>
+
+          <!-- System Status Strip -->
+          <div id="systemStatusStrip" class="system-status-strip">
+            <div class="status-strip-item">
+              <span class="status-strip-label">Connected</span>
+              <span id="statusConnected" class="status-strip-value status-connected"><span class="status-indicator"></span>Online</span>
+            </div>
+            <div class="status-strip-divider"></div>
+            <div class="status-strip-item">
+              <span class="status-strip-label">Uptime</span>
+              <span id="statusUptime" class="status-strip-value">—</span>
+            </div>
+            <div class="status-strip-divider"></div>
+            <div class="status-strip-item status-strip-context">
+              <span class="status-strip-label">Context</span>
+              <div class="context-bar-wrap">
+                <div id="statusContextBar" class="context-bar"><div id="statusContextFill" class="context-bar-fill" style="width:10%"></div></div>
+                <span id="statusContextLabel" class="context-bar-label">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Awaiting Approval -->
+          <div id="systemAwaitingApproval" class="overview-awaiting-approval" style="display:none"></div>
+
+          <!-- Dashboard Top Bar -->
+          <div id="systemDashboardTop" class="dashboard-top">
+            <div id="systemAgents" class="dashboard-agents"></div>
+          </div>
+
+          <!-- Activity Feed -->
+          <div id="systemActivity" class="overview-activity"></div>
+
+          <!-- Comms Log -->
+          <div id="systemComms" class="overview-comms">
+            <div class="comms-header" id="commsHeader">
+              <h3 class="section-title">Comms Log</h3>
+              <button class="comms-toggle" id="commsToggle" title="Collapse">&#9660;</button>
+            </div>
+            <div id="commsBody" class="comms-body">
+              <div id="commsLog" class="comms-log">
+                <div class="comms-empty">No messages yet</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Pulse View -->
+        <section id="pulse" class="view">
+          <header class="page-header">
+            <h1 class="page-title">Pulse</h1>
+            <p class="page-subtitle">System Metrics & Agent Activity</p>
+          </header>
+
+          <div class="pulse-content">
+            <!-- System Health -->
+            <div class="pulse-section">
+              <h3 class="section-title">System Health</h3>
+              <div class="engagement-grid">
+                <div class="engagement-card">
+                  <span class="platform-name">Uptime</span>
+                  <span class="metric-value" id="pulse-uptime" style="font-size:28px">—</span>
+                </div>
+                <div class="engagement-card">
+                  <span class="platform-name">Current Model</span>
+                  <span class="metric-value" id="pulse-model" style="font-size:18px">—</span>
+                </div>
+                <div class="engagement-card">
+                  <span class="platform-name">Current Context</span>
+                  <span class="metric-value" id="pulse-context" style="font-size:20px">—</span>
+                  <span class="metric-label" id="pulse-context-detail"></span>
+                </div>
+                <div class="engagement-card">
+                  <span class="platform-name">Compactions</span>
+                  <span class="metric-value" id="pulse-compactions" style="font-size:28px">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Usage -->
+            <div class="pulse-section">
+              <h3 class="section-title">Usage</h3>
+              <div id="pulseModelCards" class="model-cards-grid"></div>
+            </div>
+
+            <!-- Active Agents -->
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Expanded Card Modal -->
+  <div id="cardModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <button id="modalClose" class="modal-close">&times;</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="./app.js?v=20260412n"></script>
+</body>
+</html>

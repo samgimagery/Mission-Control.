@@ -1,0 +1,3716 @@
+[
+  {
+    "id": "job_1775891072499_doneui",
+    "title": "Fix Done list columns and Discard All button",
+    "details": "1. Done list columns: remove agent emoji/name, show only Date, Time, REQ, Description\n2. Fix Discard All Finished button",
+    "assignee": "Alfred",
+    "priority": "high",
+    "status": "done",
+    "phase": "done",
+    "source": "manual",
+    "activity": "active",
+    "createdBy": "Sam",
+    "createdAt": 1775891072499.796,
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Fix Done list to show Date, Time, REQ, Description only",
+        "status": "done",
+        "completedAt": 1775891350076,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st2",
+        "title": "Fix Discard All Finished button",
+        "status": "done",
+        "completedAt": 1775891350076,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775891350076,
+        "event": "subtask st1 done \u2014 Fix Done list to show Date, Time, REQ, Description only",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775891350076,
+        "event": "subtask st2 done \u2014 Fix Discard All Finished button",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775891350076,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      }
+    ],
+    "updatedAt": 1775891350076,
+    "completedAt": 1775891350076
+  },
+  {
+    "id": "job_1775890620968_cardui",
+    "title": "Remove hover hints and pause button from job cards",
+    "details": "Remove: 1) The hover hint text 'Click for details' on job cards. 2) The pause circle button from job cards.",
+    "assignee": "Alfred",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "active",
+    "createdBy": "Sam",
+    "createdAt": 1775890620968.76,
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Remove 'Click for details' hover hint from job cards",
+        "status": "done",
+        "completedAt": 1775890701289,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st2",
+        "title": "Remove pause circle button from job cards",
+        "status": "done",
+        "completedAt": 1775890701289,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775890701289,
+        "event": "subtask st1 done \u2014 Remove 'Click for details' hover hint from job cards",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775890701289,
+        "event": "subtask st2 done \u2014 Remove pause circle button from job cards",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775890701290,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775890958318,
+        "event": "archived"
+      }
+    ],
+    "updatedAt": 1775890958318,
+    "completedAt": 1775890701290
+  },
+  {
+    "id": "job_1775890305331_uifix",
+    "title": "UI fixes: Done list, Activity feed, empty state",
+    "details": "Three changes:\n1. Overview Done list: Add date/time column, align emoji+name column straight, put time/date right of agent name\n2. Overview empty state: Remove writing board icon and 'no active jobs' text. Leave blank.\n3. System Activity feed: Remove Created By and Completed By columns. Keep: Date & Time, Ref, Task, Description",
+    "assignee": "Alfred",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "active",
+    "createdBy": "Sam",
+    "createdAt": 1775890305331.731,
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Fix Done list columns: add date/time, align emoji+name, time right of name",
+        "status": "done",
+        "completedAt": 1775890575867,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st2",
+        "title": "Remove empty state icon and text from Overview",
+        "status": "done",
+        "completedAt": 1775890575867,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st3",
+        "title": "Fix Activity feed: remove Created/Completed By, keep Date/Time, Ref, Task, Description",
+        "status": "done",
+        "completedAt": 1775890575867,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775890575867,
+        "event": "subtask st1 done \u2014 Fix Done list columns: add date/time, align emoji+name, time right of name",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775890575867,
+        "event": "subtask st2 done \u2014 Remove empty state icon and text from Overview",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775890575867,
+        "event": "subtask st3 done \u2014 Fix Activity feed: remove Created/Completed By, keep Date/Time, Ref, Task, Description",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775890575867,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775890958318,
+        "event": "archived"
+      }
+    ],
+    "updatedAt": 1775890958318,
+    "completedAt": 1775890575867
+  },
+  {
+    "id": "job_1775466068660_dgnvwa",
+    "title": "interface change.",
+    "details": "let's remove the \"add to to do\" section from the menu panel. Big buttons are \"overview\", \"Production\", then agents and then dev. Overview and Production are single button selector. Now once in production, there's a simple + sign at the top right for user to now enter details of a new task. This will clean the menu layout.",
+    "assignee": "Team",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "complete",
+    "currentFile": "let's remove the \"add to to do\" section from the menu panel. Big buttons are \"overview\", \"Production\", then agents and then dev. Overview and Production are single button selector. Now once in production, there's a simple + sign at the top right for user to now enter details of a new task. This will clean the menu layout.",
+    "filesChanged": [
+      "let's remove the \"add to to do\" section from the menu panel. Big buttons are \"overview\", \"Production\", then agents and then dev. Overview and Production are single button selector. Now once in production, there's a simple + sign at the top right for user to now enter details of a new task. This will clean the menu layout."
+    ],
+    "workers": [
+      "Gemma",
+      "Alfred",
+      "Claude Code"
+    ],
+    "subtasks": [
+      {
+        "id": "st-1",
+        "title": "Remove add-to-do section from nav",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-2",
+        "title": "Implement pipeline board as Overview",
+        "status": "in-progress"
+      },
+      {
+        "id": "st-3",
+        "title": "Add subtask checklist UI",
+        "status": "pending"
+      },
+      {
+        "id": "st-4",
+        "title": "Add live elapsed timers",
+        "status": "pending"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775466068660,
+        "event": "created",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775643263248,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775643300000,
+        "event": "subtask st-1 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775643400000,
+        "event": "subtask st-2 in-progress",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775784653425,
+        "event": "subtask st-2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775784658544,
+        "event": "transitioned_to_qc"
+      },
+      {
+        "ts": 1775785123107,
+        "event": "subtask st-2 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775785167106,
+        "event": "subtask st-2 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775785168200,
+        "event": "subtask st-2 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775785172088,
+        "event": "transitioned_to_working"
+      },
+      {
+        "ts": 1775785176505,
+        "event": "subtask st-2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787133234,
+        "event": "subtask st-4 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787134602,
+        "event": "subtask st-4 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787573532,
+        "event": "subtask st-2 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787886113,
+        "event": "subtask st-4 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787894696,
+        "event": "subtask st-3 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788542699,
+        "event": "subtask st-2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788544544,
+        "event": "subtask st-2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788545894,
+        "event": "subtask st-3 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788545894,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775788547102,
+        "event": "subtask st-4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788547819,
+        "event": "subtask st-4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788548776,
+        "event": "subtask st-4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788551230,
+        "event": "subtask st-4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788552455,
+        "event": "subtask st-1 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788658066,
+        "event": "subtask st-1 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788658066,
+        "event": "subtask st-2 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788658066,
+        "event": "subtask st-3 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788658066,
+        "event": "subtask st-4 pending",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1775466068660,
+    "startedAt": 1775643263248,
+    "updatedAt": 1775788658066,
+    "number": "REQ-003",
+    "completedAt": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775642915043_745ek7",
+    "number": "REQ-001",
+    "title": "Test new workflow",
+    "details": "Testing job numbering and phases",
+    "assignee": "Gemma",
+    "priority": "normal",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "verified",
+    "workers": [
+      "Claude Code",
+      "Gemma"
+    ],
+    "history": [
+      {
+        "ts": 1775642915043,
+        "event": "created",
+        "by": "Gemma"
+      },
+      {
+        "ts": 1775642916850,
+        "event": "transitioned_to_working",
+        "by": "Gemma"
+      },
+      {
+        "ts": 1775642964446,
+        "event": "transitioned_to_qc",
+        "by": "Gemma"
+      },
+      {
+        "ts": 1775642966208,
+        "event": "approved_to_done",
+        "by": "Gemma"
+      },
+      {
+        "ts": 1775789126751,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775642915043,
+    "startedAt": 1775642916850,
+    "completedAt": 1775642966208,
+    "updatedAt": 1775789126751,
+    "qcResult": {
+      "status": "approved",
+      "by": "Gemma",
+      "notes": "Looks good",
+      "timestamp": 1775642966208
+    },
+    "subtasks": [],
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775642960627_jzztsj",
+    "number": "REQ-002",
+    "title": "Final verification test",
+    "details": "Confirming workflow is production-ready",
+    "assignee": "Alfred",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-5",
+        "title": "Verify production readiness",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-6",
+        "title": "Check edge cases",
+        "status": "done",
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775642960627,
+        "event": "created",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775643115966,
+        "event": "auto_transitioned_to_qc",
+        "by": "System"
+      },
+      {
+        "ts": 1775776255433,
+        "event": "subtask st-5 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775777239184,
+        "event": "snapshot_captured",
+        "url": "/mission-control/data/snapshots/job_1775642960627_jzztsj_1775777239182.png"
+      },
+      {
+        "ts": 1775787099511,
+        "event": "subtask st-5 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787100781,
+        "event": "subtask st-6 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787102094,
+        "event": "subtask st-6 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787123134,
+        "event": "transitioned_to_done"
+      },
+      {
+        "ts": 1775787275594,
+        "event": "subtask st-5 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787278707,
+        "event": "subtask st-5 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788648206,
+        "event": "subtask st-5 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788648206,
+        "event": "subtask st-6 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775789126751,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775642960627,
+    "startedAt": 1775642960627,
+    "updatedAt": 1775789126751,
+    "snapshotUrl": "/mission-control/data/snapshots/job_1775642960627_jzztsj_1775777239182.png",
+    "snapshotFile": "/Users/samg/AI/OpenClaw/dev/mission-control/data/snapshots/job_1775642960627_jzztsj_1775777239182.png",
+    "completedAt": 1775787123134,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775787558066_3398",
+    "number": "REQ-004",
+    "title": "Mission Control dashboard polish + screenshot fix",
+    "description": "Sam feedback from testing session:\n1. Clickable subtask checkboxes on cards \u2014 click to toggle done/undone\n2. Dashboard-style top bar with agent squares showing current work, stats (tasks today, completed, error rate)\n3. Fix To Do pill alignment in modal\n4. Fix screenshot preview rendering (captures work but display broken)\n5. Eventually: auto-screenshot done tasks for visual record",
+    "details": "Sam feedback from testing session:\n1. Clickable subtask checkboxes on cards \u2014 click to toggle done/undone\n2. Dashboard-style top bar with agent squares showing current work, stats (tasks today, completed, error rate)\n3. Fix To Do pill alignment in modal\n4. Fix screenshot preview rendering (captures work but display broken)\n5. Eventually: auto-screenshot done tasks for visual record",
+    "assignee": "Team",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-d1",
+        "title": "Clickable subtask checkboxes on job cards",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-d2",
+        "title": "Dashboard top bar with agent squares + stats",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-d3",
+        "title": "Fix To Do pill alignment in modal",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-d4",
+        "title": "Fix screenshot preview rendering",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-d5",
+        "title": "Auto-screenshot done tasks (future)",
+        "status": "done",
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775787558066,
+        "event": "created",
+        "by": "Team"
+      },
+      {
+        "ts": 1775787844590,
+        "event": "subtask st-d1 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775787844590,
+        "event": "subtask st-d2 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775787844590,
+        "event": "subtask st-d3 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775787844590,
+        "event": "subtask st-d4 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775787848083,
+        "event": "subtask st-d5 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775787848083,
+        "event": "all_subtasks_done_auto_to_qc",
+        "by": "System"
+      },
+      {
+        "ts": 1775788380379,
+        "event": "subtask st-d3 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788381861,
+        "event": "subtask st-d3 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788382594,
+        "event": "subtask st-d3 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788383095,
+        "event": "subtask st-d4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788383753,
+        "event": "subtask st-d2 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788385367,
+        "event": "subtask st-d1 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788648224,
+        "event": "subtask st-d1 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788648224,
+        "event": "subtask st-d2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788648224,
+        "event": "subtask st-d3 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775788648224,
+        "event": "subtask st-d4 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775789126751,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775787558066,
+    "updatedAt": 1775789126751,
+    "startedAt": null,
+    "completedAt": 1775787866122,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775788371490_6991",
+    "number": "REQ-005",
+    "title": "Mission Control UI polish pass",
+    "description": "Multiple polish items from Sam + Gemma QC:\n1. Subtask click affordance \u2014 add cursor:pointer, consider proper checkboxes\n2. Dashboard spacing \u2014 more breathing room between sections\n3. Priority pill vs phase badge distinction\n4. Snapshot images higher on Done cards\n5. Align Pulse agents with Overview agents (team members not raw sessions)\n6. Move Usage section in Pulse above Job Pipeline (after System Health)\n7. Replace Claude usage label with Ollama, show model breakdown\n8. Use gateway uptime from OpenClaw instead of Python server uptime\n9. Mission Control title: bold, fat, one word per line, top-left aligned\n10. Theme toggle: just moon/sun icon, no button border, minimal",
+    "details": "Multiple polish items from Sam + Gemma QC:\n1. Subtask click affordance \u2014 add cursor:pointer, consider proper checkboxes\n2. Dashboard spacing \u2014 more breathing room between sections\n3. Priority pill vs phase badge distinction\n4. Snapshot images higher on Done cards\n5. Align Pulse agents with Overview agents (team members not raw sessions)\n6. Move Usage section in Pulse above Job Pipeline (after System Health)\n7. Replace Claude usage label with Ollama, show model breakdown\n8. Use gateway uptime from OpenClaw instead of Python server uptime\n9. Mission Control title: bold, fat, one word per line, top-left aligned\n10. Theme toggle: just moon/sun icon, no button border, minimal",
+    "assignee": "Claude",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-p1",
+        "title": "Subtask click affordance (cursor:pointer + checkbox styling)",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-p2",
+        "title": "Dashboard spacing + breathing room",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-p3",
+        "title": "Priority vs phase badge visual distinction",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-p4",
+        "title": "Align Pulse agents with Overview (team members)",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-p5",
+        "title": "Reorder Pulse: System Health \u2192 Usage \u2192 Job Pipeline \u2192 Agents",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-p6",
+        "title": "Replace Claude usage with Ollama + model breakdown",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-p7",
+        "title": "Gateway uptime from OpenClaw instead of Python server",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-p8",
+        "title": "Mission Control title: bold fat one-word-per-line top-left",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-p9",
+        "title": "Theme toggle: minimal moon/sun icon only, no button frame",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-p10",
+        "title": "Snapshot positioning on Done cards",
+        "status": "done",
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775788371490,
+        "event": "created",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p1 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p2 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p3 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p4 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p5 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p6 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p7 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p8 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p9 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "subtask st-p10 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775788755601,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775789126751,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775788371490,
+    "updatedAt": 1775789126751,
+    "startedAt": null,
+    "completedAt": 1775788755601,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775788377837_9469",
+    "number": "REQ-006",
+    "title": "Team conversation logs \u2014 Alfred/Claude/Gemma chat history",
+    "description": "Sam wants to see conversation logs between team members. Need to figure out:\n- Where to store logs (file? API endpoint?)\n- How to capture Alfred\u2194Claude and Alfred\u2194Gemma exchanges\n- Display in Mission Control (new view or section in Pulse)\n- OpenClaw session history could be the source",
+    "details": "Sam wants to see conversation logs between team members. Need to figure out:\n- Where to store logs (file? API endpoint?)\n- How to capture Alfred\u2194Claude and Alfred\u2194Gemma exchanges\n- Display in Mission Control (new view or section in Pulse)\n- OpenClaw session history could be the source",
+    "assignee": "Gemma",
+    "priority": "normal",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-l1",
+        "title": "Research: how to capture team conversation logs",
+        "status": "in-progress"
+      },
+      {
+        "id": "st-l2",
+        "title": "Design: log display in Mission Control",
+        "status": "pending"
+      },
+      {
+        "id": "st-l3",
+        "title": "Implement: log storage and API endpoint",
+        "status": "pending"
+      },
+      {
+        "id": "st-l4",
+        "title": "Implement: log viewer UI",
+        "status": "pending"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775788377837,
+        "event": "created",
+        "by": "Gemma"
+      }
+    ],
+    "createdAt": 1775788377837,
+    "updatedAt": 1775788377837,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775788844727_2324",
+    "number": "REQ-007",
+    "title": "Agent cards + Done column polish",
+    "description": "1. Done column: add X close button on each card, and a Discard All Finished button to clear the Done column\n2. Agent cards in overview dashboard: make them bigger, add bold title + small text describing current work\n3. Completed list can be pulled from history anytime",
+    "details": "1. Done column: add X close button on each card, and a Discard All Finished button to clear the Done column\n2. Agent cards in overview dashboard: make them bigger, add bold title + small text describing current work\n3. Completed list can be pulled from history anytime",
+    "assignee": "Claude",
+    "priority": "normal",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-a1",
+        "title": "Done cards: X close button + Discard All button",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-a2",
+        "title": "Agent cards: bigger, bold title, small work description text",
+        "status": "done",
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775788844727,
+        "event": "created",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775789154520,
+        "event": "subtask st-a1 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775789154520,
+        "event": "subtask st-a2 done",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775789154520,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      }
+    ],
+    "createdAt": 1775788844727,
+    "updatedAt": 1775789154520,
+    "startedAt": null,
+    "completedAt": 1775789154520,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775789226686_8601",
+    "number": "REQ-008",
+    "title": "Production tab + approval flow + created-by tracking",
+    "description": "Structural changes to Mission Control:\n1. Add createdBy field to all jobs (Sam, Alfred, Claude, Gemma)\n2. Approval flow: jobs needing Sams sign-off show Awaiting Approval state with accept/deny\n3. New Production tab in nav \u2014 dedicated working view with To Do + Done columns, priorities, due dates, assignees\n4. Overview becomes dashboard-only (agents, stats, health)\n5. Remove snapshot buttons/features for now \u2014 consolidate layout first\n6. Anyone on the team can create jobs, not just Sam",
+    "details": "Structural changes to Mission Control:\n1. Add createdBy field to all jobs (Sam, Alfred, Claude, Gemma)\n2. Approval flow: jobs needing Sams sign-off show Awaiting Approval state with accept/deny\n3. New Production tab in nav \u2014 dedicated working view with To Do + Done columns, priorities, due dates, assignees\n4. Overview becomes dashboard-only (agents, stats, health)\n5. Remove snapshot buttons/features for now \u2014 consolidate layout first\n6. Anyone on the team can create jobs, not just Sam",
+    "assignee": "Claude",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-s1",
+        "title": "Add createdBy field to job model + creation form",
+        "status": "pending"
+      },
+      {
+        "id": "st-s2",
+        "title": "Approval flow: awaiting-approval state + accept/deny UI",
+        "status": "pending"
+      },
+      {
+        "id": "st-s3",
+        "title": "New Production tab with To Do + Done + priorities + due dates",
+        "status": "pending"
+      },
+      {
+        "id": "st-s4",
+        "title": "Overview becomes dashboard-only (agents, stats, health)",
+        "status": "pending"
+      },
+      {
+        "id": "st-s5",
+        "title": "Remove snapshot buttons/features temporarily",
+        "status": "pending"
+      },
+      {
+        "id": "st-s6",
+        "title": "Update nav: Overview | Production | Pulse",
+        "status": "pending"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775789226686,
+        "event": "created",
+        "by": "Claude"
+      }
+    ],
+    "createdAt": 1775789226686,
+    "updatedAt": 1775789226686,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775789368746_6252",
+    "number": "REQ-009",
+    "title": "Subtask visuals + bigger agent cards",
+    "description": "1. Remove double checkbox icons on subtasks \u2014 use simple empty square for pending, green checkmark for done\n2. In-progress subtasks: pulsing gradient animation on the subtask row (left to right pulse) to show active work\n3. Make agent cards bigger in Overview dashboard",
+    "details": "1. Remove double checkbox icons on subtasks \u2014 use simple empty square for pending, green checkmark for done\n2. In-progress subtasks: pulsing gradient animation on the subtask row (left to right pulse) to show active work\n3. Make agent cards bigger in Overview dashboard",
+    "assignee": "Claude",
+    "priority": "normal",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-v1",
+        "title": "Subtask icons: empty square / green check / pulsing gradient for in-progress",
+        "status": "pending"
+      },
+      {
+        "id": "st-v2",
+        "title": "Bigger agent cards in Overview",
+        "status": "pending"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775789368746,
+        "event": "created",
+        "by": "Claude"
+      }
+    ],
+    "createdAt": 1775789368746,
+    "updatedAt": 1775789368746,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775791676959_8049",
+    "number": "REQ-010",
+    "title": "Production layout + Pulse model breakdown + theme toggle move",
+    "description": "1. Pulse usage: show per-model tokens (glm-5.1:cloud, kimi-k2.5:cloud, gemma4:31b)\n2. Active job cards: pulsing opacity wave left-to-right on text\n3. Production layout top-to-bottom: Approvals (one-line, approve/deny buttons) \u2192 To Do (3-card grid) \u2192 Done (one-line, expandable)\n4. Theme toggle: move next to Connected status, circle icon (empty=filled based on mode), minimal yes/no style\n5. Remove awaiting-approval as a pipeline column",
+    "details": "1. Pulse usage: show per-model tokens (glm-5.1:cloud, kimi-k2.5:cloud, gemma4:31b)\n2. Active job cards: pulsing opacity wave left-to-right on text\n3. Production layout top-to-bottom: Approvals (one-line, approve/deny buttons) \u2192 To Do (3-card grid) \u2192 Done (one-line, expandable)\n4. Theme toggle: move next to Connected status, circle icon (empty=filled based on mode), minimal yes/no style\n5. Remove awaiting-approval as a pipeline column",
+    "assignee": "Claude",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-r1",
+        "title": "Pulse: per-model token breakdown (glm-5.1, kimi-k2.5, gemma4:31b)",
+        "status": "pending"
+      },
+      {
+        "id": "st-r2",
+        "title": "Active cards: pulsing opacity wave animation",
+        "status": "pending"
+      },
+      {
+        "id": "st-r3",
+        "title": "Production: approvals at top (one-line, approve/deny), To Do (3-grid), Done (one-line expandable)",
+        "status": "pending"
+      },
+      {
+        "id": "st-r4",
+        "title": "Theme toggle: circle icon next to Connected status",
+        "status": "pending"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775791676959,
+        "event": "created",
+        "by": "Claude"
+      }
+    ],
+    "createdAt": 1775791676959,
+    "updatedAt": 1775791676959,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775793893774_3799",
+    "number": "REQ-011",
+    "title": "Mission Control UI Polish - REQ-010 carryover",
+    "description": "Remaining items from REQ-010:\n1. Production layout polish - spacing, alignment, responsive breakpoints\n2. Theme toggle - emoji only (moon/sun) in sidebar footer\n3. Model breakdown - per-model usage cards in Pulse\n4. Subtask progress visuals on job cards",
+    "details": "Remaining items from REQ-010:\n1. Production layout polish - spacing, alignment, responsive breakpoints\n2. Theme toggle - emoji only (moon/sun) in sidebar footer\n3. Model breakdown - per-model usage cards in Pulse\n4. Subtask progress visuals on job cards",
+    "assignee": "Claude",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "title": "Production layout polish",
+        "type": "implementation",
+        "status": "done",
+        "id": "st-req11-1",
+        "completedBy": "Alfred"
+      },
+      {
+        "title": "Theme toggle (emoji only, sidebar footer)",
+        "type": "implementation",
+        "status": "done",
+        "id": "st-req11-2",
+        "completedBy": "Alfred"
+      },
+      {
+        "title": "Model breakdown in Pulse",
+        "type": "implementation",
+        "status": "done",
+        "id": "st-req11-3",
+        "completedBy": "Alfred"
+      },
+      {
+        "title": "Subtask progress visuals on job cards",
+        "type": "implementation",
+        "status": "done",
+        "id": "st-req11-4",
+        "completedBy": "Alfred"
+      },
+      {
+        "title": "Visual QC pass",
+        "type": "review",
+        "status": "done",
+        "id": "st-req11-5",
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775793893774,
+        "event": "created",
+        "by": "Claude"
+      },
+      {
+        "ts": 1775798722617,
+        "event": "subtask st-req11-2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775798723916,
+        "event": "subtask st-req11-1 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775798810828,
+        "event": "subtask st-req11-4 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775798811793,
+        "event": "subtask st-req11-2 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775799253210,
+        "event": "subtask st-req11-4 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775799600620,
+        "event": "subtask st-req11-1 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775799600620,
+        "event": "subtask st-req11-2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775799600620,
+        "event": "subtask st-req11-3 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775799600620,
+        "event": "subtask st-req11-4 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775799600620,
+        "event": "subtask st-req11-5 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775799600620,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775799608968,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775793893774,
+    "updatedAt": 1775799608968,
+    "startedAt": null,
+    "completedAt": 1775799600620,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775799594757_9949",
+    "number": "REQ-012",
+    "title": "REQ-011 UI polish carryover",
+    "description": "All completed via direct edits by Alfred:\n1. Production layout \u2014 approvals strip, 3-card grid, compact done\n2. Theme toggle \u2014 circle icon (\u25cb/\u25cf) next to Connected\n3. Model breakdown \u2014 5 models in Pulse (GLM, Kimi, Gemma, GPT 5.4, Codex 5.3)\n4. Subtask visuals \u2014 \u25a1 pending, \u2713 done, pulsing gradient in-progress\n5. Active job cards \u2014 border sweep + pulse glow\n6. Agent cards \u2014 rich layout with model, status, task, stats, vibe\n7. Removed thick left borders\n8. Badge row alignment (priority/number/phase)\n9. Default Model label (GLM5.1 754B)\n10. History: clickable person names with message box\n11. Removed Live Agents from Pulse",
+    "details": "All completed via direct edits by Alfred:\n1. Production layout \u2014 approvals strip, 3-card grid, compact done\n2. Theme toggle \u2014 circle icon (\u25cb/\u25cf) next to Connected\n3. Model breakdown \u2014 5 models in Pulse (GLM, Kimi, Gemma, GPT 5.4, Codex 5.3)\n4. Subtask visuals \u2014 \u25a1 pending, \u2713 done, pulsing gradient in-progress\n5. Active job cards \u2014 border sweep + pulse glow\n6. Agent cards \u2014 rich layout with model, status, task, stats, vibe\n7. Removed thick left borders\n8. Badge row alignment (priority/number/phase)\n9. Default Model label (GLM5.1 754B)\n10. History: clickable person names with message box\n11. Removed Live Agents from Pulse",
+    "assignee": "Alfred",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775799594757,
+        "event": "created",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775799613671,
+        "event": "transitioned_to_done"
+      },
+      {
+        "ts": 1775799621994,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775799594757,
+    "updatedAt": 1775800816638,
+    "startedAt": null,
+    "completedAt": 1775799613671,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775800482953_7355",
+    "number": "REQ-013",
+    "title": "Mission Control UX Pass 2",
+    "description": "1. Production tab \u2014 fix empty state, show jobs correctly\n2. Overview completed count \u2014 show actual completed count, not 0\n3. Current context \u2014 show used/total like 20K/202K + compactions count\n4. Default Model \u2192 rename to Current Model\n5. Usage \u2014 add origin label (Ollama / OpenAI) beside model names\n6. Usage \u2014 investigate why kimi-k2.5:cloud shows 0 tokens despite active use\n7. Theme toggle \u2014 move left of status circle, same size. Order: theme circle, status circle, status text, Claw version\n8. Theme toggle \u2014 remove uptime, show OpenClaw version\n9. Mobile \u2014 nav buttons slightly higher, menu opens full screen, auto-close on selection\n10. Overview \u2014 Activity feed below agents: scrollable list of events, clickable to ask questions (routes to Alfred in chat)\n11. Overview \u2014 Awaiting Approval section at very top, above agents, priority styled\n12. Production \u2014 priority selector: Low / Normal / High when creating or editing tasks",
+    "details": "1. Production tab \u2014 fix empty state, show jobs correctly\n2. Overview completed count \u2014 show actual completed count, not 0\n3. Current context \u2014 show used/total like 20K/202K + compactions count\n4. Default Model \u2192 rename to Current Model\n5. Usage \u2014 add origin label (Ollama / OpenAI) beside model names\n6. Usage \u2014 investigate why kimi-k2.5:cloud shows 0 tokens despite active use\n7. Theme toggle \u2014 move left of status circle, same size. Order: theme circle, status circle, status text, Claw version\n8. Theme toggle \u2014 remove uptime, show OpenClaw version\n9. Mobile \u2014 nav buttons slightly higher, menu opens full screen, auto-close on selection\n10. Overview \u2014 Activity feed below agents: scrollable list of events, clickable to ask questions (routes to Alfred in chat)\n11. Overview \u2014 Awaiting Approval section at very top, above agents, priority styled\n12. Production \u2014 priority selector: Low / Normal / High when creating or editing tasks",
+    "assignee": "Alfred",
+    "priority": "normal",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-13-1",
+        "title": "Production tab \u2014 fix empty state, show jobs",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Claude",
+        "completedAt": 1744262400000
+      },
+      {
+        "id": "st-13-2",
+        "title": "Overview completed count \u2014 show actual completed",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Alfred",
+        "completedAt": 1775802901328
+      },
+      {
+        "id": "st-13-3",
+        "title": "Current Context \u2014 show used/total (20K/202K) + compactions",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-13-4",
+        "title": "Current Model label rename",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-13-5",
+        "title": "Usage \u2014 add origin (Ollama/OpenAI) beside model names",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Claude",
+        "completedAt": 1775803201328
+      },
+      {
+        "id": "st-13-6",
+        "title": "Kimi usage investigation",
+        "type": "research",
+        "status": "done",
+        "completedBy": "Claude",
+        "completedAt": 1775803301328
+      },
+      {
+        "id": "st-13-7",
+        "title": "Theme toggle \u2014 move left of status, same size, version not uptime",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-13-8",
+        "title": "Mobile \u2014 menu full screen, auto-close on selection, higher buttons",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Claude",
+        "completedAt": 1775803470730
+      },
+      {
+        "id": "st-13-9",
+        "title": "Overview \u2014 Activity feed below agents",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Claude",
+        "completedAt": 1775803470730
+      },
+      {
+        "id": "st-13-10",
+        "title": "Overview \u2014 Awaiting Approval at very top",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Claude",
+        "completedAt": 1775803470730
+      },
+      {
+        "id": "st-13-11",
+        "title": "Production \u2014 priority selector (Low/Normal/High)",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Claude",
+        "completedAt": 1775803470730
+      },
+      {
+        "id": "st-13-12",
+        "title": "History message routing to Alfred in chat",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Claude",
+        "completedAt": 1744262400000
+      },
+      {
+        "id": "st-13-13",
+        "title": "Subtask completed-by tracking (Alfred/Claude/Gemma)",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Alfred",
+        "completedAt": 1775803401328
+      },
+      {
+        "id": "st-13-14",
+        "title": "Production - Prioritise feature (drag/order next-up)",
+        "type": "implementation",
+        "status": "pending",
+        "completedBy": "Claude",
+        "completedAt": 1775803251328
+      },
+      {
+        "id": "st-13-15",
+        "title": "Multi-project support in Production",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Claude",
+        "completedAt": 1744262400000
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775800482953,
+        "event": "created",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775801518645,
+        "event": "subtask st-13-2 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775801523610,
+        "event": "subtask st-13-4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775801524642,
+        "event": "subtask st-13-4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775801525596,
+        "event": "subtask st-13-4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775801526799,
+        "event": "subtask st-13-4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775801529170,
+        "event": "subtask st-13-4 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775801530049,
+        "event": "subtask st-13-2 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775801543875,
+        "event": "subtask st-13-7 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775801551593,
+        "event": "subtask st-13-7 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775802122159,
+        "event": "subtask st-13-2 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775802123324,
+        "event": "subtask st-13-2 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775802123875,
+        "event": "subtask st-13-2 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775802131561,
+        "event": "subtask st-13-5 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775802136890,
+        "event": "subtask st-13-3 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775802984680,
+        "event": "subtask st-13-6 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775802985554,
+        "event": "subtask st-13-5 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775804699118,
+        "event": "subtask st-13-14 pending",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775869597619,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775800482953,
+    "updatedAt": 1775869597619,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null,
+    "jobStatus": "active"
+  },
+  {
+    "id": "job_1775805027266_8708",
+    "number": "REQ-014",
+    "title": "Mission Control UX Pass 3",
+    "description": "Refinements from Sam testing session:\n1. Subtask done meta: show \u2713 by Claude (clickable \u2192 message) + time taken (startedAt \u2192 completedAt duration), not timestamp\n2. No \u23f1 clock on in-progress subtasks, just pulse + active label\n3. Pending subtasks: \u22ef menu on right with Prioritise/Cancel. Cancelled stays visible, \u22ef again to Resume\n4. Remove \u2b06 arrow from cards. Keep NEXT UP badge only\n5. Priority labels clickable but broken \u2014 make them actually cycle (low\u2192normal\u2192high\u2192critical)\n6. Subtask numbering: REQ-013-1, REQ-013-2 etc in list and history\n7. Kimi tokens still showing 0 \u2014 need OpenClaw session data, not just codexbar\n8. Done jobs: task count should show X tasks completed (not 15/15)\n9. Compaction count not showing in Pulse \u2014 wire up from session data",
+    "details": "",
+    "assignee": "Claude",
+    "priority": "high",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-14-1",
+        "title": "Subtask done: \u2713 by Name (clickable) + time taken duration",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-2",
+        "title": "Remove \u23f1 from in-progress, keep pulse animation",
+        "type": "implementation",
+        "status": "done",
+        "completedAt": 1775821877469,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-3",
+        "title": "\u22ef menu on pending subtasks (cancel/resume)",
+        "type": "implementation",
+        "status": "done",
+        "completedAt": 1744298400000,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-4",
+        "title": "Remove \u2b06 arrow, keep NEXT UP badge only",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-5",
+        "title": "Priority cycling actually works (low\u2192normal\u2192high\u2192critical)",
+        "type": "implementation",
+        "status": "done",
+        "completedAt": 1744298400000,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-6",
+        "title": "Subtask numbering REQ-013-1 style",
+        "type": "implementation",
+        "status": "done",
+        "completedAt": 1775821919459,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-7",
+        "title": "Kimi tokens: pull from OpenClaw session data",
+        "type": "implementation",
+        "status": "done",
+        "startedAt": 1775821670176,
+        "completedAt": 1744298400000,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-8",
+        "title": "Done jobs: X tasks completed (not 15/15 fraction)",
+        "type": "implementation",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-9",
+        "title": "Compaction count in Pulse from session data",
+        "type": "implementation",
+        "status": "done",
+        "completedAt": 1744298400000,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-10",
+        "title": "Up Next section in Production \u2014 see and reorder upcoming tasks",
+        "type": "implementation",
+        "status": "done",
+        "completedAt": 1744298400000,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-14-11",
+        "title": "Project creation with folder path, then create jobs inside project",
+        "type": "implementation",
+        "status": "done",
+        "startedAt": 1775860022776,
+        "startedBy": "Alfred",
+        "completedAt": 1775860208355,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775805027266,
+        "event": "created",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775805216637,
+        "event": "subtask st-14-1 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775805298919,
+        "event": "subtask st-14-10 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775805425668,
+        "event": "subtask st-14-2 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775821670176,
+        "event": "subtask st-14-7 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775821867917,
+        "event": "subtask st-14-2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775821869349,
+        "event": "subtask st-14-2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775821877469,
+        "event": "subtask st-14-2 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775821919459,
+        "event": "subtask st-14-6 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775854438573,
+        "event": "subtask st-14-11 in-progress \u2014 Project creation with folder path, then create jobs inside project",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775856840529,
+        "event": "subtask st-14-11 pending \u2014 Project creation with folder path, then create jobs inside project",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775860022776,
+        "event": "subtask st-14-11 in-progress \u2014 Project creation with folder path, then create jobs inside project",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775860208355,
+        "event": "subtask st-14-11 done \u2014 Project creation with folder path, then create jobs inside project",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775860208356,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775869597619,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775805027266,
+    "updatedAt": 1775869597619,
+    "startedAt": null,
+    "completedAt": 1775860208356,
+    "qcResult": null,
+    "jobStatus": "active",
+    "assignedBy": "Alfred"
+  },
+  {
+    "id": "job_1775806245050_9733",
+    "number": "REQ-015",
+    "title": "Overview redesign \u2014 Gemma",
+    "description": "Overview section needs a redesign. Current state: just agent cards + activity feed. Removed: Tasks Today/Completed/Error Rate stats, System Health section (Uptime, Current Model, Awaiting Approval).\n\nGemma should propose a new layout for the Overview that makes it feel alive and useful. What should the landing view of Mission Control look like?\n\nConstraints:\n- Vanilla JS/CSS only, no frameworks\n- Dark/light theme support\n- Must work on mobile\n- Keep agent cards as the hero element\n- Activity feed stays\n- System health / uptime lives in Pulse, not Overview",
+    "details": "",
+    "assignee": "Claude",
+    "priority": "normal",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-15-1",
+        "title": "Design direction for new Overview",
+        "type": "design",
+        "status": "done",
+        "startedAt": 1775821695692,
+        "completedAt": 1775821701130,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-15-2",
+        "title": "Implement redesigned Overview",
+        "type": "implementation",
+        "status": "pending",
+        "startedAt": 1775861973487,
+        "startedBy": "Claude"
+      },
+      {
+        "id": "st-15-3",
+        "title": "Visual QC pass on new Overview",
+        "type": "review",
+        "status": "pending",
+        "startedAt": 1775854425889,
+        "startedBy": "Sam"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775806245050,
+        "event": "created",
+        "by": "Gemma"
+      },
+      {
+        "ts": 1775821695692,
+        "event": "subtask st-15-1 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775821701130,
+        "event": "subtask st-15-1 done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775821720451,
+        "event": "subtask st-15-2 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775853347687,
+        "event": "subtask st-15-2 in-progress",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775854425889,
+        "event": "subtask st-15-3 in-progress \u2014 Visual QC pass on new Overview",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775856840546,
+        "event": "subtask st-15-2 pending \u2014 Implement redesigned Overview",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775856840563,
+        "event": "subtask st-15-3 pending \u2014 Visual QC pass on new Overview",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775857748957,
+        "event": "job paused",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775857857945,
+        "event": "job active",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775860999935,
+        "event": "subtask st-15-2 in-progress \u2014 Implement redesigned Overview",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775861973487,
+        "event": "subtask st-15-2 in-progress \u2014 Implement redesigned Overview",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775862548850,
+        "event": "job stopped",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775863634077,
+        "event": "subtask st-15-2 pending \u2014 Implement redesigned Overview",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775863634094,
+        "event": "job active",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775863832770,
+        "event": "job stopped",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869533433,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775806245050,
+    "updatedAt": 1775869533433,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null,
+    "jobStatus": "stopped",
+    "assignedBy": "Alfred"
+  },
+  {
+    "id": "job_1775854489954_8525",
+    "number": "REQ-016",
+    "title": "Review",
+    "description": "I'd love the Mission Control to get a review from the 3 of you. Alfred, Gemma and Claude. We are tweaking.",
+    "details": "I'd love the Mission Control to get a review from the 3 of you. Alfred, Gemma and Claude. We are tweaking.",
+    "assignee": "Unassigned",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775854489954,
+        "event": "created",
+        "by": "Unassigned"
+      },
+      {
+        "ts": 1775857746377,
+        "event": "job paused",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775857857962,
+        "event": "job active",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775862557883,
+        "event": "job stopped",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775863634128,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775854489954,
+    "updatedAt": 1775863634128,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null,
+    "jobStatus": "stopped"
+  },
+  {
+    "id": "job_1775862440551_2048",
+    "number": "REQ-017",
+    "title": "Mission Control Restructure",
+    "description": "Major UI restructure: rename tabs, shrink agent cards, fix comms log, color changes",
+    "details": "",
+    "assignee": "Claude",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "high",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-17-1",
+        "title": "Fix Unknown in activity feed",
+        "status": "done",
+        "startedAt": 1775862536678,
+        "startedBy": "Unknown",
+        "completedAt": 1775863634163,
+        "completedBy": "Unknown"
+      },
+      {
+        "id": "st-17-2",
+        "title": "Shrink agent cards to bring interface higher",
+        "status": "done",
+        "completedAt": 1775863634169,
+        "completedBy": "Unknown"
+      },
+      {
+        "id": "st-17-3",
+        "title": "Move connected dot to OpenClaw version footer, remove from agent cards",
+        "status": "done",
+        "completedAt": 1775863634175,
+        "completedBy": "Unknown"
+      },
+      {
+        "id": "st-17-4",
+        "title": "Change active/available color from green to blue",
+        "status": "done",
+        "completedAt": 1775863634181,
+        "completedBy": "Unknown"
+      },
+      {
+        "id": "st-17-5",
+        "title": "Comms log compact single-line items, expand on click, group by REQ+ST",
+        "status": "done",
+        "completedAt": 1775863634187,
+        "completedBy": "Unknown"
+      },
+      {
+        "id": "st-17-6",
+        "title": "Rename Production tab to Overview, Overview tab to System",
+        "status": "done",
+        "completedAt": 1775863634193,
+        "completedBy": "Unknown"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775862440551,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775862536678,
+        "event": "subtask st-17-1 in-progress \u2014 Fix Unknown in activity feed",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775862536704,
+        "event": "subtask st-17-1 done \u2014 Fix Unknown in activity feed",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775862990127,
+        "event": "subtask st-17-2 done \u2014 Shrink agent cards to bring interface higher",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775862990155,
+        "event": "subtask st-17-3 done \u2014 Move connected dot to OpenClaw version footer, remove from agent cards",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775862990182,
+        "event": "subtask st-17-4 done \u2014 Change active/available color from green to blue",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775862990208,
+        "event": "subtask st-17-5 done \u2014 Comms log compact single-line items, expand on click, group by REQ+ST",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775862990235,
+        "event": "subtask st-17-6 done \u2014 Rename Production tab to Overview, Overview tab to System",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775862990235,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775862996355,
+        "event": "subtask st-17-1 done \u2014 Fix Unknown in activity feed",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775863634163,
+        "event": "subtask st-17-1 done \u2014 Fix Unknown in activity feed",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775863634169,
+        "event": "subtask st-17-2 done \u2014 Shrink agent cards to bring interface higher",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775863634175,
+        "event": "subtask st-17-3 done \u2014 Move connected dot to OpenClaw version footer, remove from agent cards",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775863634181,
+        "event": "subtask st-17-4 done \u2014 Change active/available color from green to blue",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775863634187,
+        "event": "subtask st-17-5 done \u2014 Comms log compact single-line items, expand on click, group by REQ+ST",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775863634193,
+        "event": "subtask st-17-6 done \u2014 Rename Production tab to Overview, Overview tab to System",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869597619,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775862440551,
+    "updatedAt": 1775869597619,
+    "startedAt": null,
+    "completedAt": 1775862990235,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775865995129_2122",
+    "number": "REQ-018",
+    "title": "Ollama Usage Tracking in Mission Control",
+    "description": "Add daily and weekly Ollama usage tracking to Pulse view. Per-model token counts, daily/weekly breakdowns. Data from codexbar + OpenClaw status. Sam wants daily/weekly visibility.",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "high",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "paused",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-18-1",
+        "title": "Design usage data structure \u2014 per-model tokens, daily/weekly, totals",
+        "status": "pending",
+        "startedAt": 1775866007410,
+        "startedBy": "Unknown"
+      },
+      {
+        "id": "st-18-2",
+        "title": "Wire codexbar + Ollama stats into pulse-data API endpoint",
+        "status": "pending"
+      },
+      {
+        "id": "st-18-3",
+        "title": "Build usage UI in Pulse \u2014 model cards, daily breakdown, weekly chart",
+        "status": "pending"
+      },
+      {
+        "id": "st-18-4",
+        "title": "Add daily usage summary to morning cron recap",
+        "status": "pending"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775865995129,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775866007410,
+        "event": "subtask st-18-1 in-progress \u2014 Design usage data structure \u2014 per-model tokens, daily/weekly, totals",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775867466747,
+        "event": "subtask st-18-1 pending \u2014 Design usage data structure \u2014 per-model tokens, daily/weekly, totals",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775868707476,
+        "event": "job paused",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775868980623,
+        "event": "job active",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775869161144,
+        "event": "job paused",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775869533458,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775865995129,
+    "updatedAt": 1775869533458,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775867466755_4156",
+    "number": "REQ-019",
+    "title": "Fix tab content mapping \u2014 Overview and System swapped",
+    "description": "Nav buttons are correct (Overview on top, System below) but the content shown under each is swapped. Overview should show the job board (To Do, Up Next, Done, approvals). System should show agent cards, status strip, activity, comms. Swap the content mapping, not the buttons.",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "critical",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-19-1",
+        "title": "Swap section content \u2014 Overview loads job board, System loads dashboard",
+        "status": "done",
+        "completedAt": 1775867603467,
+        "completedBy": "Unknown"
+      },
+      {
+        "id": "st-19-2",
+        "title": "Verify all nav/data bindings work after swap",
+        "status": "done",
+        "startedAt": 1775867603474,
+        "startedBy": "Unknown",
+        "completedAt": 1775867637961,
+        "completedBy": "Unknown"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775867466755,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775867603467,
+        "event": "subtask st-19-1 done \u2014 Swap section content \u2014 Overview loads job board, System loads dashboard",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775867603474,
+        "event": "subtask st-19-2 in-progress \u2014 Verify all nav/data bindings work after swap",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775867637961,
+        "event": "subtask st-19-2 done \u2014 Verify all nav/data bindings work after swap",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775867637961,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775869597619,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775867466755,
+    "updatedAt": 1775869597619,
+    "startedAt": null,
+    "completedAt": 1775867637961,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775868033487_3372",
+    "number": "REQ-020",
+    "title": "UI Tweak",
+    "description": "in overview, the to do box have a start, pause, top buttons. I want these to be moved down left to the box. reserve a little footer for it and the \"click to open\" that sits on the right side also can benefit the little footer. I want to have only one button on the left. a circle with a pause sign. You can click to pause the job. The pause becomes then a play button if users want to start again. whilst paused, a x in a circle appears at the top right to delete the job.",
+    "details": "in overview, the to do box have a start, pause, top buttons. I want these to be moved down left to the box. reserve a little footer for it and the \"click to open\" that sits on the right side also can benefit the little footer. I want to have only one button on the left. a circle with a pause sign. You can click to pause the job. The pause becomes then a play button if users want to start again. whilst paused, a x in a circle appears at the top right to delete the job.",
+    "assignee": "Claude Code",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-20-1",
+        "title": "Redesign card controls \u2014 single pause/play circle bottom-left, \u2715 top-right when paused",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Unknown",
+        "startedAt": null,
+        "completedAt": 1775869533484
+      },
+      {
+        "id": "st-20-2",
+        "title": "Add footer strip to cards for controls and click-to-open",
+        "status": "done",
+        "startedBy": "Unknown",
+        "completedBy": "Unknown",
+        "startedAt": 1775869448865,
+        "completedAt": 1775869533491
+      },
+      {
+        "id": "st-20-3",
+        "title": "Show worker badge on all active jobs (Alfred/Claude), even without subtasks",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Unknown",
+        "startedAt": null,
+        "completedAt": 1775869533497
+      },
+      {
+        "id": "st-20-4",
+        "title": "Blue wave glow on any job being actively worked on",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Unknown",
+        "startedAt": null,
+        "completedAt": 1775869533505
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775868033487,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775869448858,
+        "event": "subtask st-20-1 done \u2014 Redesign card controls \u2014 single pause/play circle bottom-left, \u2715 top-right when paused",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869448865,
+        "event": "subtask st-20-2 in-progress \u2014 Add footer strip to cards for controls and click-to-open",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869482079,
+        "event": "subtask st-20-2 done \u2014 Add footer strip to cards for controls and click-to-open",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869482087,
+        "event": "subtask st-20-3 done \u2014 Show worker badge on all active jobs (Alfred/Claude), even without subtasks",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869482094,
+        "event": "subtask st-20-4 done \u2014 Blue wave glow on any job being actively worked on",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869482094,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775869533484,
+        "event": "subtask st-20-1 done \u2014 Redesign card controls \u2014 single pause/play circle bottom-left, \u2715 top-right when paused",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869533491,
+        "event": "subtask st-20-2 done \u2014 Add footer strip to cards for controls and click-to-open",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869533497,
+        "event": "subtask st-20-3 done \u2014 Show worker badge on all active jobs (Alfred/Claude), even without subtasks",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869533505,
+        "event": "subtask st-20-4 done \u2014 Blue wave glow on any job being actively worked on",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775869533511,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775868033487,
+    "updatedAt": 1775869533511,
+    "startedAt": null,
+    "completedAt": 1775869482094,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775869663324_8660",
+    "number": "REQ-021",
+    "title": "Ok everything vanished in the Overview.",
+    "description": "This is created to see what will happen.",
+    "details": "This is created to see what will happen.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775869663324,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775869891080,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775869663324,
+    "updatedAt": 1775869891080,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775869735574_9683",
+    "number": "REQ-022",
+    "title": "When creating a new job here",
+    "description": "gemma is still in the choices for assigning to. remove Gemma from that menu.",
+    "details": "gemma is still in the choices for assigning to. remove Gemma from that menu.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775869735574,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775870022841,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775869735574,
+    "updatedAt": 1775870022841,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775869835513_2171",
+    "number": "REQ-023",
+    "title": "the overview footer",
+    "description": "the job boxes have two changes to bring. when you hover the lower right says click for details. So please remove the permanent \"click to open\" and just lower the pause button to sit at the bottom line on the left.",
+    "details": "the job boxes have two changes to bring. when you hover the lower right says click for details. So please remove the permanent \"click to open\" and just lower the pause button to sit at the bottom line on the left.",
+    "assignee": "Claude Code",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775869835513,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775870022868,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775869835513,
+    "updatedAt": 1775870022868,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775869912474_8062",
+    "number": "REQ-024",
+    "title": "Claude Code tag",
+    "description": "In overview, the assigned agent is tagged. somehow Claude with it's lightning is showing a human head and Claude Code instead of \u26a1\ufe0fClaude",
+    "details": "In overview, the assigned agent is tagged. somehow Claude with it's lightning is showing a human head and Claude Code instead of \u26a1\ufe0fClaude",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775869912474,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775873252428,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775869912474,
+    "updatedAt": 1775873252428,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775869971894_8309",
+    "number": "REQ-025",
+    "title": "Rows.",
+    "description": "When more than 3 jobs, stack a second row. will be able to show a grid of 9 if reaches that.",
+    "details": "When more than 3 jobs, stack a second row. will be able to show a grid of 9 if reaches that.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "stopped",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775869971894,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775870010081,
+        "event": "job paused",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775870020347,
+        "event": "job stopped",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775870039911,
+        "event": "job stopped",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775870063261,
+        "event": "job stopped",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775873252460,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775869971894,
+    "updatedAt": 1775873252460,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775873351411_2492",
+    "number": "REQ-026",
+    "title": "Working indicator integration",
+    "description": "When Alfred posts working status, System tab shows pulsing Working badge on Alfred card",
+    "details": "When Alfred posts working status, System tab shows pulsing Working badge on Alfred card",
+    "assignee": "Alfred",
+    "createdBy": "Alfred",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775873351411,
+        "event": "created",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775873385053,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775873351411,
+    "updatedAt": 1775873385053,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775873446901_6911",
+    "number": "REQ-027",
+    "title": "New job about the pause play button.",
+    "description": "If not done yet, remove the pause play button at the bottom of the job box. Keep the \u201cclick for details\u201d on hover. Inside the box, add a pause/play then a x to delete appears if paused.",
+    "details": "If not done yet, remove the pause play button at the bottom of the job box. Keep the \u201cclick for details\u201d on hover. Inside the box, add a pause/play then a x to delete appears if paused.",
+    "assignee": "Claude Code",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775873446901,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775874166023,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775873446901,
+    "updatedAt": 1775874166023,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775873480193_1868",
+    "number": "REQ-028",
+    "title": "Finished jobs",
+    "description": "Should show in done. Latest at top.",
+    "details": "Should show in done. Latest at top.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775873480193,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775874166054,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775873480193,
+    "updatedAt": 1775874166054,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775873558769_7229",
+    "number": "REQ-029",
+    "title": "Blue pulse when being started.",
+    "description": "When I create a job, make sure it shows with a check box and the blue wave when started and strikes out when done.",
+    "details": "When I create a job, make sure it shows with a check box and the blue wave when started and strikes out when done.",
+    "assignee": "Unassigned",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775873558769,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775874166083,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775873558769,
+    "updatedAt": 1775874166083,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775873591128_7140",
+    "number": "REQ-030",
+    "title": "Date",
+    "description": "Make the current date preselected here when creating a job.",
+    "details": "Make the current date preselected here when creating a job.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775873591128,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775874166112,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775873591128,
+    "updatedAt": 1775874166112,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775874780727_6424",
+    "number": "REQ-031",
+    "title": "Top right",
+    "description": "Need to move the plus button for new job at the top right. Also need to force a refresh on arrival of a page in Mission Control.",
+    "details": "Need to move the plus button for new job at the top right. Also need to force a refresh on arrival of a page in Mission Control.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "high",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775874780727,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775875392166,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775874780727,
+    "updatedAt": 1775875392166,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775874835057_4207",
+    "number": "REQ-032",
+    "title": "Activity feed alignment test",
+    "description": "Testing column alignment",
+    "details": "Testing column alignment",
+    "assignee": "Alfred",
+    "createdBy": "Alfred",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775874835057,
+        "event": "created",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775874835082,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775874835057,
+    "updatedAt": 1775874835082,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775875863203_7980",
+    "number": "REQ-033",
+    "title": "Make the dot to toggle th\u00e8me Grey",
+    "description": "Make it grey in both colours of theme.",
+    "details": "Make it grey in both colours of theme.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775875863203,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775876595735,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775875863203,
+    "updatedAt": 1775876595735,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775876220226_5470",
+    "number": "REQ-034",
+    "title": "Remove light mode",
+    "description": "Keep the grey circle after control but it now acts as a refresh.",
+    "details": "Keep the grey circle after control but it now acts as a refresh.",
+    "assignee": "Claude Code",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "high",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775876220226,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775876595764,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775876220226,
+    "updatedAt": 1775876595764,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775876935937_8727",
+    "number": "REQ-035",
+    "title": "Columns",
+    "description": "Make sure in activity, ref doesn\u2019t overlap time. There\u2019s space it needs to be move after the time.",
+    "details": "Make sure in activity, ref doesn\u2019t overlap time. There\u2019s space it needs to be move after the time.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-35-1",
+        "title": "Fix activity Ref column overlap",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Unknown",
+        "startedAt": null,
+        "completedAt": 1775877463132
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775876935937,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775877463132,
+        "event": "subtask st-35-1 done \u2014 Fix activity Ref column overlap",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775877463133,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775877463139,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775876935937,
+    "updatedAt": 1775877463139,
+    "startedAt": null,
+    "completedAt": 1775877463133,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775877084434_6905",
+    "number": "REQ-036",
+    "title": "Redo the top menu to have Mission Control alway...",
+    "description": "Redo the top menu to have Mission Control always visible at top left.\n\nRedesign. \nBring back the grey dot. It stills refresh but I want the dot. Make the blue wave go across the text bloc only not the whole box for the jobs.",
+    "details": "Redo the top menu to have Mission Control always visible at top left.\n\nRedesign. \nBring back the grey dot. It stills refresh but I want the dot. Make the blue wave go across the text bloc only not the whole box for the jobs.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "high",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-36-1",
+        "title": "Redesign top menu with MC branding",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Unknown",
+        "startedAt": null,
+        "completedAt": 1775877463165
+      },
+      {
+        "id": "st-36-2",
+        "title": "Bring back grey dot for refresh",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Unknown",
+        "startedAt": null,
+        "completedAt": 1775877463172
+      },
+      {
+        "id": "st-36-3",
+        "title": "Blue wave on text block only",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Unknown",
+        "startedAt": null,
+        "completedAt": 1775877463178
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775877084434,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775877463165,
+        "event": "subtask st-36-1 done \u2014 Redesign top menu with MC branding",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775877463172,
+        "event": "subtask st-36-2 done \u2014 Bring back grey dot for refresh",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775877463178,
+        "event": "subtask st-36-3 done \u2014 Blue wave on text block only",
+        "by": "Unknown"
+      },
+      {
+        "ts": 1775877463178,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775877463184,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775877084434,
+    "updatedAt": 1775877463184,
+    "startedAt": null,
+    "completedAt": 1775877463178,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775878811570_2802",
+    "number": "REQ-037",
+    "title": "Overview done list",
+    "description": "Overview done list\n\nMake sure to align the ref number. You can truncate the description in order to have them all aligned. Make sure Claude code is Claude in the \u201cby\u201d column.",
+    "details": "Overview done list\n\nMake sure to align the ref number. You can truncate the description in order to have them all aligned. Make sure Claude code is Claude in the \u201cby\u201d column.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-37-1",
+        "title": "Align REF numbers in done list",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775879018736
+      },
+      {
+        "id": "st-37-2",
+        "title": "Truncate descriptions for alignment",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775879018743
+      },
+      {
+        "id": "st-37-3",
+        "title": "Fix Claude Code \u2192 Claude in By column",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775879018751
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775878811570,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775879018736,
+        "event": "subtask st-37-1 done \u2014 Align REF numbers in done list",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775879018743,
+        "event": "subtask st-37-2 done \u2014 Truncate descriptions for alignment",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775879018751,
+        "event": "subtask st-37-3 done \u2014 Fix Claude Code \u2192 Claude in By column",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775879018752,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775879018758,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775878811570,
+    "updatedAt": 1775879018758,
+    "startedAt": null,
+    "completedAt": 1775879018752,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775879556617_7659",
+    "number": "REQ-038",
+    "title": "Remove job pipeline from pulse",
+    "description": "Remove job pipeline from pulse\n\nRemove that bottom section.",
+    "details": "Remove job pipeline from pulse\n\nRemove that bottom section.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775879556617,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775883111072,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775879556617,
+    "updatedAt": 1775883111072,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775879685565_7306",
+    "number": "REQ-039",
+    "title": "Revert Mission Control title at top left on two...",
+    "description": "Revert Mission Control title at top left on two lines.\n\nI want that big like the menu and permanent. Make the 3 lines open the menu overlay maybe to choose from overview system or pulse.",
+    "details": "Revert Mission Control title at top left on two lines.\n\nI want that big like the menu and permanent. Make the 3 lines open the menu overlay maybe to choose from overview system or pulse.",
+    "assignee": "Claude",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775879685565,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775883111097,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775879685565,
+    "updatedAt": 1775883111097,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775886933795_1239",
+    "number": "REQ-040",
+    "title": "Last check before reset",
+    "description": "Verify MC is stable, all tabs work, no console errors, browser screenshot confirms clean state",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "high",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-40-1",
+        "title": "JS validates with node -c",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775886987798
+      },
+      {
+        "id": "st-40-2",
+        "title": "CSS braces balanced",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775886987805
+      },
+      {
+        "id": "st-40-3",
+        "title": "Browser: Overview tab renders",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775886987812
+      },
+      {
+        "id": "st-40-4",
+        "title": "Browser: System tab renders",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775886987825
+      },
+      {
+        "id": "st-40-5",
+        "title": "Browser: Pulse tab renders",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775886987832
+      },
+      {
+        "id": "st-40-6",
+        "title": "No console errors",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775886987838
+      },
+      {
+        "id": "st-40-7",
+        "title": "Memory files updated",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775886987845
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775886933795,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775886987798,
+        "event": "subtask st-40-1 done \u2014 JS validates with node -c",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775886987805,
+        "event": "subtask st-40-2 done \u2014 CSS braces balanced",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775886987812,
+        "event": "subtask st-40-3 done \u2014 Browser: Overview tab renders",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775886987825,
+        "event": "subtask st-40-4 done \u2014 Browser: System tab renders",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775886987832,
+        "event": "subtask st-40-5 done \u2014 Browser: Pulse tab renders",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775886987838,
+        "event": "subtask st-40-6 done \u2014 No console errors",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775886987845,
+        "event": "subtask st-40-7 done \u2014 Memory files updated",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775886987845,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775886987852,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775886933795,
+    "updatedAt": 1775886987852,
+    "startedAt": null,
+    "completedAt": 1775886987845,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775887196052_4077",
+    "number": "REQ-041",
+    "title": "Remove Event column + full datetime in Activity, 2-col agent cards",
+    "description": "1) Remove Event column from activity feed, replace with full date+time. 2) Agent cards side by side (2-col grid)",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "high",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-41-1",
+        "title": "Remove Event column from activity, show full date+time",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775887975853
+      },
+      {
+        "id": "st-41-2",
+        "title": "Agent cards 2-column grid",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775887975860
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775887196052,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775887975853,
+        "event": "subtask st-41-1 done \u2014 Remove Event column from activity, show full date+time",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775887975860,
+        "event": "subtask st-41-2 done \u2014 Agent cards 2-column grid",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775887975861,
+        "event": "all_subtasks_done_auto",
+        "by": "System"
+      },
+      {
+        "ts": 1775887975867,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775887196052,
+    "updatedAt": 1775887975867,
+    "startedAt": null,
+    "completedAt": 1775887975861,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775960783442_8232",
+    "number": "REQ-042",
+    "title": "Build LLM Wiki Presentation Website",
+    "description": "Create a visually stunning dark-themed single-page website presenting Karpathy's LLM Wiki pattern. Source: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f\n\nThree layers: Raw Sources, Wiki, Schema. Three operations: Ingest, Query, Lint. Use cases, tooling, Memex lineage. Premium product-page feel with scroll animations, interactive diagrams, 3D isometric layer view. Single HTML file, pure CSS/JS, no frameworks.",
+    "details": "Create a visually stunning dark-themed single-page website presenting Karpathy's LLM Wiki pattern. Source: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f\n\nThree layers: Raw Sources, Wiki, Schema. Three operations: Ingest, Query, Lint. Use cases, tooling, Memex lineage. Premium product-page feel with scroll animations, interactive diagrams, 3D isometric layer view. Single HTML file, pure CSS/JS, no frameworks.",
+    "assignee": "Claude",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Set up project folder and read Karpathy gist",
+        "status": "done",
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st2",
+        "title": "Build HTML/CSS/JS \u2014 dark theme, hero, scroll animations",
+        "status": "done",
+        "completedBy": "Claude"
+      },
+      {
+        "id": "st3",
+        "title": "Interactive 3D layer diagram + operations flow",
+        "status": "done",
+        "completedBy": "Claude"
+      },
+      {
+        "id": "st4",
+        "title": "Use cases, tooling, Memex sections",
+        "status": "done",
+        "completedBy": "Claude"
+      },
+      {
+        "id": "st5",
+        "title": "QA and visual verification",
+        "status": "done",
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775960783442,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775960785291,
+        "event": "transitioned_to_done"
+      }
+    ],
+    "createdAt": 1775960783442,
+    "updatedAt": 1775960785291,
+    "startedAt": null,
+    "completedAt": 1775960785291,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775976023401_6250",
+    "number": "REQ-043",
+    "title": "Host Mission Control remotely \u2014 Railway + VPN access",
+    "description": "Research and implement hosting Mission Control so Sam can access it remotely. Two questions to answer:\n1. How to deploy the Mission Control server on Railway (or similar)\n2. How to access it remotely via home VPN (Tailscale, WireGuard, etc.)\n\nCurrent setup: Python dev server on localhost:8787, data in JSON files. Need to figure out deployment strategy that keeps it accessible from outside the house.",
+    "details": "Research and implement hosting Mission Control so Sam can access it remotely. Two questions to answer:\n1. How to deploy the Mission Control server on Railway (or similar)\n2. How to access it remotely via home VPN (Tailscale, WireGuard, etc.)\n\nCurrent setup: Python dev server on localhost:8787, data in JSON files. Need to figure out deployment strategy that keeps it accessible from outside the house.",
+    "assignee": "Claude",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "high",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Research Railway deployment for Python/JS static server + JSON data",
+        "status": "in-progress"
+      },
+      {
+        "id": "st2",
+        "title": "Research VPN options for remote access to self-hosted services (Tailscale, WireGuard, etc.)",
+        "status": "todo"
+      },
+      {
+        "id": "st3",
+        "title": "Evaluate: Railway vs VPN-at-home tradeoffs",
+        "status": "todo"
+      },
+      {
+        "id": "st4",
+        "title": "Produce recommendation with steps",
+        "status": "todo"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775976023401,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775976264838,
+        "event": "transitioned_to_done"
+      },
+      {
+        "ts": 1775977650061,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775976023401,
+    "updatedAt": 1775977650061,
+    "startedAt": null,
+    "completedAt": 1775976264838,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775978105290_8831",
+    "number": "REQ-044",
+    "title": "Debug MC subtask PATCH + tighten loose ends",
+    "description": "Two parts:\n\n1. BUG: Subtask status updates via PATCH endpoint silently fail \u2014 sent subtask status changes, got ok:true back, but data didnt stick. Need to debug the PATCH /{id}/subtasks endpoint and verify the right payload format.\n\n2. CLEANUP: General code tightening \u2014 clean up loose ends, remove dead code, ensure consistency across the Mission Control server.\n\nVerify every write by reading back the data after.",
+    "details": "Two parts:\n\n1. BUG: Subtask status updates via PATCH endpoint silently fail \u2014 sent subtask status changes, got ok:true back, but data didnt stick. Need to debug the PATCH /{id}/subtasks endpoint and verify the right payload format.\n\n2. CLEANUP: General code tightening \u2014 clean up loose ends, remove dead code, ensure consistency across the Mission Control server.\n\nVerify every write by reading back the data after.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Debug PATCH subtask endpoint \u2014 find why status updates dont persist",
+        "status": "done",
+        "startedAt": 1775978253464,
+        "startedBy": "Alfred",
+        "completedAt": 1775980931168,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st2",
+        "title": "Fix subtask update and add readback verification",
+        "status": "done",
+        "startedAt": 1775980902569,
+        "startedBy": "Alfred",
+        "completedAt": 1775980931168,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st3",
+        "title": "General code cleanup and tightening",
+        "status": "done",
+        "startedAt": 1775981216910,
+        "startedBy": "Alfred",
+        "completedAt": 1775981216951,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st4",
+        "title": "Verify all MC API writes work correctly",
+        "status": "done",
+        "startedAt": 1775981224753,
+        "startedBy": "Alfred",
+        "completedAt": 1775981234403,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st5",
+        "title": "Fix blue pulse animation for manually-created jobs in MC UI",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775980931168
+      },
+      {
+        "id": "st6",
+        "title": "Auto-rewrite: when Sam creates a job in MC UI, Alfred rewrites it into clean format",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775981597933
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775978105290,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775978253464,
+        "event": "subtask st1 in-progress \u2014 Debug PATCH subtask endpoint \u2014 find why status updates dont persist",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775978294942,
+        "event": "transitioned_to_working"
+      },
+      {
+        "ts": 1775980902569,
+        "event": "subtask st2 in-progress \u2014 Fix subtask update and add readback verification",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775980931168,
+        "event": "subtask st1 done \u2014 Debug PATCH subtask endpoint \u2014 find why status updates dont persist",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775980931168,
+        "event": "subtask st2 done \u2014 Fix subtask update and add readback verification",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775980931168,
+        "event": "subtask st5 done \u2014 Fix blue pulse animation for manually-created jobs in MC UI",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775980953339,
+        "event": "subtask st3 in-progress \u2014 General code cleanup and tightening",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775981216910,
+        "event": "subtask st3 in-progress \u2014 General code cleanup and tightening",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775981216951,
+        "event": "subtask st3 done \u2014 General code cleanup and tightening",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775981224753,
+        "event": "subtask st4 in-progress \u2014 Verify all MC API writes work correctly",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775981234403,
+        "event": "subtask st4 done \u2014 Verify all MC API writes work correctly",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775981597933,
+        "event": "subtask st6 done \u2014 Auto-rewrite: when Sam creates a job in MC UI, Alfred rewrites it into clean format",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775981630195,
+        "event": "transitioned_to_done"
+      }
+    ],
+    "createdAt": 1775978105290,
+    "updatedAt": 1775981630195,
+    "startedAt": null,
+    "completedAt": 1775981630195,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775981466018_7372",
+    "number": "REQ-045",
+    "title": "Test rewrite flag",
+    "description": "Testing the needsRewrite flag",
+    "details": "Testing the needsRewrite flag",
+    "assignee": "Unassigned",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "archived",
+    "jobStatus": "active",
+    "phase": "archived",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1775981466018,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775981545768,
+        "event": "archived"
+      }
+    ],
+    "createdAt": 1775981466018,
+    "updatedAt": 1775981545768,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1775994743003_4414",
+    "number": "REQ-046",
+    "title": "Remove project selector and add-project UI",
+    "description": "Remove the project selector dropdown and the plus/add-project button from the Mission Control sidebar. We are working with a single dashboard now \u2014 no project splitting. Clean up all related code (HTML, JS, CSS) for the project mechanic.",
+    "details": "Clean up\n\nRemove the project, menu with \"Mission Control\" and the plus button. This was made to split projects but we will work with the single dashboard. Clean up code of that mechanic that's now removed. Even in this \"new job\" window there is the project selection at the bottom \"Mission Control\". So try to tidy up what's related too. we function job and job are split into tasks. that's it.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Remove project selector dropdown from sidebar HTML",
+        "status": "done",
+        "startedBy": "Alfred",
+        "completedBy": "Alfred",
+        "startedAt": 1775994937541,
+        "completedAt": 1775994978912
+      },
+      {
+        "id": "st2",
+        "title": "Remove add-project plus button from sidebar",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775994978912
+      },
+      {
+        "id": "st3",
+        "title": "Clean up project-related JS (filtering, selector logic, project state)",
+        "status": "done",
+        "startedBy": "Alfred",
+        "completedBy": "Alfred",
+        "startedAt": 1775994978912,
+        "completedAt": 1775995122065
+      },
+      {
+        "id": "st4",
+        "title": "Clean up project-related CSS",
+        "status": "done",
+        "startedBy": "Alfred",
+        "completedBy": "Alfred",
+        "startedAt": 1775995122065,
+        "completedAt": 1775995278898
+      },
+      {
+        "id": "st5",
+        "title": "Remove project API endpoints if no longer needed",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1775995278898
+      },
+      {
+        "id": "st6",
+        "title": "Verify nothing breaks after cleanup",
+        "status": "done",
+        "startedBy": "Alfred",
+        "completedBy": "Alfred",
+        "startedAt": 1775995278898,
+        "completedAt": 1775995326535
+      }
+    ],
+    "history": [
+      {
+        "ts": 1775994743003,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1775994937521,
+        "event": "transitioned_to_working"
+      },
+      {
+        "ts": 1775994937541,
+        "event": "subtask st1 in-progress \u2014 Remove project selector dropdown from sidebar HTML",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775994978912,
+        "event": "subtask st1 done \u2014 Remove project selector dropdown from sidebar HTML",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775994978912,
+        "event": "subtask st2 done \u2014 Remove add-project plus button from sidebar",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775994978912,
+        "event": "subtask st3 in-progress \u2014 Clean up project-related JS (filtering, selector logic, project state)",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775995122065,
+        "event": "subtask st3 done \u2014 Clean up project-related JS (filtering, selector logic, project state)",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775995122065,
+        "event": "subtask st4 in-progress \u2014 Clean up project-related CSS",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775995278898,
+        "event": "subtask st4 done \u2014 Clean up project-related CSS",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775995278898,
+        "event": "subtask st5 done \u2014 Remove project API endpoints if no longer needed",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775995278898,
+        "event": "subtask st6 in-progress \u2014 Verify nothing breaks after cleanup",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775995326535,
+        "event": "subtask st6 done \u2014 Verify nothing breaks after cleanup",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1775995326556,
+        "event": "transitioned_to_done"
+      }
+    ],
+    "createdAt": 1775994743003,
+    "updatedAt": 1775995326556,
+    "startedAt": null,
+    "completedAt": 1775995326556,
+    "qcResult": null
+  }
+]
