@@ -4,9 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mission Control</title>
-  <link rel="stylesheet" href="./styles.css?v=20260412n" />
+  <link rel="stylesheet" href="./styles.css?v=20260413q" />
 </head>
-<body>
+<body class="dark">
+  <script>/* Force dark immediately — prevent light flash on iPhone */
+    if(localStorage.getItem('mc-theme')==='light')document.body.classList.remove('dark');
+  </script>
 
   <div class="mobile-header"><span class="mobile-title">Mission Control</span><button class="mobile-menu-btn">☰</button></div>
   <button class="mobile-menu-btn" id="mobileMenuBtn" title="Menu">☰</button>
@@ -21,6 +24,7 @@
         <button class="nav-item active" data-view="overview">Overview</button>
         <button class="nav-item" data-view="system">System</button>
         <button class="nav-item" data-view="pulse">Pulse</button>
+        <button class="nav-item" data-view="logs">Logs</button>
       </div>
 
       <div class="nav-footer">
@@ -63,7 +67,7 @@
           <div class="production-section">
             <div class="production-section-title-row">
               <h3 class="production-section-title">Done</h3>
-              <button id="discardAllBtn" class="discard-all-btn" title="Discard all finished jobs">Discard All Finished</button>
+
             </div>
             <div id="doneRow" class="done-row"></div>
           </div>
@@ -112,48 +116,63 @@
           <!-- Activity Feed -->
           <div id="systemActivity" class="overview-activity"></div>
 
-          <!-- Comms Log -->
-          <div id="systemComms" class="overview-comms">
-            <div class="comms-header" id="commsHeader">
-              <h3 class="section-title">Comms Log</h3>
-              <button class="comms-toggle" id="commsToggle" title="Collapse">&#9660;</button>
-            </div>
-            <div id="commsBody" class="comms-body">
-              <div id="commsLog" class="comms-log">
-                <div class="comms-empty">No messages yet</div>
-              </div>
-            </div>
-          </div>
         </section>
 
         <!-- Pulse View -->
         <section id="pulse" class="view">
           <header class="page-header">
             <h1 class="page-title">Pulse</h1>
-            <p class="page-subtitle">System Metrics & Agent Activity</p>
+            <p class="page-subtitle">Work & System Metrics</p>
           </header>
 
           <div class="pulse-content">
-            <!-- System Health -->
+            <!-- Work Pulse -->
             <div class="pulse-section">
-              <h3 class="section-title">System Health</h3>
+              <h3 class="section-title">Work</h3>
+              <div class="pulse-metrics-grid">
+                <div class="pulse-metric-card pulse-metric-today">
+                  <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">DAY</span>
+                  <span class="metric-value" id="pulse-tasks-today" style="font-size:32px;font-weight:700">—</span>
+                  <span class="metric-sublabel">tasks completed</span>
+                </div>
+                <div class="pulse-metric-card pulse-metric-week">
+                  <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">WEEK</span>
+                  <span class="metric-value" id="pulse-tasks-week" style="font-size:32px;font-weight:700">—</span>
+                  <span class="metric-sublabel">tasks completed</span>
+                </div>
+                <div class="pulse-metric-card pulse-metric-month">
+                  <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">MONTH</span>
+                  <span class="metric-value" id="pulse-tasks-month" style="font-size:32px;font-weight:700">—</span>
+                  <span class="metric-sublabel">tasks completed</span>
+                </div>
+                <div class="pulse-metric-card pulse-metric-year">
+                  <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">YEAR</span>
+                  <span class="metric-value" id="pulse-tasks-year" style="font-size:32px;font-weight:700">—</span>
+                  <span class="metric-sublabel">tasks completed</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- System -->
+            <div class="pulse-section">
+              <h3 class="section-title">System</h3>
               <div class="engagement-grid">
                 <div class="engagement-card">
                   <span class="platform-name">Uptime</span>
                   <span class="metric-value" id="pulse-uptime" style="font-size:28px">—</span>
                 </div>
                 <div class="engagement-card">
-                  <span class="platform-name">Current Model</span>
+                  <span class="platform-name">Active Model</span>
                   <span class="metric-value" id="pulse-model" style="font-size:18px">—</span>
                 </div>
                 <div class="engagement-card">
-                  <span class="platform-name">Current Context</span>
+                  <span class="platform-name">Context</span>
                   <span class="metric-value" id="pulse-context" style="font-size:20px">—</span>
                   <span class="metric-label" id="pulse-context-detail"></span>
                 </div>
                 <div class="engagement-card">
-                  <span class="platform-name">Compactions</span>
-                  <span class="metric-value" id="pulse-compactions" style="font-size:28px">—</span>
+                  <span class="platform-name">OpenClaw</span>
+                  <span class="metric-value" id="pulse-version" style="font-size:18px">—</span>
                 </div>
               </div>
             </div>
@@ -165,6 +184,20 @@
             </div>
 
             <!-- Active Agents -->
+          </div>
+        </section>
+
+        <!-- Logs View -->
+        <section id="logs" class="view">
+          <header class="page-header">
+            <h1 class="page-title">Logs</h1>
+            <p class="page-subtitle">Job History</p>
+          </header>
+
+          <div class="logs-content">
+            <div id="jobLogsList" class="log-list">
+              <div class="log-empty">Loading logs...</div>
+            </div>
           </div>
         </section>
 
@@ -180,6 +213,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260412n"></script>
+  <script src="./app.js?v=20260413q"></script>
 </body>
 </html>

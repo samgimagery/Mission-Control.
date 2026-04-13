@@ -96,7 +96,7 @@ def find_job_by_id(job_id):
     return None, jobs
 
 
-def transition_job_phase(job_id, new_phase, event_prefix='transitioned'):
+def transition_job_phase(job_id, new_phase, event_prefix='transitioned', by='Alfred'):
     job, jobs = find_job_by_id(job_id)
     if not job:
         return None, 'Job not found'
@@ -116,10 +116,12 @@ def transition_job_phase(job_id, new_phase, event_prefix='transitioned'):
     # Set completedAt when moving to done
     if new_phase == 'done':
         job['completedAt'] = now_ms
-    job['history'].append({
+    event_record = {
         'ts': now_ms,
         'event': f'{event_prefix}_to_{new_phase}',
-    })
+        'by': by,
+    }
+    job['history'].append(event_record)
     save_mission_control_jobs(jobs)
     return job, None
 
@@ -233,7 +235,7 @@ def _load_openclaw_sessions():
             ['openclaw', 'sessions', '--all-agents', '--json'],
             capture_output=True,
             text=True,
-            timeout=8,
+            timeout=2,
             check=True,
         )
         payload = json.loads(proc.stdout or '{}')
@@ -250,7 +252,7 @@ def _get_openclaw_status():
     try:
         proc = subprocess.run(
             ['openclaw', 'status', '--json'],
-            capture_output=True, text=True, timeout=4
+            capture_output=True, text=True, timeout=2
         )
         if proc.returncode != 0 or not proc.stdout.strip():
             return {}
@@ -634,7 +636,7 @@ def build_pulse_data():
     try:
         result = subprocess.run(
             ['openclaw', 'status', '--json'],
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True, timeout=8
         )
         if result.returncode == 0:
             oc_status = json.loads(result.stdout)
@@ -667,6 +669,41 @@ def build_pulse_data():
         except Exception:
             pass
 
+    # --- Tasks completed metrics ---
+    now_dt = __import__('datetime').datetime.now(__import__('datetime').timezone.utc)
+    today_start = __import__('datetime').datetime(now_dt.year, now_dt.month, now_dt.day, tzinfo=__import__('datetime').timezone.utc)
+    week_start = today_start - __import__('datetime').timedelta(days=today_start.weekday())
+    month_start = __import__('datetime').datetime(now_dt.year, now_dt.month, 1, tzinfo=__import__('datetime').timezone.utc)
+    year_start = __import__('datetime').datetime(now_dt.year, 1, 1, tzinfo=__import__('datetime').timezone.utc)
+
+    today_ms = int(today_start.timestamp() * 1000)
+    week_ms = int(week_start.timestamp() * 1000)
+    month_ms = int(month_start.timestamp() * 1000)
+    year_ms = int(year_start.timestamp() * 1000)
+
+    def count_completed(since_ms):
+        """Count completed subtasks + completed jobs since a timestamp."""
+        count = 0
+        for j in jobs:
+            # Count completed jobs (by completedAt)
+            if j.get('phase') == 'done' and (j.get('completedAt') or 0) >= since_ms:
+                count += 1
+            # Count completed subtasks
+            for st in j.get('subtasks', []):
+                if st.get('status') == 'done':
+                    st_completed = st.get('completedAt') or j.get('completedAt') or 0
+                    if st_completed >= since_ms:
+                        count += 1
+        return count
+
+    tasks_completed = {
+        'today': count_completed(today_ms),
+        'week': count_completed(week_ms),
+        'month': count_completed(month_ms),
+        'year': count_completed(year_ms),
+        'total': sum(len([s for s in j.get('subtasks', []) if s.get('status') == 'done']) for j in jobs) + sum(1 for j in jobs if j.get('phase') == 'done'),
+    }
+
     return {
         'ok': True,
         'timestamp': now_ms,
@@ -683,6 +720,7 @@ def build_pulse_data():
             'ollama': ollama_usage,
         },
         'compactions': compactions,
+        'tasksCompleted': tasks_completed,
         'uptime': _format_duration(uptime_s) if uptime_s else 'unknown',
         'model': 'glm-5.1:cloud',
         'contextUsed': context_used,
@@ -972,8 +1010,25 @@ class Handler(SimpleHTTPRequestHandler):
             self._send_json(200, state)
             return
         if clean_path == '/api/pulse-data':
-            pulse = build_pulse_data()
-            self._send_json(200, pulse)
+            import threading
+            pulse_result = {}
+            pulse_error = None
+            def _build():
+                nonlocal pulse_result, pulse_error
+                try:
+                    pulse_result = build_pulse_data()
+                except Exception as e:
+                    pulse_error = str(e)
+            t = threading.Thread(target=_build, daemon=True)
+            t.start()
+            t.join(timeout=15)
+            if t.is_alive() or pulse_error:
+                # Timeout or error — return minimal data with real jobs count
+                jobs = load_mission_control_jobs()
+                done_count = sum(1 for j in jobs if j.get('phase') in ('done', 'completed') and j.get('phase') != 'archived')
+                self._send_json(200, {'ok': True, 'agents': [{'name': 'Alfred', 'emoji': '🛎️', 'role': 'Coordinator', 'status': 'standby', 'model': 'glm-5.1:cloud'}, {'name': 'Claude', 'emoji': '⚡', 'role': 'Build', 'status': 'standby', 'model': 'Claude-Code / glm-5.1:cloud'}], 'jobs': {'total': len(jobs), 'todo': sum(1 for j in jobs if j.get('phase') == 'todo'), 'working': sum(1 for j in jobs if j.get('phase') == 'working'), 'qc': sum(1 for j in jobs if j.get('phase') in ('review', 'qc')), 'done': done_count}, 'usage': {}, 'compactions': 0, 'tasksCompleted': {}, 'uptime': 'unknown', 'contextUsed': 0, 'contextTotal': 202752, 'excludedModels': [], 'modelUsage': []})
+                return
+            self._send_json(200, pulse_result)
             return
         if clean_path == '/api/alfred-status':
             status_file = DATA_DIR / 'alfred-status.json'
@@ -990,12 +1045,109 @@ class Handler(SimpleHTTPRequestHandler):
             self._send_json(200, profile)
             return
         if clean_path == '/api/mission-control-jobs':
-            self._send_json(200, {'ok': True, 'jobs': load_mission_control_jobs()})
+            all_jobs = load_mission_control_jobs()
+            # Return only active (todo + working) jobs — done jobs available via /done endpoint
+            active = []
+            for j in all_jobs:
+                phase = j.get('phase', 'todo')
+                if phase in ('archived', 'done', 'completed'):
+                    continue  # Skip done/archived — load on demand only
+                active.append(j)
+            self._send_json(200, {'ok': True, 'jobs': active})
+            return
+        if clean_path == '/api/mission-control-jobs/done':
+            # On-demand: return compacted done jobs for the Done list
+            all_jobs = load_mission_control_jobs()
+            compacted = []
+            for j in all_jobs:
+                phase = j.get('phase', 'todo')
+                if phase == 'archived':
+                    continue
+                if phase in ('done', 'completed'):
+                    completed_by = ''
+                    for h in j.get('history', []):
+                        ev = h.get('event', '')
+                        if ev in ('transitioned_to_done', 'approved') or 'done' in ev:
+                            completed_by = h.get('by', 'Alfred')
+                    compacted.append({
+                        'id': j.get('id'),
+                        'number': j.get('number'),
+                        'title': j.get('title'),
+                        'phase': phase,
+                        'assignee': j.get('assignee'),
+                        'priority': j.get('priority'),
+                        'project': j.get('project'),
+                        'createdBy': j.get('createdBy'),
+                        'completedBy': completed_by or j.get('assignee', ''),
+                        'completedAt': j.get('completedAt'),
+                        'createdAt': j.get('createdAt'),
+                    })
+            self._send_json(200, {'ok': True, 'jobs': compacted})
             return
         if clean_path == '/api/mission-control-jobs/needs-rewrite':
             jobs = load_mission_control_jobs()
             needing = [j for j in jobs if j.get('needsRewrite')]
             self._send_json(200, {'ok': True, 'jobs': needing})
+            return
+
+        if clean_path == '/api/mission-control-jobs/logs':
+            # Job-level log entries for the Logs panel
+            all_jobs = load_mission_control_jobs()
+            log_entries = []
+            for j in all_jobs:
+                phase = j.get('phase', 'todo')
+                if phase == 'archived':
+                    continue
+                number = j.get('number', '')
+                title = j.get('title', '')
+                description = j.get('description', j.get('details', ''))
+                # Extract last sentence from description
+                import re as _re
+                sentences = _re.split(r'[.!?]+', description.strip())
+                sentences = [s.strip() for s in sentences if s.strip()]
+                summary = sentences[-1] if sentences else title
+                # Get created and completed dates
+                created_at = j.get('createdAt')
+                completed_at = j.get('completedAt')
+                history = j.get('history', [])
+                # Build log text from history
+                log_lines = []
+                for h in history:
+                    ev = h.get('event', '')
+                    by = h.get('by', '')
+                    ts = h.get('ts', 0)
+                    from datetime import datetime as _dt, timezone as _tz
+                    try:
+                        dt = _dt.fromtimestamp(ts / 1000, tz=_tz.utc)
+                        time_str = dt.strftime('%H:%M')
+                    except Exception:
+                        time_str = ''
+                    if 'created' in ev:
+                        log_lines.append(f'{time_str} Created by {by}')
+                    elif 'working' in ev:
+                        log_lines.append(f'{time_str} Started ({by})')
+                    elif 'done' in ev or 'approved' in ev:
+                        log_lines.append(f'{time_str} Completed ({by})')
+                    elif 'archived' in ev:
+                        log_lines.append(f'{time_str} Archived')
+                    elif 'stopped' in ev:
+                        log_lines.append(f'{time_str} Stopped ({by})')
+                    elif 'subtask' in ev:
+                        log_lines.append(f'{time_str} {ev} ({by})')
+                log_entries.append({
+                    'id': j.get('id'),
+                    'number': number,
+                    'title': title,
+                    'summary': summary,
+                    'phase': phase,
+                    'createdAt': created_at,
+                    'completedAt': completed_at,
+                    'log': log_lines,
+                    'assignee': j.get('assignee', ''),
+                })
+            # Sort by createdAt descending
+            log_entries.sort(key=lambda e: e.get('createdAt') or 0, reverse=True)
+            self._send_json(200, {'ok': True, 'logs': log_entries})
             return
         if clean_path == '/api/mission-control-projects':
             self._send_json(200, {'ok': True, 'projects': load_mission_control_projects()})
@@ -1235,7 +1387,25 @@ class Handler(SimpleHTTPRequestHandler):
                 if new_phase not in ('todo', 'working', 'qc', 'review', 'awaiting-approval', 'done'):
                     self._send_json(400, {'ok': False, 'error': 'Invalid phase'})
                     return
-                job, err = transition_job_phase(job_id, new_phase)
+                # Prevent starting a scheduled job before its due date
+                if new_phase == 'working':
+                    target_job, _ = find_job_by_id(job_id)
+                    if target_job:
+                        due = target_job.get('dueDate')
+                        if due and due != 'None':
+                            try:
+                                import datetime as _dt
+                                due_dt = _dt.datetime.fromisoformat(due.replace('Z', '+00:00'))
+                                if due_dt.tzinfo is None:
+                                    due_dt = due_dt.replace(tzinfo=_dt.timezone.utc)
+                                now_utc = _dt.datetime.now(_dt.timezone.utc)
+                                if due_dt > now_utc:
+                                    self._send_json(400, {'ok': False, 'error': f'Job is scheduled to start at {due}. Cannot start before due date.'})
+                                    return
+                            except (ValueError, TypeError):
+                                pass  # Invalid date format — allow transition
+                by = (payload.get('by') or '').strip() or 'Alfred'
+                job, err = transition_job_phase(job_id, new_phase, by=by)
                 if err:
                     self._send_json(404, {'ok': False, 'error': err})
                     return
@@ -1254,7 +1424,7 @@ class Handler(SimpleHTTPRequestHandler):
             if action == 'approve':
                 import time as _time_approve
                 now_ms_approve = int(_time_approve.time() * 1000)
-                job, err = transition_job_phase(job_id, 'done', event_prefix='approved')
+                job, err = transition_job_phase(job_id, 'done', event_prefix='approved', by='Sam')
                 if err:
                     self._send_json(404, {'ok': False, 'error': err})
                     return
@@ -1274,7 +1444,7 @@ class Handler(SimpleHTTPRequestHandler):
                 import time as _time_reject
                 now_ms_reject = int(_time_reject.time() * 1000)
                 reason = (payload.get('reason') or '').strip()
-                job, err = transition_job_phase(job_id, 'working', event_prefix='rejected')
+                job, err = transition_job_phase(job_id, 'working', event_prefix='rejected', by='Sam')
                 if err:
                     self._send_json(404, {'ok': False, 'error': err})
                     return
@@ -1428,7 +1598,7 @@ class Handler(SimpleHTTPRequestHandler):
                     'details': payload.get('details', ''),
                     'assignee': payload.get('assignee', 'Unassigned'),
                     'createdBy': payload.get('createdBy', payload.get('assignee', 'Unassigned')),
-                    'assignedBy': payload.get('assignedBy', 'Alfred'),
+                    'assignedBy': payload.get('assignedBy', payload.get('createdBy', 'Alfred')),
                     'priority': payload.get('priority', 'normal'),
                     'project': payload.get('project', 'Mission Control'),
                     'status': 'todo',
@@ -1442,6 +1612,7 @@ class Handler(SimpleHTTPRequestHandler):
                     'history': [{'ts': now_ms, 'event': 'created', 'by': payload.get('createdBy', payload.get('assignee', 'Unassigned'))}],
                     'createdAt': now_ms,
                     'updatedAt': now_ms,
+                    'dueDate': payload.get('dueDate') or None,
                     'startedAt': None,
                     'completedAt': None,
                     'qcResult': None,

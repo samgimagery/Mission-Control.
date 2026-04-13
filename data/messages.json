@@ -70,5 +70,14 @@
     "timestamp": 1775875934707,
     "routedTo": "Alfred",
     "status": "pending"
+  },
+  {
+    "id": "msg_1776006066258",
+    "from": "Sam",
+    "to": "Alfred",
+    "message": "can you make the dot a little smaller and white?",
+    "timestamp": 1776006066258,
+    "routedTo": "Alfred",
+    "status": "pending"
   }
 ]

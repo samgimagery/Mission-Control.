@@ -14,11 +14,12 @@ setInterval(fetchAlfredStatus, 5000);
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[MC] DOM ready');
 
-  // ── Theme (dark mode persisted) ──
+  // ── Theme (dark mode persisted, dark is default) ──
   const themeToggle = document.getElementById('themeToggle');
   const savedTheme = localStorage.getItem('mc-theme');
 
-  if (savedTheme === 'dark') {
+  // Default to dark unless explicitly set to light
+  if (savedTheme !== 'light') {
     document.body.classList.add('dark');
   }
 
@@ -74,17 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ── Comms Log Collapse Toggle ──
-  const commsToggle = document.getElementById('commsToggle');
-  const commsHeader = document.getElementById('commsHeader');
-  const commsBody = document.getElementById('commsBody');
-  if (commsToggle && commsHeader && commsBody) {
-    commsHeader.addEventListener('click', () => {
-      const isCollapsed = commsBody.classList.toggle('collapsed');
-      commsToggle.textContent = isCollapsed ? '\u25B6' : '\u25BC';
-    });
-  }
-
   function switchView(targetView) {
     navItems.forEach(nav => nav.classList.remove('active'));
     document.querySelector(`[data-view="${targetView}"]`)?.classList.add('active');
@@ -100,6 +90,11 @@ document.addEventListener('DOMContentLoaded', () => {
       startPulseAutoRefresh();
     } else {
       stopPulseAutoRefresh();
+    }
+
+    // Load comms log when Logs view is activated
+    if (targetView === 'logs') {
+      loadJobLogs();
     }
   }
 
@@ -250,18 +245,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Load Data ──
   async function loadAssetData() {
     try {
-      const [stateRes, jobsRes] = await Promise.all([
+      const [stateRes, jobsRes, doneRes] = await Promise.all([
         fetch('/api/mission-control-state', { cache: 'no-store' }),
-        fetch('/api/mission-control-jobs', { cache: 'no-store' })
+        fetch('/api/mission-control-jobs', { cache: 'no-store' }),
+        fetch('/api/mission-control-jobs/done', { cache: 'no-store' })
       ]);
 
       const stateData = await stateRes.json();
       const jobsData = await jobsRes.json();
+      const doneData = await doneRes.json();
 
-      if (jobsData.ok && jobsData.jobs) {
-        currentJobs = jobsData.jobs;
-        updatePipeline(jobsData.jobs);
-      }
+      // Merge active + done jobs
+      const activeJobs = jobsData.jobs || [];
+      const doneJobs = doneData.jobs || [];
+      currentJobs = [...activeJobs, ...doneJobs];
+      updatePipeline(currentJobs);
 
       if (stateData.ok) {
         updateServerStatus(true);
@@ -275,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const infoEl = document.getElementById('serverInfo');
           if (infoEl) {
             const ver = pulseData.version || '2026.4.9';
-            infoEl.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-right:6px;vertical-align:middle"></span>OpenClaw ${ver}`;
+            infoEl.innerHTML = `<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#fff;margin-right:6px;vertical-align:middle"></span>OpenClaw ${ver}`;
           }
           updateDashboard(pulseData.agents || [], currentJobs, pulseData);
         }
@@ -370,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const jobAssignments = {};
     const agentSubtasks = {}; // agent name -> {number, subtaskTitle}
     (jobs || []).forEach(job => {
-      if (job.phase !== 'done' && job.phase !== 'completed' && job.phase !== 'archived' && job.assignee) {
+      if (job.phase === 'working' && job.assignee) {
         const a = job.assignee;
         team.forEach(t => {
           if (a.includes(t.name)) jobAssignments[t.name] = job.title;
@@ -432,16 +430,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const alfredTask = isAlfred && alfredWorkingStatus.task ? alfredWorkingStatus.task : null;
         const displayLabel = alfredTask || jobLabel || 'Available';
         const workingBadge = alfredWorking ? `<span class="alfred-working-badge">Working</span>` : '';
-        return `<div class="agent-card ${isActive ? 'active' : 'standby'}">
+        return `<div class="agent-card ${isActive ? 'active' : 'standby'} agent-card-${t.name.toLowerCase()}">
           <div class="agent-card-top">
-            <div class="agent-card-emoji">${t.emoji}</div>
-            <div class="agent-card-header-text">
+            <div class="agent-card-header">
               <div class="agent-card-name">${t.name}${workingBadge}</div>
               <div class="agent-card-role">${t.role}</div>
             </div>
             <span class="agent-card-model">${t.model || ''}</span>
           </div>
-          <div class="agent-card-now"${!displayLabel || displayLabel === 'Available' ? ' style="color:#3b82f6"' : ''}>${displayLabel}</div>
+          <div class="agent-card-now"${!displayLabel || displayLabel === 'Available' ? ' style="color:inherit;opacity:.7"' : ''}>${displayLabel}</div>
           <div class="agent-card-stats">
             <span class="agent-stat"><span class="agent-stat-val">${stats.completed}</span> done</span>
             <span class="agent-stat"><span class="agent-stat-val">${stats.inProgress}</span> active</span>
@@ -500,18 +497,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const created = history.find(h => h.event === 'created');
         const createdBy = (created && created.by) || job.createdBy || 'Sam';
         const createdTs = (created && created.ts) || job.createdAt || null;
-        // Find who completed (last subtask done or archived)
-        const completions = history.filter(h => h.event?.startsWith('subtask') && h.event?.endsWith('done'));
-        const archived = history.find(h => h.event === 'archived');
-        let completedBy = '';
-        let completedTs = null;
-        if (archived) {
-          completedBy = archived.by || 'Alfred';
-          completedTs = archived.ts;
-        } else if (completions.length > 0) {
-          const last = completions[completions.length - 1];
-          completedBy = last.by || 'Alfred';
-          completedTs = last.ts;
+        // Find who completed — use completedBy field from API if available, otherwise check history
+        let completedBy = job.completedBy || '';
+        let completedTs = job.completedAt || null;
+        if (!completedBy) {
+          const doneEvent = history.find(h => h.event === 'transitioned_to_done' || h.event === 'approved');
+          const completions = history.filter(h => h.event?.startsWith('subtask') && h.event?.endsWith('done'));
+          const archived = history.find(h => h.event === 'archived');
+          if (doneEvent) {
+            completedBy = doneEvent.by || 'Alfred';
+            completedTs = doneEvent.ts;
+          } else if (archived) {
+            completedBy = archived.by || 'Alfred';
+            completedTs = archived.ts;
+          } else if (completions.length > 0) {
+            const last = completions[completions.length - 1];
+            completedBy = last.by || 'Alfred';
+            completedTs = last.ts;
+          }
         }
         return {
           jobId: job.id,
@@ -536,18 +539,18 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="activity-feed-header">
                 <span class="activity-col-time">Date</span>
                 <span class="activity-col-ref">Ref</span>
-                <span class="activity-col-task">Task</span>
-                <span class="activity-col-desc">Description</span>
+                <span class="activity-col-created">Created By</span>
+                <span class="activity-col-completed">Completed By</span>
               </div>
               ${recent.map(r => {
                 const reqHtml = r.jobNumber ? `<span class="activity-req">${r.jobNumber}</span>` : '';
-                const title = r.title || '';
-                const desc = r.status || '';
+                const createdByHtml = escapeHtml(r.createdBy || '—');
+                const completedByHtml = r.completedBy ? escapeHtml(r.completedBy) : '—';
                 return `<div class="activity-entry" data-job-id="${r.jobId || ''}" style="cursor:pointer">
                     <span class="activity-time">${formatFullDate(r.createdTs)}</span>
                     <span class="activity-ref">${reqHtml}</span>
-                    <span class="activity-task-col">${escapeHtml(title)}</span>
-                    <span class="activity-desc-col">${escapeHtml(desc)}</span>
+                    <span class="activity-created-col">${createdByHtml}</span>
+                    <span class="activity-completed-col">${completedByHtml}</span>
                   </div>
                 `;
               }).join('')}
@@ -569,92 +572,78 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ── Comms Log ──
-  async function loadCommsLog() {
-    const commsEl = document.getElementById('commsLog');
-    if (!commsEl) return;
-    const activeEl = document.activeElement;
-    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
-      if (commsEl.contains(activeEl)) return;
-    }
+  // ── Job Logs Panel ──
+  async function loadJobLogs() {
+    const logsEl = document.getElementById('jobLogsList');
+    if (!logsEl) return;
+    // Remember expanded entries
+    const expandedKeys = new Set();
+    logsEl.querySelectorAll('.log-entry.expanded').forEach(el => {
+      if (el.dataset.logId) expandedKeys.add(el.dataset.logId);
+    });
+
     try {
-      const resp = await fetch('/api/mission-control-messages');
-      if (!resp.ok) { commsEl.innerHTML = '<div class="comms-empty">No messages yet</div>'; return; }
+      const resp = await fetch('/api/mission-control-jobs/logs');
+      if (!resp.ok) { logsEl.innerHTML = '<div class="log-empty">No logs yet</div>'; return; }
       const data = await resp.json();
-      const messages = data.messages || [];
-      if (messages.length === 0) {
-        commsEl.innerHTML = '<div class="comms-empty">No messages yet</div>';
+      const logs = data.logs || [];
+      if (logs.length === 0) {
+        logsEl.innerHTML = '<div class="log-empty">No logs yet</div>';
         return;
       }
-      // Group messages by jobNumber + subtaskNumber
-      const groups = {};
-      messages.forEach(m => {
-        const key = `${m.jobNumber || ''}-${m.subtaskNumber || ''}-${m.to || ''}`;
-        if (!groups[key]) groups[key] = { jobNumber: m.jobNumber, subtaskNumber: m.subtaskNumber, to: m.to, messages: [] };
-        groups[key].messages.push(m);
-      });
 
-      commsEl.innerHTML = Object.values(groups).map(g => {
-        const ref = [g.jobNumber, g.subtaskNumber].filter(Boolean).join(' ');
-        const firstMsg = g.messages[0];
-        const firstText = (firstMsg.text || firstMsg.message || '').substring(0, 60);
-        const firstFrom = firstMsg.from || 'System';
-        const icon = firstFrom === 'Sam' ? '👤' : firstFrom === 'Alfred' ? '🛎️' : '⚡';
-        const allMessagesHtml = g.messages.map(m => {
-          const mIcon = m.from === 'Sam' ? '👤' : m.from === 'Alfred' ? '🛎️' : '⚡';
-          const mFrom = m.from === 'Claude Code' ? 'Claude' : (m.from || 'System');
-          const mText = m.text || m.message || '';
-          const mTs = m.ts || m.timestamp || Date.now();
-          return `<div class="comms-thread-msg"><span class="comms-thread-icon">${mIcon}</span><span class="comms-thread-from">${escapeHtml(mFrom)}</span><span class="comms-thread-time">${formatTimestamp(mTs)}</span><div class="comms-thread-text">${escapeHtml(mText)}</div></div>`;
-        }).join('');
+      logsEl.innerHTML = logs.map(l => {
+        const reqNum = l.number || '—';
+        const isExpanded = expandedKeys.has(l.id);
+        const chevron = isExpanded ? '▾' : '▸';
+        const summary = l.summary || l.title || '';
+        const summaryShort = summary.length > 80 ? summary.substring(0, 77) + '...' : summary;
+        const phaseLabel = l.phase === 'done' ? '✓' : l.phase === 'working' ? '►' : '●';
+        const logHtml = (l.log || []).map(line => `<div class="log-thread-msg">${escapeHtml(line)}</div>`).join('');
 
-        return `<div class="comms-group" data-group-key="${escapeHtml(ref)}">
-          <div class="comms-group-header">
-            <span class="comms-group-ref">${ref ? escapeHtml(ref) : 'General'}</span>
-            <span class="comms-group-preview">${icon} ${escapeHtml(firstText)}${firstText.length >= 60 ? '...' : ''}</span>
-            <span class="comms-group-count">${g.messages.length}</span>
+        return `<div class="log-entry${isExpanded ? ' expanded' : ''}" data-log-id="${l.id}" data-job-id="${l.id}">
+          <div class="log-entry-header">
+            <span class="log-entry-chevron">${chevron}</span>
+            <span class="log-entry-date">${formatFullDate(l.createdAt)}</span>
+            <span class="log-entry-req">${escapeHtml(reqNum)}</span>
+            <span class="log-entry-phase">${phaseLabel}</span>
+            <span class="log-entry-summary">${escapeHtml(summaryShort)}</span>
           </div>
-          <div class="comms-group-thread" style="display:none">
-            ${allMessagesHtml}
-            <div class="comms-reply">
-              <input type="text" class="comms-reply-input" placeholder="Reply..." />
-              <button class="comms-reply-send">Send</button>
-            </div>
+          <div class="log-entry-thread" style="display:${isExpanded ? 'flex' : 'none'}">
+            ${logHtml}
           </div>
         </div>`;
       }).join('');
 
-      // Click to expand group
-      commsEl.querySelectorAll('.comms-group-header').forEach(header => {
+      // Click header to expand/collapse
+      logsEl.querySelectorAll('.log-entry-header').forEach(header => {
         header.addEventListener('click', (e) => {
-          const thread = header.nextElementSibling;
-          if (thread) thread.style.display = thread.style.display === 'none' ? 'flex' : 'none';
+          if (e.target.classList.contains('log-entry-req')) return;
+          const entry = header.parentElement;
+          const thread = entry.querySelector('.log-entry-thread');
+          const chevron = header.querySelector('.log-entry-chevron');
+          if (thread) {
+            const isNowExpanded = thread.style.display !== 'none';
+            thread.style.display = isNowExpanded ? 'none' : 'flex';
+            entry.classList.toggle('expanded', !isNowExpanded);
+            if (chevron) chevron.textContent = isNowExpanded ? '▸' : '▾';
+          }
         });
       });
-      // Reply handling
-      commsEl.querySelectorAll('.comms-group').forEach(group => {
-        const sendBtn = group.querySelector('.comms-reply-send');
-        const input = group.querySelector('.comms-reply-input');
-        const sendReply = async () => {
-          const msg = input.value.trim();
-          if (!msg) return;
-          const ref = group.dataset.groupKey || '';
-          const parts = ref.split(' ');
-          const jobNumber = parts[0] || '';
-          const subtaskNumber = parts[1] || '';
-          await fetch('/api/mission-control-message', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ to: 'Alfred', message: msg, from: 'Sam', jobNumber, subtaskNumber })
-          });
-          input.value = '';
-          loadCommsLog();
-        };
-        if (sendBtn) sendBtn.addEventListener('click', (e) => { e.stopPropagation(); sendReply(); });
-        if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.stopPropagation(); sendReply(); } });
+
+      // Click REQ number to open job modal
+      logsEl.querySelectorAll('.log-entry-req').forEach(reqEl => {
+        reqEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const entry = reqEl.closest('.log-entry');
+          const jobId = entry?.dataset.jobId;
+          if (!jobId) return;
+          const job = currentJobs.find(j => j.id === jobId);
+          if (job) openCardModal(job);
+        });
       });
     } catch(e) {
-      commsEl.innerHTML = '<div class="comms-empty">No messages yet</div>';
+      logsEl.innerHTML = '<div class="log-empty">Failed to load logs</div>';
     }
   }
 
@@ -727,8 +716,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Load comms log on each data refresh
-  loadCommsLog();
+  // Load comms log when Logs view is active
+  if (document.getElementById('logs')?.classList.contains('active')) {
+    loadJobLogs();
+  }
 
   // ── Pipeline Rendering ──
   function updatePipeline(jobs) {
@@ -1000,6 +991,7 @@ document.addEventListener('DOMContentLoaded', () => {
     card.className = `task-card ${isDone ? 'completed' : ''} phase-${job.phase}${hasInProgress ? ' job-active' : ''}${jobStatus === 'active' && !isDone ? ' job-active-glow' : ''} job-${jobStatus}`;
     if (isAwaiting) card.classList.add('phase-awaiting-approval');
     card.dataset.jobId = job.id;
+    card.dataset.assignee = job.assignee || 'Unassigned';
 
     // Build card inner HTML
     let cardHtml = '';
@@ -1033,9 +1025,9 @@ document.addEventListener('DOMContentLoaded', () => {
       cardHtml += `<div class="task-card-desc">${escapeHtml(jobDesc.length > 120 ? jobDesc.substring(0, 117) + '...' : jobDesc)}</div>`;
     }
 
-    // Created by / Assigned by — plain text, no emoji icons
+    // Created by / Assigned to — plain text, no emoji icons
     cardHtml += `<div class="task-meta-line">Created by ${escapeHtml(createdBy)}`;
-    if (assignedBy && assignedBy !== createdBy) cardHtml += ` / Assigned by ${escapeHtml(assignedBy)}`;
+    if (assignee && assignee !== 'Unassigned') cardHtml += ` · Assigned to ${escapeHtml(assignee)}`;
     cardHtml += `</div>`;
 
     // ── Worker badge — show assignee icon on any card with an assignee
@@ -1049,7 +1041,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Due date
     if (job.dueDate) {
       const overdue = isDueDateOverdue(job.dueDate);
-      cardHtml += `<div class="task-due-date ${overdue ? 'overdue' : ''}">📅 ${formatDueDate(job.dueDate)}</div>`;
+      const isScheduled = !isDone && job.phase === 'todo' && new Date(job.dueDate) > new Date();
+      if (isScheduled) {
+        cardHtml += `<div class="task-due-date scheduled">🕐 Scheduled: ${formatDueDate(job.dueDate)}</div>`;
+      } else {
+        cardHtml += `<div class="task-due-date ${overdue ? 'overdue' : ''}">📅 ${formatDueDate(job.dueDate)}</div>`;
+      }
     }
 
     // ── Awaiting Approval: show Accept/Deny buttons ──
@@ -1185,6 +1182,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const phaseColors = { todo: '#6b7280', 'awaiting-approval': '#f59e0b', done: '#22c55e' };
     html += `<span class="phase-badge" style="background:${phaseColors[job.phase] || '#6b7280'}">${phaseLabels[job.phase] || job.phase}</span>`;
     html += `</div>`;
+    // Edit button for unstarted jobs
+    if (job.phase === 'todo') {
+      html += `<button class="modal-edit-btn" data-job-id="${job.id}" title="Edit this job">✏️ Edit</button>`;
+    }
     html += `<h2 class="modal-title">${escapeHtml(job.title || 'Untitled Task')}</h2>`;
     html += `</div>`;
 
@@ -1200,12 +1201,18 @@ document.addEventListener('DOMContentLoaded', () => {
     html += `<div class="modal-assignee"><span class="assignee-emoji" style="font-size:20px">${creatorEmoji}</span> ${escapeHtml(createdBy)}</div>`;
     html += `</div>`;
 
-    // Due date
+    // Due date / Scheduled indicator
     if (job.dueDate) {
       html += `<div class="modal-section">`;
-      html += `<h3>Due Date</h3>`;
       const overdue = isDueDateOverdue(job.dueDate);
-      html += `<div class="modal-due-date ${overdue ? 'overdue' : ''}">${formatDueDate(job.dueDate)}</div>`;
+      const isScheduled = job.phase === 'todo' && new Date(job.dueDate) > new Date();
+      if (isScheduled) {
+        html += `<h3>Scheduled</h3>`;
+        html += `<div class="modal-due-date scheduled" style="color:#3b82f6;font-weight:600">🕐 Scheduled to start: ${formatDueDate(job.dueDate)}</div>`;
+      } else {
+        html += `<h3>Due Date</h3>`;
+        html += `<div class="modal-due-date ${overdue ? 'overdue' : ''}">${formatDueDate(job.dueDate)}</div>`;
+      }
       html += `</div>`;
     }
 
@@ -1306,21 +1313,10 @@ document.addEventListener('DOMContentLoaded', () => {
       html += `</div>`;
     }
 
-    // Transition buttons (for non-done, non-awaiting jobs)
+    // Cancel button (for non-done, non-awaiting jobs)
     if (!isDone && !isAwaiting) {
-      const transitions = [
-        { phase: 'todo', label: '→ To Do' },
-        { phase: 'awaiting-approval', label: '→ Awaiting Approval' },
-        { phase: 'done', label: '→ Done' }
-      ].filter(t => t.phase !== job.phase);
-
-      html += `<div class="modal-section">`;
-      html += `<h3>Move To</h3>`;
-      html += `<div style="display:flex;gap:6px;flex-wrap:wrap">`;
-      transitions.forEach(t => {
-        html += `<button class="btn btn-secondary modal-transition-btn" data-job-id="${job.id}" data-phase="${t.phase}" style="font-size:12px;padding:6px 12px">${t.label}</button>`;
-      });
-      html += `</div>`;
+      html += `<div class="modal-section" style="text-align:center;padding-top:12px;border-top:1px solid var(--line)">`;
+      html += `<button class="btn modal-cancel-btn" data-job-id="${job.id}" style="font-size:13px;padding:8px 24px;border-radius:8px;background:transparent;border:1px solid var(--line);color:var(--muted);cursor:pointer;transition:all .15s">Cancel</button>`;
       html += `</div>`;
     }
 
@@ -1339,14 +1335,30 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Bind modal transition buttons
-    content.querySelectorAll('.modal-transition-btn').forEach(btn => {
+    // Bind modal cancel button (closes modal)
+    content.querySelectorAll('.modal-cancel-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const jobId = btn.dataset.jobId;
-        const phase = btn.dataset.phase;
-        transitionJob(jobId, phase);
-        // Close modal after transition
-        modal.style.display = 'none';
+        // Stop the job and close modal
+        fetch(`/api/mission-control-jobs/${jobId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobStatus: 'stopped' })
+        }).then(() => {
+          modal.style.display = 'none';
+          loadAssetData(); // Refresh the board
+        });
+      });
+      // Hover effects
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = '#ef4444';
+        btn.style.color = '#fff';
+        btn.style.borderColor = '#ef4444';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--muted)';
+        btn.style.borderColor = 'var(--line)';
       });
     });
 
@@ -1367,6 +1379,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
+    // Bind Edit button for todo jobs
+    const editBtn = content.querySelector('.modal-edit-btn');
+    if (editBtn) {
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        enableModalEditMode(job, content);
+      });
+    }
+
     modal.style.display = 'flex';
 
     // Start modal elapsed timer if working
@@ -1380,6 +1401,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
       }
     }
+  }
+
+  // ── Edit Mode for unstarted jobs ──
+  function enableModalEditMode(job, content) {
+    const prioColors = { low: '#3b82f6', normal: '#22c55e', high: '#ef4444', critical: '#f59e0b' };
+    const prioOpts = ['low', 'normal', 'high', 'critical'];
+    const assigneeOpts = ['Unassigned', 'Alfred', 'Claude'];
+    const currentPriority = job.priority || 'normal';
+    const currentAssignee = job.assignee || 'Unassigned';
+    const currentDueDate = job.dueDate || '';
+
+    let editHtml = `<div class="modal-edit-form">`;
+    editHtml += `<div class="modal-edit-row"><label>Title</label><input type="text" id="edit-title" class="edit-input" value="${escapeHtml(job.title || '')}" /></div>`;
+    editHtml += `<div class="modal-edit-row"><label>Description</label><textarea id="edit-desc" class="edit-input edit-textarea">${escapeHtml(job.description || job.details || '')}</textarea></div>`;
+    editHtml += `<div class="modal-edit-row"><label>Priority</label><select id="edit-priority" class="edit-input">`;
+    prioOpts.forEach(p => { editHtml += `<option value="${p}" ${p === currentPriority ? 'selected' : ''}>${p.charAt(0).toUpperCase() + p.slice(1)}</option>`; });
+    editHtml += `</select></div>`;
+    editHtml += `<div class="modal-edit-row"><label>Assignee</label><select id="edit-assignee" class="edit-input">`;
+    assigneeOpts.forEach(a => { editHtml += `<option value="${a}" ${a === currentAssignee ? 'selected' : ''}>${a}</option>`; });
+    editHtml += `</select></div>`;
+    editHtml += `<div class="modal-edit-row"><label>Due Date</label><input type="date" id="edit-due" class="edit-input" value="${currentDueDate}" /></div>`;
+    editHtml += `<div class="modal-edit-actions">`;
+    editHtml += `<button class="btn-primary edit-save" data-job-id="${job.id}">Save</button>`;
+    editHtml += `<button class="btn-secondary edit-cancel">Cancel</button>`;
+    editHtml += `</div>`;
+    editHtml += `</div>`;
+
+    content.innerHTML = editHtml;
+
+    // Cancel = re-open modal in view mode
+    content.querySelector('.edit-cancel')?.addEventListener('click', () => {
+      openCardModal(job);
+    });
+
+    // Save
+    content.querySelector('.edit-save')?.addEventListener('click', async () => {
+      const newTitle = document.getElementById('edit-title')?.value?.trim();
+      const newDesc = document.getElementById('edit-desc')?.value?.trim();
+      const newPriority = document.getElementById('edit-priority')?.value;
+      const newAssignee = document.getElementById('edit-assignee')?.value;
+      const newDue = document.getElementById('edit-due')?.value || null;
+
+      if (!newTitle) return;
+
+      const patch = {
+        title: newTitle,
+        description: newDesc,
+        priority: newPriority,
+        assignee: newAssignee,
+      };
+      if (newDue) patch.dueDate = newDue;
+
+      try {
+        const res = await fetch(`/api/mission-control-jobs/${job.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patch)
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('Job updated');
+          document.getElementById('cardModal').style.display = 'none';
+          loadAssetData();
+        } else {
+          showToast('Failed to update job');
+        }
+      } catch(e) {
+        showToast('Error saving changes');
+      }
+    });
   }
 
   // ── Close Modal ──
@@ -1747,7 +1838,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
         if (data.ok) {
-          form.remove();
+          const overlay = document.getElementById('inlineTaskForm');
+          if (overlay) overlay.remove();
           loadAssetData();
         } else {
           console.error('[MC] Create failed:', data.error);
@@ -1794,29 +1886,30 @@ document.addEventListener('DOMContentLoaded', () => {
       const modelEl = document.getElementById('pulse-model');
       const contextEl = document.getElementById('pulse-context');
       const contextDetailEl = document.getElementById('pulse-context-detail');
-      const compactionsEl = document.getElementById('pulse-compactions');
+
       if (uptimeEl) uptimeEl.textContent = data.uptime || '—';
-      if (modelEl) modelEl.textContent = 'GLM5.1 754B';
+      if (modelEl) modelEl.textContent = data.model ? data.model.replace('ollama/', '') : '—';
       // Context: show used/total format
       const ctxTotal = data.contextWindow || 202752;
       const ctxUsed = data.contextUsed || Math.round(ctxTotal * 0.1); // estimate if not provided
       const formatCtx = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'K' : n.toString();
       if (contextEl) contextEl.textContent = `${formatCtx(ctxUsed)}/${formatCtx(ctxTotal)}`;
       if (contextDetailEl) contextDetailEl.textContent = `${ctxUsed.toLocaleString()} / ${ctxTotal.toLocaleString()} tokens`;
-      if (compactionsEl) compactionsEl.textContent = data.compactions != null ? data.compactions : '0';
 
-      // Job Pipeline removed from Pulse
-      const tasksEl = document.getElementById('pulse-tasks-total');
-      if (tasksEl) {
-        fetch('/api/mission-control-jobs', { cache: 'no-store' }).then(r => r.json()).then(jd => {
-          if (jd.ok && jd.jobs) {
-            const activeJobs = jd.jobs.filter(j => j.phase !== 'archived');
-            const totalTasks = activeJobs.reduce((sum, j) => sum + (j.subtasks?.length || 0), 0);
-            const doneTasks = activeJobs.reduce((sum, j) => sum + (j.subtasks?.filter(s => s.status === 'done').length || 0), 0);
-            tasksEl.textContent = totalTasks > 0 ? doneTasks + '/' + totalTasks : '—';
-          }
-        }).catch(() => { tasksEl.textContent = '—'; });
-      }
+      // Version
+      const versionEl = document.getElementById('pulse-version');
+      if (versionEl) versionEl.textContent = data.lastUpdate || '—';
+
+      // Tasks completed metrics
+      const tasksCompleted = data.tasksCompleted || {};
+      const todayEl = document.getElementById('pulse-tasks-today');
+      const weekEl = document.getElementById('pulse-tasks-week');
+      const monthEl = document.getElementById('pulse-tasks-month');
+      const yearEl = document.getElementById('pulse-tasks-year');
+      if (todayEl) todayEl.textContent = tasksCompleted.today ?? '—';
+      if (weekEl) weekEl.textContent = tasksCompleted.week ?? '—';
+      if (monthEl) monthEl.textContent = tasksCompleted.month ?? '—';
+      if (yearEl) yearEl.textContent = tasksCompleted.year ?? '—';
 
       // Usage — per-model cards
       const usage = data.usage || {};
@@ -1831,43 +1924,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('pulseModelCards');
     if (!container) return;
 
-    // Friendly display names
+    // Team model list — only active team members
     const displayNames = {
       'glm-5.1:cloud': 'GLM 5.1',
       'kimi-k2.5:cloud': 'Kimi K2.5',
-      'gemma4:31b-cloud': 'Gemma4 31B',
-      'qwen3.5:397b-cloud': 'Qwen 3.5',
-      'qwen3-coder:30b': 'Qwen3 Coder',
-      'qwen3-coder:480b-cloud': 'Qwen3 Coder 480B',
       'gpt-5.4': 'GPT 5.4',
-      'gpt-5.3-codex': 'Codex 5.3',
-      'minimax-m2.7': 'MiniMax M2.7'
+      'gpt-5.3-codex': 'Codex 5.3'
     };
 
     const modelOrigins = {
       'glm-5.1:cloud': 'Ollama',
       'kimi-k2.5:cloud': 'Ollama',
-      'gemma4:31b-cloud': 'Ollama',
-      'qwen3.5:397b-cloud': 'Ollama',
-      'qwen3-coder:30b': 'Ollama',
-      'qwen3-coder:480b-cloud': 'Ollama',
       'gpt-5.4': 'OpenAI',
-      'gpt-5.3-codex': 'OpenAI',
-      'minimax-m2.7': 'Ollama'
+      'gpt-5.3-codex': 'OpenAI'
     };
 
     // Keyword mapping for flexible matching
     const modelKeywords = {
       'glm-5.1:cloud': ['glm', 'glm5', 'glm-5'],
       'kimi-k2.5:cloud': ['kimi', 'kimi-k2', 'kimik2'],
-      'gemma4:31b-cloud': ['gemma', 'gemma4'],
-      'qwen3.5:397b-cloud': ['qwen3.5', 'qwen35'],
-      'qwen3-coder:30b': ['qwen3-coder:30b', 'qwen3coder'],
-      'qwen3-coder:480b-cloud': ['qwen3-coder:480b', 'qwen3coder480'],
       'gpt-5.4': ['gpt-5.4', 'gpt5.4'],
-      'gpt-5.3-codex': ['gpt-5.3', 'gpt5.3', 'codex', 'codex5.3'],
-      'minimax-m2.7': ['minimax']
+      'gpt-5.3-codex': ['gpt-5.3', 'gpt5.3', 'codex', 'codex5.3']
     };
+
+    // Models to exclude (retired agents)
+    const excludedModels = ['gemma', 'qwen', 'minimax'];
 
     const modelTokens = {};
     Object.keys(displayNames).forEach(m => { modelTokens[m] = 0; });
@@ -1894,11 +1975,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         });
-        // Unmatched Ollama models → add as-is
+        // Unmatched Ollama models → add as-is (unless excluded)
         if (!matched && m.tokens > 0) {
-          modelTokens[name] = (modelTokens[name] || 0) + m.tokens;
-          if (!displayNames[name]) displayNames[name] = name;
-          if (!modelOrigins[name]) modelOrigins[name] = 'Ollama';
+          const isExcluded = excludedModels.some(ex => normalizeForMatch(name).includes(normalizeForMatch(ex)));
+          if (!isExcluded) {
+            modelTokens[name] = (modelTokens[name] || 0) + m.tokens;
+            if (!displayNames[name]) displayNames[name] = name;
+            if (!modelOrigins[name]) modelOrigins[name] = 'Ollama';
+          }
         }
       });
     }
@@ -1917,7 +2001,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sorted = Object.entries(modelTokens)
       .filter(([_, t]) => t > 0)
       .sort((a, b) => b[1] - a[1]);
-    const top4 = sorted.slice(0, 4);
+    const topModels = sorted.slice(0, 3);
     const totalTokens = sorted.reduce((sum, [_, t]) => sum + t, 0);
 
     // Calculate days tracked and per-day average
@@ -1929,7 +2013,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeLabel = codexDays > 0 ? `${codexDays}d tracked` : '—';
 
     let html = '';
-    top4.forEach(([model, tokens]) => {
+    topModels.forEach(([model, tokens]) => {
       const displayName = displayNames[model] || model;
       const origin = modelOrigins[model] || '';
       const originClass = origin === 'OpenAI' ? 'model-origin-label openai' : 'model-origin-label';
@@ -1967,7 +2051,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (infoEl) {
       const ver = '2026.4.9';
       const dotColor = connected ? '#22c55e' : '#ef4444';
-      infoEl.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dotColor};margin-right:6px;vertical-align:middle"></span>OpenClaw ${ver}`;
+      infoEl.innerHTML = `<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#fff;margin-right:6px;vertical-align:middle"></span>OpenClaw ${ver}`;
     }
     // Also update the system status strip
     updateSystemStatus(null, connected);
@@ -1992,15 +2076,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isTyping) loadAssetData();
   }, 10000);
 
-  // ── Bind Discard All Finished button ──
-  const discardAllBtn = document.getElementById('discardAllBtn');
-  if (discardAllBtn) {
-    discardAllBtn.addEventListener('click', () => {
-      if (confirm('Archive all completed jobs?')) {
-        archiveAllDone();
-      }
-    });
-  }
+
 
   // ── Initialize ──
   updateServerStatus(false);

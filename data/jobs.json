@@ -1,5 +1,306 @@
 [
   {
+    "id": "job_1776040969732_9463",
+    "number": "REQ-084",
+    "title": "Fix Pulse \u2014 not pulling live data",
+    "description": "Fix Pulse / not pulling data and info atm. Pulse section should show live system health and usage data.",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": true,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776040969732,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776041133995,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776041260871,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776040969732,
+    "updatedAt": 1776041260871,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1776041260871,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776040969790_4092",
+    "number": "REQ-085",
+    "title": "Simplify job card edge animation \u2014 thin coloured border + slow REQ pulse only",
+    "description": "Remove the animation. Need a simple thin coloured edge. REQ number is cycling slowly that is all. Don't touch the task part of the animation. Only edge of the box and the REQ # at the top.",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": true,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776040969790,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776041023286,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776041055727,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776040969790,
+    "updatedAt": 1776041055727,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1776041055727,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776040969823_6896",
+    "number": "REQ-086",
+    "title": "Scheduled jobs \u2014 create without starting, auto-start on due date",
+    "description": "I added a few jobs in the future at a future date. The job started straight as I clicked create job \u2014 this should create the job but not start it. On the job it should say something like scheduled to start: date and actually start then.",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": true,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776040969823,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776041583256,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776041671363,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776040969823,
+    "updatedAt": 1776041671363,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1776041671363,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776040969853_9745",
+    "number": "REQ-087",
+    "title": "Reduce model context weight \u2014 archive done jobs on demand",
+    "description": "Make the jobs a mechanic of current and done. The done list should not add massive trace for token of context when done. The model should only see and know what is worked on now and have access to archives just on demand. No extra weight on the model that grows as we do more jobs.",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": true,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776040969853,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776041680215,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776041749434,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776040969853,
+    "updatedAt": 1776041749434,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1776041749434,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776040969882_1544",
+    "number": "REQ-088",
+    "title": "Force dark mode as default \u2014 light mode on iPhone",
+    "description": "Somehow, on my iPhone, Mission Control is light not dark. Force dark mode as default.",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": true,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776040969882,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776041059992,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776041097589,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776040969882,
+    "updatedAt": 1776041097589,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1776041097589,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776040969912_7064",
+    "number": "REQ-089",
+    "title": "Add Edit button to unstarted job modals",
+    "description": "When jobs are not started, we need to be able to edit the job if you have not started it. Add an edit button at the top when you open a job.",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": true,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776040969912,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776041110459,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776041110473,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776040969912,
+    "updatedAt": 1776041110473,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1776041110473,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776040969933_7500",
+    "number": "REQ-090",
+    "title": "Build Logs panel \u2014 date, REQ#, summary, click to expand",
+    "description": "Replace Comms Log with a Logs panel under the Pulse menu. Each log entry shows: date, REQ number, last sentence about that request. Click to expand and see the full back-and-forth for that request. Click a log entry to open the job modal.",
+    "details": "",
+    "assignee": "Claude",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776040969933,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776041755473,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776041985182,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776040969933,
+    "updatedAt": 1776041985182,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1776041985182,
+    "qcResult": null
+  },
+  {
     "id": "job_1775891072499_doneui",
     "title": "Fix Done list columns and Discard All button",
     "details": "1. Done list columns: remove agent emoji/name, show only Date, Time, REQ, Description\n2. Fix Discard All Finished button",
@@ -93,7 +394,8 @@
       },
       {
         "ts": 1775890958318,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "updatedAt": 1775890958318,
@@ -157,7 +459,8 @@
       },
       {
         "ts": 1775890958318,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "updatedAt": 1775890958318,
@@ -233,7 +536,8 @@
       },
       {
         "ts": 1775784658544,
-        "event": "transitioned_to_qc"
+        "event": "transitioned_to_qc",
+        "by": "Alfred"
       },
       {
         "ts": 1775785123107,
@@ -252,7 +556,8 @@
       },
       {
         "ts": 1775785172088,
-        "event": "transitioned_to_working"
+        "event": "transitioned_to_working",
+        "by": "Team"
       },
       {
         "ts": 1775785176505,
@@ -395,7 +700,8 @@
       },
       {
         "ts": 1775789126751,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775642915043,
@@ -456,7 +762,8 @@
       {
         "ts": 1775777239184,
         "event": "snapshot_captured",
-        "url": "/mission-control/data/snapshots/job_1775642960627_jzztsj_1775777239182.png"
+        "url": "/mission-control/data/snapshots/job_1775642960627_jzztsj_1775777239182.png",
+        "by": "Alfred"
       },
       {
         "ts": 1775787099511,
@@ -475,7 +782,8 @@
       },
       {
         "ts": 1775787123134,
-        "event": "transitioned_to_done"
+        "event": "transitioned_to_done",
+        "by": "Alfred"
       },
       {
         "ts": 1775787275594,
@@ -499,7 +807,8 @@
       },
       {
         "ts": 1775789126751,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775642960627,
@@ -643,7 +952,8 @@
       },
       {
         "ts": 1775789126751,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775787558066,
@@ -791,7 +1101,8 @@
       },
       {
         "ts": 1775789126751,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775788371490,
@@ -1166,7 +1477,8 @@
       },
       {
         "ts": 1775799608968,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775793893774,
@@ -1198,11 +1510,13 @@
       },
       {
         "ts": 1775799613671,
-        "event": "transitioned_to_done"
+        "event": "transitioned_to_done",
+        "by": "Alfred"
       },
       {
         "ts": 1775799621994,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775799594757,
@@ -1437,7 +1751,8 @@
       },
       {
         "ts": 1775869597619,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775800482953,
@@ -1623,7 +1938,8 @@
       },
       {
         "ts": 1775869597619,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775805027266,
@@ -1757,7 +2073,8 @@
       },
       {
         "ts": 1775869533433,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775806245050,
@@ -1806,7 +2123,8 @@
       },
       {
         "ts": 1775863634128,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775854489954,
@@ -1962,7 +2280,8 @@
       },
       {
         "ts": 1775869597619,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775862440551,
@@ -2045,7 +2364,8 @@
       },
       {
         "ts": 1775869533458,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775865995129,
@@ -2117,7 +2437,8 @@
       },
       {
         "ts": 1775869597619,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775867466755,
@@ -2239,7 +2560,8 @@
       },
       {
         "ts": 1775869533511,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775868033487,
@@ -2274,7 +2596,8 @@
       },
       {
         "ts": 1775869891080,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775869663324,
@@ -2309,7 +2632,8 @@
       },
       {
         "ts": 1775870022841,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775869735574,
@@ -2344,7 +2668,8 @@
       },
       {
         "ts": 1775870022868,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775869835513,
@@ -2379,7 +2704,8 @@
       },
       {
         "ts": 1775873252428,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775869912474,
@@ -2434,7 +2760,8 @@
       },
       {
         "ts": 1775873252460,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775869971894,
@@ -2469,7 +2796,8 @@
       },
       {
         "ts": 1775873385053,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775873351411,
@@ -2504,7 +2832,8 @@
       },
       {
         "ts": 1775874166023,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775873446901,
@@ -2539,7 +2868,8 @@
       },
       {
         "ts": 1775874166054,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775873480193,
@@ -2574,7 +2904,8 @@
       },
       {
         "ts": 1775874166083,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775873558769,
@@ -2609,7 +2940,8 @@
       },
       {
         "ts": 1775874166112,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775873591128,
@@ -2644,7 +2976,8 @@
       },
       {
         "ts": 1775875392166,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775874780727,
@@ -2679,7 +3012,8 @@
       },
       {
         "ts": 1775874835082,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775874835057,
@@ -2714,7 +3048,8 @@
       },
       {
         "ts": 1775876595735,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775875863203,
@@ -2749,7 +3084,8 @@
       },
       {
         "ts": 1775876595764,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775876220226,
@@ -2804,7 +3140,8 @@
       },
       {
         "ts": 1775877463139,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775876935937,
@@ -2887,7 +3224,8 @@
       },
       {
         "ts": 1775877463184,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775877084434,
@@ -2970,7 +3308,8 @@
       },
       {
         "ts": 1775879018758,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775878811570,
@@ -3005,7 +3344,8 @@
       },
       {
         "ts": 1775883111072,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775879556617,
@@ -3040,7 +3380,8 @@
       },
       {
         "ts": 1775883111097,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775879685565,
@@ -3179,7 +3520,8 @@
       },
       {
         "ts": 1775886987852,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775886933795,
@@ -3248,7 +3590,8 @@
       },
       {
         "ts": 1775887975867,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775887196052,
@@ -3314,7 +3657,8 @@
       },
       {
         "ts": 1775960785291,
-        "event": "transitioned_to_done"
+        "event": "transitioned_to_done",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775960783442,
@@ -3370,11 +3714,13 @@
       },
       {
         "ts": 1775976264838,
-        "event": "transitioned_to_done"
+        "event": "transitioned_to_done",
+        "by": "Alfred"
       },
       {
         "ts": 1775977650061,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775976023401,
@@ -3469,7 +3815,8 @@
       },
       {
         "ts": 1775978294942,
-        "event": "transitioned_to_working"
+        "event": "transitioned_to_working",
+        "by": "Alfred"
       },
       {
         "ts": 1775980902569,
@@ -3523,7 +3870,8 @@
       },
       {
         "ts": 1775981630195,
-        "event": "transitioned_to_done"
+        "event": "transitioned_to_done",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775978105290,
@@ -3559,7 +3907,8 @@
       },
       {
         "ts": 1775981545768,
-        "event": "archived"
+        "event": "archived",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775981466018,
@@ -3650,7 +3999,8 @@
       },
       {
         "ts": 1775994937521,
-        "event": "transitioned_to_working"
+        "event": "transitioned_to_working",
+        "by": "Alfred"
       },
       {
         "ts": 1775994937541,
@@ -3704,7 +4054,8 @@
       },
       {
         "ts": 1775995326556,
-        "event": "transitioned_to_done"
+        "event": "transitioned_to_done",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1775994743003,
@@ -3724,9 +4075,9 @@
     "assignedBy": "Alfred",
     "priority": "normal",
     "project": "Mission Control",
-    "status": "todo",
+    "status": "done",
     "jobStatus": "active",
-    "phase": "todo",
+    "phase": "done",
     "source": "manual",
     "needsRewrite": true,
     "activity": "new",
@@ -3767,6 +4118,44 @@
     ],
     "createdAt": 1775995774614,
     "updatedAt": 1775995774614,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776045153884_8176",
+    "number": "REQ-091",
+    "title": "Code tidy-up and test \u2014 validate JS/CSS, remove dead code, commit",
+    "description": "Full sweep: validate JS/CSS, remove dead code (old comms log references, unused CSS classes), check browser console for errors, verify all tabs load, bump cache buster, commit clean state to git.",
+    "details": "",
+    "assignee": "Alfred",
+    "createdBy": "Alfred",
+    "assignedBy": "Alfred",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "working",
+    "jobStatus": "active",
+    "phase": "working",
+    "source": "manual",
+    "needsRewrite": true,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776045153884,
+        "event": "created",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776045157775,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776045153884,
+    "updatedAt": 1776045157775,
+    "dueDate": null,
     "startedAt": null,
     "completedAt": null,
     "qcResult": null
