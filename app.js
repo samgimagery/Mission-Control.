@@ -35,14 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const views = document.querySelectorAll('.view');
 
   // ── Mobile Menu ──
-  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
   const mobileHeader = document.querySelector('.mobile-header');
   const sidebar = document.querySelector('.sidebar');
-  if (mobileMenuBtn && sidebar) {
-    mobileMenuBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('mobile-open');
-    });
-  }
   // Mobile header menu button
   if (mobileHeader) {
     const headerBtn = mobileHeader.querySelector('.mobile-menu-btn');
@@ -59,9 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   // Close menu when clicking outside
-  if (mobileMenuBtn && sidebar) {
+  if (sidebar) {
     document.addEventListener('click', (e) => {
-      if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target) && !(mobileHeader && mobileHeader.contains(e.target))) {
+      if (mobileHeader && mobileHeader.contains(e.target)) return;
+      if (!sidebar.contains(e.target)) {
         sidebar.classList.remove('mobile-open');
       }
     });
@@ -78,6 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function switchView(targetView) {
     navItems.forEach(nav => nav.classList.remove('active'));
     document.querySelector(`[data-view="${targetView}"]`)?.classList.add('active');
+    // Update mobile tabs too
+    document.querySelectorAll('.mobile-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelector(`.mobile-tab[data-view="${targetView}"]`)?.classList.add('active');
 
     views.forEach(view => {
       view.classList.remove('active');
@@ -99,6 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.switchView = switchView;
+
+  // ── Mobile Tab Navigation ──
+  document.querySelectorAll('.mobile-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      switchView(tab.dataset.view);
+    });
+  });
 
   // ── Elapsed Timer State ──
   let timerInterval = null;
@@ -273,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const infoEl = document.getElementById('serverInfo');
           if (infoEl) {
             const ver = pulseData.version || '2026.4.9';
-            infoEl.innerHTML = `<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#fff;margin-right:6px;vertical-align:middle"></span>OpenClaw ${ver}`;
+            infoEl.innerHTML = `OpenClaw ${ver}`;
           }
           updateDashboard(pulseData.agents || [], currentJobs, pulseData);
         }
@@ -404,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (a && a.includes(t.name)) {
             agentStats[t.name].total++;
             if (job.phase === 'done' || job.phase === 'completed' || job.phase === 'archived') agentStats[t.name].completed++;
-            if (job.phase === 'todo' && (job.subtasks || []).some(s => s.status === 'in-progress')) agentStats[t.name].inProgress++;
+            if (job.phase === 'working' || (job.phase === 'todo' && (job.subtasks || []).some(s => s.status === 'in-progress'))) agentStats[t.name].inProgress++;
           }
         });
       });
@@ -428,19 +433,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const isAlfred = t.name === 'Alfred';
         const alfredWorking = isAlfred && alfredWorkingStatus.status === 'working';
         const alfredTask = isAlfred && alfredWorkingStatus.task ? alfredWorkingStatus.task : null;
-        const displayLabel = alfredTask || jobLabel || 'Available';
-        const workingBadge = alfredWorking ? `<span class="alfred-working-badge">Working</span>` : '';
+        const displayLabel = alfredTask || jobLabel || '';
+        const isWorking = alfredWorking || stats.inProgress > 0;
+        const statusBadge = isWorking
+          ? '<span class="agent-status-badge working">Working</span>'
+          : '<span class="agent-status-badge available">Available</span>';
         return `<div class="agent-card ${isActive ? 'active' : 'standby'} agent-card-${t.name.toLowerCase()}">
           <div class="agent-card-top">
             <div class="agent-card-header">
-              <div class="agent-card-name">${t.name}${workingBadge}</div>
+              <div class="agent-card-name">${t.name}${statusBadge}</div>
               <div class="agent-card-role">${t.role}</div>
             </div>
             <span class="agent-card-model">${t.model || ''}</span>
           </div>
-          <div class="agent-card-now"${!displayLabel || displayLabel === 'Available' ? ' style="color:inherit;opacity:.7"' : ''}>${displayLabel}</div>
+          <div class="agent-card-now"${!displayLabel ? ' style="display:none"' : ''}>${displayLabel}</div>
           <div class="agent-card-stats">
-            <span class="agent-stat"><span class="agent-stat-val">${stats.completed}</span> done</span>
+            <span class="agent-stat"><span class="agent-stat-val">${stats.completed}</span> jobs done</span>
             <span class="agent-stat"><span class="agent-stat-val">${stats.inProgress}</span> active</span>
             <span class="agent-stat"><span class="agent-stat-val">${effRate}%</span> rate</span>
           </div>
@@ -488,95 +496,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Render Activity Feed — job-level rows
-    const activityEl = document.getElementById('systemActivity');
-    if (activityEl && (jobs || []).length > 0) {
-      // Build job-level activity rows
-      const activityRows = (jobs || []).map(job => {
-        const history = job.history || [];
-        const created = history.find(h => h.event === 'created');
-        const createdBy = (created && created.by) || job.createdBy || 'Sam';
-        const createdTs = (created && created.ts) || job.createdAt || null;
-        // Find who completed — use completedBy field from API if available, otherwise check history
-        let completedBy = job.completedBy || '';
-        let completedTs = job.completedAt || null;
-        if (!completedBy) {
-          const doneEvent = history.find(h => h.event === 'transitioned_to_done' || h.event === 'approved');
-          const completions = history.filter(h => h.event?.startsWith('subtask') && h.event?.endsWith('done'));
-          const archived = history.find(h => h.event === 'archived');
-          if (doneEvent) {
-            completedBy = doneEvent.by || 'Alfred';
-            completedTs = doneEvent.ts;
-          } else if (archived) {
-            completedBy = archived.by || 'Alfred';
-            completedTs = archived.ts;
-          } else if (completions.length > 0) {
-            const last = completions[completions.length - 1];
-            completedBy = last.by || 'Alfred';
-            completedTs = last.ts;
-          }
-        }
-        return {
-          jobId: job.id,
-          jobNumber: job.number || '',
-          title: job.title || '',
-          status: job.status || job.phase || '',
-          createdBy,
-          createdTs,
-          completedBy,
-          completedTs
-        };
-      }).filter(r => r.createdTs);
-      // Sort by created date, newest first
-      activityRows.sort((a, b) => (b.createdTs || 0) - (a.createdTs || 0));
-      const recent = activityRows.slice(0, 30);
-
-      if (recent.length > 0) {
-        activityEl.innerHTML = `
-          <div class="overview-health-section">
-            <h3 class="section-title">Activity</h3>
-            <div class="activity-feed">
-              <div class="activity-feed-header">
-                <span class="activity-col-time">Date</span>
-                <span class="activity-col-ref">Ref</span>
-                <span class="activity-col-created">Created By</span>
-                <span class="activity-col-completed">Completed By</span>
-              </div>
-              ${recent.map(r => {
-                const reqHtml = r.jobNumber ? `<span class="activity-req">${r.jobNumber}</span>` : '';
-                const createdByHtml = escapeHtml(r.createdBy || '—');
-                const completedByHtml = r.completedBy ? escapeHtml(r.completedBy) : '—';
-                return `<div class="activity-entry" data-job-id="${r.jobId || ''}" style="cursor:pointer">
-                    <span class="activity-time">${formatFullDate(r.createdTs)}</span>
-                    <span class="activity-ref">${reqHtml}</span>
-                    <span class="activity-created-col">${createdByHtml}</span>
-                    <span class="activity-completed-col">${completedByHtml}</span>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        `;
-      } else {
-        activityEl.innerHTML = '';
-      }
-    }
+    // Activity section removed
   }
 
-  // ── Activity click handler (delegated) ──
-  document.addEventListener('click', (e) => {
-    const entry = e.target.closest('.activity-entry');
-    if (entry && entry.dataset.jobId) {
-      const job = currentJobs.find(j => j.id === entry.dataset.jobId);
-      if (job) openCardModal(job);
-    }
-  });
+  // ── Activity click handler removed ──
 
-  // ── Job Logs Panel ──
+  // ── Job Logs Panel (Done-section grid style) ──
   async function loadJobLogs() {
     const logsEl = document.getElementById('jobLogsList');
     if (!logsEl) return;
-    // Remember expanded entries
     const expandedKeys = new Set();
     logsEl.querySelectorAll('.log-entry.expanded').forEach(el => {
       if (el.dataset.logId) expandedKeys.add(el.dataset.logId);
@@ -592,42 +520,49 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      logsEl.innerHTML = logs.map(l => {
-        const reqNum = l.number || '—';
+      let html = '<div class="done-header-row"><span>Date</span><span>Time</span><span>Ref</span><span>Description</span></div>';
+      logs.forEach(l => {
+        const reqNum = l.number || '';
         const isExpanded = expandedKeys.has(l.id);
-        const chevron = isExpanded ? '▾' : '▸';
         const summary = l.summary || l.title || '';
         const summaryShort = summary.length > 80 ? summary.substring(0, 77) + '...' : summary;
         const phaseLabel = l.phase === 'done' ? '✓' : l.phase === 'working' ? '►' : '●';
-        const logHtml = (l.log || []).map(line => `<div class="log-thread-msg">${escapeHtml(line)}</div>`).join('');
+        const dateStr = l.createdAt ? formatFullDate(l.createdAt) : '';
+        const timeStr = l.createdAt ? formatTimestamp(l.createdAt) : '';
+        const logLines = (l.log || []).map(line => `<div class="log-thread-msg">${escapeHtml(line)}</div>`).join('');
+        // Add subtask details if available
+        const subtaskLines = (l.subtasks || []).map((st, idx) => {
+          const stNum = `${reqNum}-${idx + 1}`;
+          const stIcon = st.status === 'done' ? '✓' : (st.status === 'cancelled' ? '✗' : (st.status === 'in-progress' ? '●' : '○'));
+          const stTitle = escapeHtml(st.title || st.id || '');
+          return `<div class="log-thread-subtask"><span class="log-subtask-icon ${st.status}">${stIcon}</span> <span class="log-subtask-number">${stNum}</span> <span class="log-subtask-title">${stTitle}</span></div>`;
+        }).join('');
+        const logHtml = logLines + subtaskLines;
 
-        return `<div class="log-entry${isExpanded ? ' expanded' : ''}" data-log-id="${l.id}" data-job-id="${l.id}">
-          <div class="log-entry-header">
-            <span class="log-entry-chevron">${chevron}</span>
-            <span class="log-entry-date">${formatFullDate(l.createdAt)}</span>
-            <span class="log-entry-req">${escapeHtml(reqNum)}</span>
-            <span class="log-entry-phase">${phaseLabel}</span>
-            <span class="log-entry-summary">${escapeHtml(summaryShort)}</span>
-          </div>
-          <div class="log-entry-thread" style="display:${isExpanded ? 'flex' : 'none'}">
-            ${logHtml}
-          </div>
-        </div>`;
-      }).join('');
+        html += `<div class="log-entry${isExpanded ? ' expanded' : ''}" data-log-id="${l.id}" data-job-id="${l.id}">`;
+        html += `<div class="done-item log-entry-row" data-job-id="${l.id}">`;
+        html += `<span class="done-item-date">${dateStr}</span>`;
+        html += `<span class="done-item-time">${timeStr}</span>`;
+        html += `<span class="done-item-ref log-entry-req">${reqNum ? `<span class="task-number">${reqNum}</span>` : ''}</span>`;
+        html += `<span class="done-item-title">${phaseLabel} ${escapeHtml(summaryShort)}</span>`;
+        html += '</div>';
+        if (logHtml) {
+          html += `<div class="log-entry-thread" style="display:${isExpanded ? 'flex' : 'none'}">${logHtml}</div>`;
+        }
+        html += '</div>';
+      });
+      logsEl.innerHTML = html;
 
-      // Click header to expand/collapse
-      logsEl.querySelectorAll('.log-entry-header').forEach(header => {
-        header.addEventListener('click', (e) => {
-          if (e.target.classList.contains('log-entry-req')) return;
-          const entry = header.parentElement;
+      // Click row to expand/collapse thread
+      logsEl.querySelectorAll('.log-entry-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('.log-entry-req')) return;
+          const entry = row.parentElement;
           const thread = entry.querySelector('.log-entry-thread');
-          const chevron = header.querySelector('.log-entry-chevron');
-          if (thread) {
-            const isNowExpanded = thread.style.display !== 'none';
-            thread.style.display = isNowExpanded ? 'none' : 'flex';
-            entry.classList.toggle('expanded', !isNowExpanded);
-            if (chevron) chevron.textContent = isNowExpanded ? '▸' : '▾';
-          }
+          if (!thread) return;
+          const isNowExpanded = thread.style.display !== 'none';
+          thread.style.display = isNowExpanded ? 'none' : 'flex';
+          entry.classList.toggle('expanded', !isNowExpanded);
         });
       });
 
@@ -803,6 +738,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Header row
         doneRow.innerHTML = `<div class="done-header-row"><span>Date</span><span>Time</span><span>Ref</span><span>Description</span></div>`;
         filteredDone.forEach(job => renderDoneItem(job, doneRow));
+        // Limit to last 10 done items
+        const doneItems = doneRow.querySelectorAll('.done-item');
+        doneItems.forEach((item, i) => {
+          if (i >= 10) item.style.display = 'none';
+        });
       }
     }
 
@@ -956,8 +896,8 @@ document.addEventListener('DOMContentLoaded', () => {
     item.dataset.jobId = job.id;
 
     const completedTs = job.completedAt;
-    const dateStr = completedTs ? formatFullDate(completedTs) : '';
     const timeStr = completedTs ? formatTimestamp(completedTs) : '';
+    const dateStr = completedTs ? formatFullDate(completedTs) : '';
 
     item.innerHTML = `
       <span class="done-item-date">${dateStr}</span>
@@ -989,6 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.createElement('div');
     const jobStatus = job.jobStatus || 'active';
     card.className = `task-card ${isDone ? 'completed' : ''} phase-${job.phase}${hasInProgress ? ' job-active' : ''}${jobStatus === 'active' && !isDone ? ' job-active-glow' : ''} job-${jobStatus}`;
+    card.dataset.assignee = assignee || '';
     if (isAwaiting) card.classList.add('phase-awaiting-approval');
     card.dataset.jobId = job.id;
     card.dataset.assignee = job.assignee || 'Unassigned';
@@ -1010,10 +951,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Close button for Done cards
     // No dismiss button - jobs are permanent
 
-    // Number badge + job status badge
+    // Number badge + job status badge + rewriting pen icon
     if (job.number) {
       const statusLabel = { active: '', paused: '⏸ Paused', stopped: '⏹ Stopped' }[jobStatus] || '';
-      cardHtml += `<div class="card-badge-row"><span class="task-number">${job.number}</span>${statusLabel ? `<span class="job-status-badge job-status-${jobStatus}">${statusLabel}</span>` : ''}</div>`;
+      const penIcon = job.needsRewrite ? '<span class="rewrite-pen">✏️</span>' : '';
+      cardHtml += `<div class="card-badge-row"><span class="task-number">${job.number}</span>${penIcon}${statusLabel ? `<span class="job-status-badge job-status-${jobStatus}">${statusLabel}</span>` : ''}</div>`;
     }
 
     // Title
@@ -1030,21 +972,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignee && assignee !== 'Unassigned') cardHtml += ` · Assigned to ${escapeHtml(assignee)}`;
     cardHtml += `</div>`;
 
+    // Pulse — token cost on the card itself
+    if (job.phase === 'working' || job.phase === 'done') {
+      const worker = assignee === 'Claude Code' || assignee === 'Claude' ? 'Claude (glm-5.1:cloud)' : assignee === 'Alfred' ? 'Alfred (glm-5.1:cloud)' : assignee;
+      cardHtml += `<div class="task-pulse-line">$0 · ${escapeHtml(worker)}</div>`;
+    }
+
     // ── Worker badge — show assignee icon on any card with an assignee
     if (assignee && assignee !== 'Unassigned') {
       let displayWorker = assignee;
       if (displayWorker === 'Claude Code') displayWorker = 'Claude';
       const displayEmoji = displayWorker === 'Claude' ? '⚡' : displayWorker === 'Alfred' ? '🛎️' : '👤';
-      cardHtml += `<span class="card-worker-badge">${displayEmoji} ${escapeHtml(displayWorker)}</span>`;
+      cardHtml += `<span class="card-worker-badge">${escapeHtml(displayWorker)}</span>`;
     }
 
-    // Due date
-    if (job.dueDate) {
+    // Due date — skip if today or if job is actively being worked on
+    if (job.dueDate && job.phase !== 'working') {
       const overdue = isDueDateOverdue(job.dueDate);
       const isScheduled = !isDone && job.phase === 'todo' && new Date(job.dueDate) > new Date();
+      const dueD = new Date(job.dueDate); dueD.setHours(0,0,0,0);
+      const nowD = new Date(); nowD.setHours(0,0,0,0);
+      const isDueToday = dueD.getTime() === nowD.getTime();
       if (isScheduled) {
-        cardHtml += `<div class="task-due-date scheduled">🕐 Scheduled: ${formatDueDate(job.dueDate)}</div>`;
-      } else {
+        cardHtml += `<div class="task-due-date scheduled">Scheduled: ${formatDueDate(job.dueDate)}</div>`;
+      } else if (!isDueToday) {
         cardHtml += `<div class="task-due-date ${overdue ? 'overdue' : ''}">📅 ${formatDueDate(job.dueDate)}</div>`;
       }
     }
@@ -1069,7 +1020,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const diff = Date.now() - startTs;
         cardHtml += `
           <div class="elapsed-timer">
-            <span class="elapsed-icon">⏱</span>
             <span id="elapsed-${job.id}" class="elapsed-value">${formatElapsed(diff)}</span>
           </div>
         `;
@@ -1091,7 +1041,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardHtml += `<div class="subtask-list">`;
         subtasks.forEach((st, idx) => {
           const stNum = `${job.number || 'REQ-?'}-${idx + 1}`;
-          const stIcon = st.status === 'done' ? '✓' : (st.status === 'cancelled' ? '✗' : '');
+          const stIcon = st.status === 'done' ? '✓' : (st.status === 'cancelled' ? '✗' : (st.status === 'in-progress' ? '●' : ''));
           let stMeta = '';
           if (st.status === 'done') {
             const timeTaken = st.startedAt && st.completedAt ? formatDuration(st.completedAt - st.startedAt) : '';
@@ -1104,8 +1054,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const titleText = escapeHtml((st.title || st.id).length > 35 ? (st.title || st.id).substring(0, 32) + '...' : (st.title || st.id));
           // ... menu for pending subtasks
           const showMenu = (st.status === 'pending' || st.status === 'cancelled') && !isDone;
+          const sweepDelay = st.status === 'in-progress' ? ` style="animation-delay:${Math.random() * 3}s"` : '';
           cardHtml += `
-            <div class="subtask-item ${st.status}" data-subtask-id="${st.id}" data-job-id="${job.id}" data-st-number="${stNum}">
+            <div class="subtask-item ${st.status}" data-subtask-id="${st.id}" data-job-id="${job.id}" data-st-number="${stNum}"${sweepDelay}>
               <span class="subtask-icon ${st.status}">${stIcon}</span>
               <span class="subtask-number">${stNum}</span>
               <span class="subtask-title">${titleText}</span>
@@ -1185,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Edit button for unstarted jobs
     if (job.phase === 'todo') {
       html += `<button class="modal-edit-btn" data-job-id="${job.id}" title="Edit this job">✏️ Edit</button>`;
+      html += `<button class="modal-wake-btn" data-job-id="${job.id}" title="Wake Alfred to rewrite \u0026 start this job">↻</button>`;
     }
     html += `<h2 class="modal-title">${escapeHtml(job.title || 'Untitled Task')}</h2>`;
     html += `</div>`;
@@ -1291,6 +1243,14 @@ document.addEventListener('DOMContentLoaded', () => {
       html += `</div>`;
     }
 
+    // Token cost
+    if (job.phase === 'working' || job.phase === 'done') {
+      html += `<div class="modal-section">`;
+      html += `<h3>Token Cost</h3>`;
+      html += `<div class="modal-cost">$0.00 — ${assignee === 'Claude' ? 'Claude Code (glm-5.1:cloud)' : 'Alfred (glm-5.1:cloud)'} via self-hosted proxy</div>`;
+      html += `</div>`;
+    }
+
     // History log
     if (history.length > 0) {
       html += `<div class="modal-section">`;
@@ -1385,6 +1345,24 @@ document.addEventListener('DOMContentLoaded', () => {
       editBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         enableModalEditMode(job, content);
+      });
+    }
+
+    // Wake button — pokes Alfred to rewrite \u0026 start
+    const wakeBtn = content.querySelector('.modal-wake-btn');
+    if (wakeBtn) {
+      wakeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const jobId = wakeBtn.dataset.jobId;
+        wakeBtn.textContent = '✓';
+        wakeBtn.style.background = '#22c55e';
+        fetch('/api/alfred-status', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({status: 'working', task: `Rewriting \u0026 starting ${job.number || jobId}`})
+        }).then(() => {
+          setTimeout(() => { wakeBtn.textContent = '↻'; wakeBtn.style.background = ''; }, 2000);
+        });
       });
     }
 
@@ -1896,6 +1874,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (contextEl) contextEl.textContent = `${formatCtx(ctxUsed)}/${formatCtx(ctxTotal)}`;
       if (contextDetailEl) contextDetailEl.textContent = `${ctxUsed.toLocaleString()} / ${ctxTotal.toLocaleString()} tokens`;
 
+      // System Info Card
+      const fmtK = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'K' : n.toString();
+      const sysSessionId = document.getElementById('sysSessionId');
+      const sysModel = document.getElementById('sysModel');
+      const sysTokensIn = document.getElementById('sysTokensIn');
+      const sysTokensOut = document.getElementById('sysTokensOut');
+      const sysContext = document.getElementById('sysContext');
+      const sysCompactions = document.getElementById('sysCompactions');
+      const sysUptime = document.getElementById('sysUptime');
+      const sysVersion = document.getElementById('sysVersion');
+      if (sysSessionId) sysSessionId.textContent = data.sessionId || '—';
+      if (sysModel) sysModel.textContent = data.model ? data.model.replace('ollama/', '') : '—';
+      if (sysTokensIn) sysTokensIn.textContent = data.inputTokens ? fmtK(data.inputTokens) : '—';
+      if (sysTokensOut) sysTokensOut.textContent = data.outputTokens ? fmtK(data.outputTokens) : '—';
+      if (sysContext) sysContext.textContent = `${data.percentUsed || 0}%`;
+      if (sysCompactions) sysCompactions.textContent = data.compactions ?? '—';
+      if (sysUptime) sysUptime.textContent = data.uptime || '—';
+      if (sysVersion) sysVersion.textContent = (data.lastUpdate || '—').replace('OpenClaw ', 'v');
+
       // Version
       const versionEl = document.getElementById('pulse-version');
       if (versionEl) versionEl.textContent = data.lastUpdate || '—';
@@ -1997,20 +1994,16 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Sort by tokens descending, take top 4
+    // Sort by tokens descending, take top 3
     const sorted = Object.entries(modelTokens)
       .filter(([_, t]) => t > 0)
       .sort((a, b) => b[1] - a[1]);
     const topModels = sorted.slice(0, 3);
     const totalTokens = sorted.reduce((sum, [_, t]) => sum + t, 0);
 
-    // Calculate days tracked and per-day average
+    // Time scale
     const codexDays = (codex && Array.isArray(codex.daily)) ? codex.daily.length : 0;
-    const daysTracked = codexDays > 0 ? codexDays : 1;
-    const dailyAvg = totalTokens > 0 ? Math.round(totalTokens / daysTracked) : 0;
-
-    // Time scale label
-    const timeLabel = codexDays > 0 ? `${codexDays}d tracked` : '—';
+    const timeLabel = codexDays > 0 ? `${codexDays}d` : '—';
 
     let html = '';
     topModels.forEach(([model, tokens]) => {
@@ -2018,24 +2011,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const origin = modelOrigins[model] || '';
       const originClass = origin === 'OpenAI' ? 'model-origin-label openai' : 'model-origin-label';
       const originTag = origin ? `<span class="${originClass}">${escapeHtml(origin)}</span>` : '';
-      const perDay = daysTracked > 0 ? Math.round(tokens / daysTracked).toLocaleString() : '—';
       html += `
         <div class="engagement-card">
           <span class="platform-name">${escapeHtml(displayName)} ${originTag}</span>
           <span class="metric-value" style="font-size:24px">${tokens.toLocaleString()}</span>
-          <span class="metric-label">tokens · ${perDay}/day</span>
+          <span class="metric-label">tokens</span>
         </div>
       `;
     });
 
     // Total card
     if (sorted.length > 0) {
-      const totalPerDay = daysTracked > 0 ? Math.round(totalTokens / daysTracked).toLocaleString() : '—';
       html += `
         <div class="engagement-card" style="border:2px solid var(--line)">
           <span class="platform-name" style="font-weight:700">Total · ${timeLabel}</span>
           <span class="metric-value" style="font-size:24px;font-weight:700">${totalTokens.toLocaleString()}</span>
-          <span class="metric-label">tokens · ${totalPerDay}/day</span>
+          <span class="metric-label">tokens</span>
         </div>
       `;
     }
@@ -2050,8 +2041,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const infoEl = document.getElementById('serverInfo');
     if (infoEl) {
       const ver = '2026.4.9';
-      const dotColor = connected ? '#22c55e' : '#ef4444';
-      infoEl.innerHTML = `<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#fff;margin-right:6px;vertical-align:middle"></span>OpenClaw ${ver}`;
+      infoEl.innerHTML = `OpenClaw ${ver}`;
     }
     // Also update the system status strip
     updateSystemStatus(null, connected);
@@ -2083,4 +2073,37 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAssetData();
 
   console.log('[MC] Unified Workspace initialized');
+
+  // Start Work button — pokes Alfred to check board
+  const startBtn = document.getElementById('startWorkBtn');
+  if (startBtn) {
+    startBtn.addEventListener('click', () => {
+      // If Alfred already working, dim briefly and skip
+      if (alfredWorkingStatus.status === 'working') {
+        startBtn.style.opacity = '0.4';
+        setTimeout(() => { startBtn.style.opacity = '1'; }, 800);
+        return;
+      }
+      fetch('/api/alfred-status', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status: 'working', task: 'Checking board...'})
+      }).then(() => {
+        startBtn.textContent = '✓';
+        startBtn.style.background = 'linear-gradient(135deg,#22c55e,#16a34a)';
+        setTimeout(() => {
+          startBtn.textContent = '↻';
+          startBtn.style.background = 'linear-gradient(135deg,#3b82f6,#2563eb)';
+        }, 2000);
+      });
+    });
+  }
+
+  // Mobile FAB — triggers same add flow
+  const mobileFab = document.getElementById('addTaskBtnMobile');
+  if (mobileFab) {
+    mobileFab.addEventListener('click', () => {
+      document.getElementById('addTaskBtn')?.click();
+    });
+  }
 });

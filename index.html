@@ -4,15 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mission Control</title>
-  <link rel="stylesheet" href="./styles.css?v=20260413q" />
+  <link rel="stylesheet" href="./styles.css?v=20260413aj" />
 </head>
 <body class="dark">
   <script>/* Force dark immediately — prevent light flash on iPhone */
     if(localStorage.getItem('mc-theme')==='light')document.body.classList.remove('dark');
   </script>
 
-  <div class="mobile-header"><span class="mobile-title">Mission Control</span><button class="mobile-menu-btn">☰</button></div>
-  <button class="mobile-menu-btn" id="mobileMenuBtn" title="Menu">☰</button>
+  <div class="mobile-header"><span class="mobile-title">Mission Control</span><button id="addTaskBtnMobile" class="fab-mobile" title="Add new job">+</button></div>
+  <div class="mobile-tabs">
+    <button class="mobile-tab active" data-view="overview">Overview</button>
+    <button class="mobile-tab" data-view="system">System</button>
+    <button class="mobile-tab" data-view="pulse">Pulse</button>
+    <button class="mobile-tab" data-view="logs">Logs</button>
+  </div>
   <div class="app">
     <!-- Left Navigation -->
     <nav class="sidebar">
@@ -53,7 +58,10 @@
 
           <!-- Up Next -->
           <div id="upNextSection" class="up-next-section" style="display:none">
-            <h3 class="production-section-title">Up Next</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <h3 class="production-section-title" style="margin:0">Up Next</h3>
+              <button id="startWorkBtn" class="start-work-btn" title="Poke Alfred to check the board">↻</button>
+            </div>
             <div id="upNextList" class="up-next-list"></div>
           </div>
 
@@ -113,8 +121,7 @@
             <div id="systemAgents" class="dashboard-agents"></div>
           </div>
 
-          <!-- Activity Feed -->
-          <div id="systemActivity" class="overview-activity"></div>
+
 
         </section>
 
@@ -126,6 +133,41 @@
           </header>
 
           <div class="pulse-content">
+            <!-- System Info Card -->
+            <div class="system-info-card" id="systemInfoCard">
+              <div class="system-info-header">
+                <span class="system-info-title">Session</span>
+                <span class="system-info-id" id="sysSessionId">—</span>
+                <span class="system-info-model" id="sysModel">—</span>
+              </div>
+              <div class="system-info-grid">
+                <div class="system-info-cell">
+                  <span class="system-info-value" id="sysTokensIn">—</span>
+                  <span class="system-info-label">tokens in</span>
+                </div>
+                <div class="system-info-cell">
+                  <span class="system-info-value" id="sysTokensOut">—</span>
+                  <span class="system-info-label">tokens out</span>
+                </div>
+                <div class="system-info-cell">
+                  <span class="system-info-value" id="sysContext">—</span>
+                  <span class="system-info-label">context</span>
+                </div>
+                <div class="system-info-cell">
+                  <span class="system-info-value" id="sysCompactions">—</span>
+                  <span class="system-info-label">compactions</span>
+                </div>
+                <div class="system-info-cell">
+                  <span class="system-info-value" id="sysUptime">—</span>
+                  <span class="system-info-label">uptime</span>
+                </div>
+                <div class="system-info-cell">
+                  <span class="system-info-value" id="sysVersion">—</span>
+                  <span class="system-info-label">version</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Work Pulse -->
             <div class="pulse-section">
               <h3 class="section-title">Work</h3>
@@ -153,6 +195,12 @@
               </div>
             </div>
 
+            <!-- Usage -->
+            <div class="pulse-section">
+              <h3 class="section-title">Usage</h3>
+              <div id="pulseModelCards" class="model-cards-grid"></div>
+            </div>
+
             <!-- System -->
             <div class="pulse-section">
               <h3 class="section-title">System</h3>
@@ -175,12 +223,6 @@
                   <span class="metric-value" id="pulse-version" style="font-size:18px">—</span>
                 </div>
               </div>
-            </div>
-
-            <!-- Usage -->
-            <div class="pulse-section">
-              <h3 class="section-title">Usage</h3>
-              <div id="pulseModelCards" class="model-cards-grid"></div>
             </div>
 
             <!-- Active Agents -->
@@ -213,6 +255,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260413q"></script>
+  <script src="./app.js?v=20260413aj"></script>
 </body>
 </html>

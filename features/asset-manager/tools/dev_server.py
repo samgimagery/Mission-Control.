@@ -633,6 +633,10 @@ def build_pulse_data():
     compactions = 0
     context_used = 0
     context_total = 202752
+    input_tokens = 0
+    output_tokens = 0
+    percent_used = 0
+    session_id = ''
     try:
         result = subprocess.run(
             ['openclaw', 'status', '--json'],
@@ -649,6 +653,10 @@ def build_pulse_data():
                     out = s.get('outputTokens', 0)
                     remaining = s.get('remainingTokens', context_total - inp - out)
                     context_used = context_total - remaining
+                    input_tokens = inp
+                    output_tokens = out
+                    percent_used = s.get('percentUsed', 0)
+                    session_id = s.get('sessionId', '').split('-')[0] if s.get('sessionId') else ''
                     break
             # Compaction count not in status API — read from file as fallback
             session_stats_file = DATA_DIR / 'session-stats.json'
@@ -725,6 +733,10 @@ def build_pulse_data():
         'model': 'glm-5.1:cloud',
         'contextUsed': context_used,
         'contextWindow': context_total,
+        'inputTokens': input_tokens,
+        'outputTokens': output_tokens,
+        'percentUsed': percent_used,
+        'sessionId': session_id,
         'serverRestart': '2026-04-10T11:25:00+10:00',
         'lastUpdate': 'OpenClaw 2026.4.9',
     }
@@ -1073,6 +1085,8 @@ class Handler(SimpleHTTPRequestHandler):
                         'id': j.get('id'),
                         'number': j.get('number'),
                         'title': j.get('title'),
+                        'description': j.get('description', ''),
+                        'details': j.get('details', ''),
                         'phase': phase,
                         'assignee': j.get('assignee'),
                         'priority': j.get('priority'),
@@ -1081,6 +1095,10 @@ class Handler(SimpleHTTPRequestHandler):
                         'completedBy': completed_by or j.get('assignee', ''),
                         'completedAt': j.get('completedAt'),
                         'createdAt': j.get('createdAt'),
+                        'subtasks': j.get('subtasks', []),
+                        'history': j.get('history', []),
+                        'qcResult': j.get('qcResult'),
+                        'dueDate': j.get('dueDate'),
                     })
             self._send_json(200, {'ok': True, 'jobs': compacted})
             return
@@ -1144,6 +1162,8 @@ class Handler(SimpleHTTPRequestHandler):
                     'completedAt': completed_at,
                     'log': log_lines,
                     'assignee': j.get('assignee', ''),
+                    'description': description,
+                    'subtasks': j.get('subtasks', []),
                 })
             # Sort by createdAt descending
             log_entries.sort(key=lambda e: e.get('createdAt') or 0, reverse=True)

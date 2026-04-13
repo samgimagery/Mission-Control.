@@ -4133,9 +4133,9 @@
     "assignedBy": "Alfred",
     "priority": "normal",
     "project": "Mission Control",
-    "status": "working",
+    "status": "done",
     "jobStatus": "active",
-    "phase": "working",
+    "phase": "done",
     "source": "manual",
     "needsRewrite": true,
     "activity": "new",
@@ -4151,13 +4151,1519 @@
         "ts": 1776045157775,
         "event": "transitioned_to_working",
         "by": "Alfred"
+      },
+      {
+        "ts": 1776045247643,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1776045153884,
-    "updatedAt": 1776045157775,
+    "updatedAt": 1776045247643,
     "dueDate": null,
     "startedAt": null,
-    "completedAt": null,
+    "completedAt": 1776045247643,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776065937250_2499",
+    "number": "REQ-092",
+    "title": "Fix subtasks, restore System design, clean up logs & done section",
+    "description": "Multiple UI fixes across System and Overview tabs",
+    "details": "Jobs don't show subtasks somehow\n\ncan you verify the jobs I write will be rewritten as we organised yesterday and that they are done step by step? \n\nWe've lost sone nice design we had in System. It's move like terminal then the nice bar we had for context and the uptime etc. Remove \"activity\" section from the System page. \n\nPlease update logs to look like the overview \"done\" section. These are basically the old logs of done stuff from the past. The \"done\" section in overview should only present the 10 last ones.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Fix subtasks not showing on job cards",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066180445
+      },
+      {
+        "id": "st2",
+        "title": "Verify job rewrite flow works on new jobs",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066180445
+      },
+      {
+        "id": "st3",
+        "title": "Restore System tab status bar design",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066513551
+      },
+      {
+        "id": "st4",
+        "title": "Remove Activity section from System tab",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066615597
+      },
+      {
+        "id": "st5",
+        "title": "Update logs to match Done section style",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066728835
+      },
+      {
+        "id": "st6",
+        "title": "Limit Overview Done to last 10 items",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066746285
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776065937250,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776066068981,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066180445,
+        "event": "subtask st1 done \u2014 Fix subtasks not showing on job cards",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066180445,
+        "event": "subtask st2 done \u2014 Verify job rewrite flow works on new jobs",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066513551,
+        "event": "subtask st3 done \u2014 Restore System tab status bar design",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066615597,
+        "event": "subtask st4 done \u2014 Remove Activity section from System tab",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066728835,
+        "event": "subtask st5 done \u2014 Update logs to match Done section style",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066746285,
+        "event": "subtask st6 done \u2014 Limit Overview Done to last 10 items",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066748693,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776065937250,
+    "updatedAt": 1776066748693,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776066748693,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776066414610_7291",
+    "number": "REQ-093",
+    "title": "Improve mobile layout \u2014 remove broken hamburger, explore top nav for iPhone",
+    "description": "Mobile UI issues: broken hamburger button on Mac and iPhone, overlapping buttons on mobile. Explore top-nav layout for iPhone while preserving Mac sidebar. Dont break desktop.",
+    "details": "Interface Challenge.\n\nI love the Mac widescreen look of the left side menu and the Mission Control. title on two lines. I want that on iPhone too. Right now there's a new button at the top left on Mac too... white with horizontal lines. does work. On iPhone either. Please remove this.  Anyway you can make the phone interface not change but have the menu at the top instead of the left side and keeping the top left title the same as on Mac? dont know, I'm sure we can improve. \n\non iPhone, the top right now has the 3 lines white button on top of the plus button. obviously an issue with that. Was better before with been bottom left (button) and new job at bottom right. but im looking to improve this. Don't break anything as, this will be mainly used on my laptop but - have a check if we can do anything please.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Remove broken hamburger button from Mac desktop view",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066973029
+      },
+      {
+        "id": "st2",
+        "title": "Fix iPhone mobile \u2014 overlapping hamburger and + button at top",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066973029
+      },
+      {
+        "id": "st3",
+        "title": "Explore top-nav layout for iPhone (tabs at top instead of sidebar)",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066973029
+      },
+      {
+        "id": "st4",
+        "title": "Ensure desktop sidebar layout untouched and working",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776066973029
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776066414610,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776066817963,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066973029,
+        "event": "subtask st1 done \u2014 Remove broken hamburger button from Mac desktop view",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066973029,
+        "event": "subtask st2 done \u2014 Fix iPhone mobile \u2014 overlapping hamburger and + button at top",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066973029,
+        "event": "subtask st3 done \u2014 Explore top-nav layout for iPhone (tabs at top instead of sidebar)",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066973029,
+        "event": "subtask st4 done \u2014 Ensure desktop sidebar layout untouched and working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776066975259,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776066414610,
+    "updatedAt": 1776066975259,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776066975259,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776066571675_5646",
+    "number": "REQ-094",
+    "title": "Clarify agent stats \u2014 label done count as Jobs Done",
+    "description": "The done count on agent cards is ambiguous. Label it Jobs Done so its clear what the number means.",
+    "details": "In system, the agents \"done\"\n\nisnt clear. Can you indicate what is \"done\" Daily Tasks? Add the precision of what that is in the agent box.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Update agent card stats label from done to Jobs Done",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776067056280
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776066571675,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776067002126,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067056280,
+        "event": "subtask st1 done \u2014 Update agent card stats label from done to Jobs Done",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067058718,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776066571675,
+    "updatedAt": 1776067058718,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776067058718,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776066634090_2672",
+    "number": "REQ-095",
+    "title": "Fix job card sweep animation \u2014 show on in-progress subtasks, use agent colour",
+    "description": "The blue sweep animation on job cards should highlight which subtask is actively being worked on, using the assigned agents colour. Currently only completed subtasks are visible, in-progress ones arent highlighted.",
+    "details": "Fix the wave over the liner of task you work on.\n\nI cant see any working on task. \nUse the agent colour to match how is working on the task \nwas working but now, can only see the completed one not the current addressed one.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Make in-progress subtasks visible on job cards with sweep animation",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776067091969
+      },
+      {
+        "id": "st2",
+        "title": "Use agent-specific colour for the sweep (Alfred=blue, Claude=purple)",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776067091969
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776066634090,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776067067706,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067091969,
+        "event": "subtask st1 done \u2014 Make in-progress subtasks visible on job cards with sweep animation",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067091969,
+        "event": "subtask st2 done \u2014 Use agent-specific colour for the sweep (Alfred=blue, Claude=purple)",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067094909,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776066634090,
+    "updatedAt": 1776067094909,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776067094909,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776066727671_9576",
+    "number": "REQ-096",
+    "title": "Add status badge back on agent cards (Working / Available)",
+    "description": "Agent cards used to show a rounded status badge next to the name. Bring it back \u2014 Working or Available.",
+    "details": "In system, agent's card had a \"status\" next to their name\n\nEarlier, the agents would show a \"working\" or \"available\" or else. can we put back that square with radius info you had yesterday?",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Add rounded status badge (Working/Available) next to agent name on card",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776067147316
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776066727671,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776067107175,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067147316,
+        "event": "subtask st1 done \u2014 Add rounded status badge (Working/Available) next to agent name on card",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067150237,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776066727671,
+    "updatedAt": 1776067150237,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776067150237,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776066768022_3544",
+    "number": "REQ-097",
+    "title": "Hide date on jobs done today, only show future dates",
+    "description": "In the job card and done section, dont show the date when the job was completed today. Only display dates for past/future days.",
+    "details": "Remove the date if it's done today\n\nIN the job section, dont put the today's date. Only show a shelled date if in the future.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Update Done section to hide date column when completed today",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776067360406
+      },
+      {
+        "id": "st2",
+        "title": "Update job card to hide date display when due/completed today",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776067360406
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776066768022,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776067160485,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067360406,
+        "event": "subtask st1 done \u2014 Update Done section to hide date column when completed today",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067360406,
+        "event": "subtask st2 done \u2014 Update job card to hide date display when due/completed today",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776067509316,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776066768022,
+    "updatedAt": 1776067509316,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776067509316,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776066911570_7594",
+    "number": "REQ-098",
+    "title": "Done job modals \u2014 restore rich info when clicking a done job",
+    "description": "Done job modals seem light now, only showing title. Restore the full info: done pill, subtask list, completion details.",
+    "details": "in the done jobs,\n\nmake sure it shows the beautiful done job info when clicked. we had yesterday a done pill, the list of task etc. Seems like it's light now... too light. some only have a title. please check that.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Check done job modal and restore rich detail (done pill, subtasks, completion info)",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776068202707
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776066911570,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776067723165,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068202707,
+        "event": "subtask st1 done \u2014 Check done job modal and restore rich detail (done pill, subtasks, completion info)",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068202718,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776066911570,
+    "updatedAt": 1776068202718,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776068202718,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776067225529_7987",
+    "number": "REQ-099",
+    "title": "Fix agent cards \u2014 working status and active count not reflecting reality",
+    "description": "Alfred card says Available when working. Active count shows 0. Agent card status and stats must reflect live data.",
+    "details": "Agent cards\n\nAlfred is working and card says : available. \nalso active says 0. Can you fix this. That the system reflects reality ?",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Fix agent status badge logic \u2014 show Working when Alfred has active jobs",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776068391614
+      },
+      {
+        "id": "st2",
+        "title": "Fix active count \u2014 count in-progress jobs, not just phase=working",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776068391614
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776067225529,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776068235246,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068391614,
+        "event": "subtask st1 done \u2014 Fix agent status badge logic \u2014 show Working when Alfred has active jobs",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068391614,
+        "event": "subtask st2 done \u2014 Fix active count \u2014 count in-progress jobs, not just phase=working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068391634,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776067225529,
+    "updatedAt": 1776068391634,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776068391634,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776067258923_2076",
+    "number": "REQ-100",
+    "title": "Remove dot next to OpenClaw version in sidebar footer",
+    "description": "Remove the dot left of the OpenClaw version number in the bottom left of the sidebar.",
+    "details": "Bottom left\n\ncan you remove the dot left to the openclaw version?",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Remove the dot icon next to OpenClaw version text",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776068522509
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776067258923,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776068522490,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068522509,
+        "event": "subtask st1 done \u2014 Remove the dot icon next to OpenClaw version text",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068522526,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776067258923,
+    "updatedAt": 1776068522526,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776068522526,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776067403442_9762",
+    "number": "REQ-101",
+    "title": "Hide due date on job card when working today, show only scheduled future dates",
+    "description": "When a job is being worked on today, dont show the calendar+date on the card. Only show scheduled date for future jobs.",
+    "details": "Overview Done section\n\nNo date are showing. \nWhat I meant is, on the job itself, when you start the job, dont show in the job box the calendar and the date it's working if today. show the scheduled date. But down at the done section, I want the today's date, yes. Also when clicking that done things, should open the job panel where the task / job was.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Hide due date display on job cards when the job is active today",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776068573765
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776067403442,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776068573752,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068573765,
+        "event": "subtask st1 done \u2014 Hide due date display on job cards when the job is active today",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068573775,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776067403442,
+    "updatedAt": 1776068573775,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776068573775,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776067523259_8535",
+    "number": "REQ-102",
+    "title": "Visual states on Overview \u2014 pen icon when rewriting, colour outline when working, no REQ pulse",
+    "description": "Add a pen icon on job cards while Alfred is rewriting them. Show coloured outline when a job is being worked on. Stop pulsing the REQ number.",
+    "details": "update on the overview\n\nWhen a job is written by me, it sits there. I want you to add a pen icon on it when you're rewriting it. Then put the coloured outline when it's worked on.  Dont pulse the REQ number. Just colour outline to show, adressed, then wave over the task worked on now. and before all that, the pen shows, I'm reading this and am rewriting it.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Add pen icon to job cards that have needsRewrite=true",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776068953377
+      },
+      {
+        "id": "st2",
+        "title": "Coloured outline on working job cards (already have glow \u2014 confirm working)",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776068953377
+      },
+      {
+        "id": "st3",
+        "title": "Remove REQ number pulse animation",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776068953377
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776067523259,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776068576819,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068953377,
+        "event": "subtask st1 done \u2014 Add pen icon to job cards that have needsRewrite=true",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068953377,
+        "event": "subtask st2 done \u2014 Coloured outline on working job cards (already have glow \u2014 confirm working)",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068953377,
+        "event": "subtask st3 done \u2014 Remove REQ number pulse animation",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068953396,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776067523259,
+    "updatedAt": 1776068953396,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776068953396,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776067663753_9474",
+    "number": "REQ-103",
+    "title": "Remove Available label duplication on agent cards",
+    "description": "When the status badge shows Available next to the name, the line below also says Available \u2014 duplication. Only show task info below the name, never Available. If Working, show the current task below.",
+    "details": "In system\n\nThe agent card sometimes show the status right to their name : available. if so, under the title and role, remove the double up \"available\". That location is to say what's happening in that job. If status is \"working\" right to the name, then under you see what is the work. \"the current task\"",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Remove Available text duplication \u2014 only show it in the badge, not below",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776068953414
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776067663753,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776068865902,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068953414,
+        "event": "subtask st1 done \u2014 Remove Available text duplication \u2014 only show it in the badge, not below",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776068953431,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776067663753,
+    "updatedAt": 1776068953431,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776068953431,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776072265623_9522",
+    "number": "REQ-104",
+    "title": "Logs expanded view \u2014 show subtask numbers and descriptions",
+    "description": "When clicking a log entry to expand it, the thread shows subtask lines but without numbers or descriptions. Add subtask number (REQ-XXX-N) and title to each expanded line.",
+    "details": "Logs update\n\nIn the logs when you click a req, it expands. I suppose these are the tasks. can you please add the task number there when expanded, and would it be possible to see the description of the tasks?",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Add subtask numbers to expanded log entries",
+        "status": "done",
+        "startedBy": "Sam",
+        "completedBy": "Alfred",
+        "startedAt": 1776072907800,
+        "completedAt": 1776073525283
+      },
+      {
+        "id": "st2",
+        "title": "Add subtask titles/descriptions to expanded log entries",
+        "status": "done",
+        "startedBy": "Sam",
+        "completedBy": "Alfred",
+        "startedAt": 1776073051889,
+        "completedAt": 1776073525283
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776072265623,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776072518690,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776072907800,
+        "event": "subtask st1 in-progress \u2014 Add subtask numbers to expanded log entries",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776073051889,
+        "event": "subtask st2 in-progress \u2014 Add subtask titles/descriptions to expanded log entries",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776073525283,
+        "event": "subtask st1 done \u2014 Add subtask numbers to expanded log entries",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776073525283,
+        "event": "subtask st2 done \u2014 Add subtask titles/descriptions to expanded log entries",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776073525303,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776072265623,
+    "updatedAt": 1776073525303,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776073525303,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776072649016_7153",
+    "number": "REQ-105",
+    "title": "Mobile layout \u2014 move FAB to top-right, remove hamburger",
+    "description": "Remove the hamburger menu button from top-right on iPhone. Move the + (add job) FAB to top-right, always sticky. Mission Control logo stays at top since FAB shares the header row.",
+    "details": "Menu on iPhone\n\nI would like the hamburger three lines button removed from top right on iPhone. the menu is working, the design of the Mission Control on two lines with the dot doesn't stick but it's ok. \n\nHaving the button that's wasn't used from the top right, I want the plus sign button to moved to the top right now. always. sticky. This is why the logo \"Mission Control\" can stay button on iPhone since the plus button is also taking the height at the top.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Remove hamburger button from mobile header",
+        "status": "done",
+        "startedBy": "Alfred",
+        "completedBy": "Alfred",
+        "startedAt": 1776073609360,
+        "completedAt": 1776074056147
+      },
+      {
+        "id": "st2",
+        "title": "Move FAB to top-right sticky position on mobile",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776074056147
+      },
+      {
+        "id": "st3",
+        "title": "Verify logo and FAB coexist in top bar on mobile",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776074056147
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776072649016,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776073609341,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776073609360,
+        "event": "subtask st1 in-progress \u2014 Remove hamburger button from mobile header",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776074056147,
+        "event": "subtask st1 done \u2014 Remove hamburger button from mobile header",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776074056147,
+        "event": "subtask st2 done \u2014 Move FAB to top-right sticky position on mobile",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776074056147,
+        "event": "subtask st3 done \u2014 Verify logo and FAB coexist in top bar on mobile",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776074056169,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776072649016,
+    "updatedAt": 1776074056169,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776074056169,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776073165251_1259",
+    "number": "REQ-106",
+    "title": "Active task animation \u2014 desync sweep, remove inner colour circle",
+    "description": "Each active subtask sweep should be independent (not synced). Remove any coloured circle/dot inside the card during work \u2014 just the coloured outline border + the sweep wave is enough.",
+    "details": "animation\n\nactive task needs to have the wave with singular sync per task. animation isn't necessary sync with all active tasks. also, no circle of colour in the box during the work, just the box with the coloured outline and the colour wave is enough.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "low",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Desync subtask sweep animations (random delay per item)",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776074056208
+      },
+      {
+        "id": "st2",
+        "title": "Remove inner colour circle/dot from working cards",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776074056208
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776073165251,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776074056190,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776074056208,
+        "event": "subtask st1 done \u2014 Desync subtask sweep animations (random delay per item)",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776074056208,
+        "event": "subtask st2 done \u2014 Remove inner colour circle/dot from working cards",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776074056226,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776073165251,
+    "updatedAt": 1776074056226,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776074056226,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776074671506_8532",
+    "number": "REQ-107",
+    "title": "Pulse: daily tokens + 2x2 grid on mobile",
+    "description": "Show daily token consumption on usage cards. Make DAY/WEEK/MONTH/YEAR a 2x2 grid on mobile (already in CSS, confirm working). Add per-job token cost to job cards/modals.",
+    "details": "Pulse update\n\nCan you make the token consumption show the daily amount. Also can you make the 4 square day, week, month, year a grid of 4. 2 by 2. On iPhone. So 2 wide and 2 boxes heigh. Not one on top of the next if that makes sense.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Show daily token amount on model usage cards",
+        "status": "done",
+        "startedBy": "Alfred",
+        "completedBy": "Alfred",
+        "startedAt": 1776076009941,
+        "completedAt": 1776076769256
+      },
+      {
+        "id": "st2",
+        "title": "Confirm 2x2 grid works on mobile for period cards",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776076769256
+      },
+      {
+        "id": "st3",
+        "title": "Add token cost display to job cards/modals",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776076769256
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776074671506,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776074923748,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776075897075,
+        "event": "transitioned_to_todo",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776076009925,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776076009941,
+        "event": "subtask st1 in-progress \u2014 Show daily token amount on model usage cards",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776076769256,
+        "event": "subtask st1 done \u2014 Show daily token amount on model usage cards",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776076769256,
+        "event": "subtask st2 done \u2014 Confirm 2x2 grid works on mobile for period cards",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776076769256,
+        "event": "subtask st3 done \u2014 Add token cost display to job cards/modals",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776076769277,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776074671506,
+    "updatedAt": 1776076769277,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776076769277,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776076360647_7881",
+    "number": "REQ-108",
+    "title": "Pulse page order: Work \u2192 Usage \u2192 System",
+    "description": "Reorder the Pulse tab sections: Work metrics first, then Usage/Model cards, then System Health at the bottom.",
+    "details": "Pulse page order\n\nPut work, then usage, then system.",
+    "assignee": "Unassigned",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776076360647,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776077070812,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776077148461,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776076360647,
+    "updatedAt": 1776077148461,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776077148461,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776076496340_1276",
+    "number": "REQ-109",
+    "title": "Remove icons from job cards \u2014 clock, bell, agent emojis",
+    "description": "Remove the clock icon from the timer, remove the bell icon for Alfred, and remove agent emoji icons from job cards. Keep the card clean without decorative icons.",
+    "details": "Job box\n\nRemove the clock icon for the timer. \nRemove the bell icon for Alfred \nSame for Claude, no icon in there please.",
+    "assignee": "Unassigned",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776076496340,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776078398631,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776078495547,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776076496340,
+    "updatedAt": 1776078495547,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776078495547,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776076580139_4994",
+    "number": "REQ-110",
+    "title": "Remove card pulse animation, add color left-border on active tasks",
+    "description": "Remove the whole card pulse/glow animation. Keep the per-task wave animation. Active tasks should have a colored left-border line but no colored circle in the checkbox.",
+    "details": "Job box\n\nCan you remove that whole box pulse. Just keep the one per task. Also tweak that active task to have a colour line on the left of the task liner but no coloured circle in the check box.",
+    "assignee": "Unassigned",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776076580139,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776078518769,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776080318577,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776076580139,
+    "updatedAt": 1776080318577,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776080318577,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776077746854_9084",
+    "number": "REQ-111",
+    "title": "Pulse: system card + simplified tokens",
+    "description": "1) Revert token display \u2014 just numbers and the word tokens. Total shows 7 days. No per-day or per-model breakdown fluff. 2) Add a gradient info card at top of Pulse page showing OpenClaw session stats: tokens in, tokens out, compaction count, context usage. Single colour gradient, two-tone, good looking rectangle.",
+    "details": "Revert the complex token display. Just show tokens with numbers. Total says 7 days tracked.\n\nAdd a gradient info card at the top of the Pulse page showing system data from openclaw status: session number, tokens in, tokens out, compaction count, context window usage. Single colour gradient, two-tone rectangle, good looking.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st1",
+        "title": "Simplify token display \u2014 just numbers + tokens label, total shows 7d",
+        "status": "done",
+        "startedBy": "Alfred",
+        "completedBy": "Alfred",
+        "startedAt": 1776077777950,
+        "completedAt": 1776080195855
+      },
+      {
+        "id": "st2",
+        "title": "Remove per-model today/daily breakdown, keep simple total",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776080195855
+      },
+      {
+        "id": "st3",
+        "title": "Add system info card at top of Pulse with session stats from openclaw status",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776080195855
+      },
+      {
+        "id": "st4",
+        "title": "Style: two-tone gradient card, clean layout",
+        "status": "done",
+        "startedBy": null,
+        "completedBy": "Alfred",
+        "startedAt": null,
+        "completedAt": 1776080195855
+      }
+    ],
+    "history": [
+      {
+        "ts": 1776077746854,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776077777931,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776077777950,
+        "event": "subtask st1 in-progress \u2014 Simplify token display \u2014 just numbers + tokens label, total shows 7d",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776080195855,
+        "event": "subtask st1 done \u2014 Simplify token display \u2014 just numbers + tokens label, total shows 7d",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776080195855,
+        "event": "subtask st2 done \u2014 Remove per-model today/daily breakdown, keep simple total",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776080195855,
+        "event": "subtask st3 done \u2014 Add system info card at top of Pulse with session stats from openclaw status",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776080195855,
+        "event": "subtask st4 done \u2014 Style: two-tone gradient card, clean layout",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776080195875,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776077746854,
+    "updatedAt": 1776080195875,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1776080195875,
+    "qcResult": null
+  },
+  {
+    "id": "job_1776081099937_5286",
+    "number": "REQ-112",
+    "title": "Fix nav active state + keep + button square on mobile",
+    "description": "Two UI fixes: (1) The sidebar nav should show an outline/border on the active section instead of just highlighting the text. (2) The + create job button should keep its square shape style on iPhone/mobile instead of becoming a blue circle with white plus sign. Keep it square, no blue color.",
+    "details": "menu button\n\nthe menu needs to have an outline not he section we're on. \n\nalso I would love if you could keep the style of the plus button of the wide style of the page as when on iPhone, turns into a blue circle and white plus sign. try to just keep the square shape style also on iPhone please and no blue on that.",
+    "assignee": "Unassigned",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [],
+    "history": [
+      {
+        "ts": 1776081099937,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1776082195007,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1776082433413,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1776081099937,
+    "updatedAt": 1776082433413,
+    "dueDate": "2026-04-13",
+    "startedAt": null,
+    "completedAt": 1776082433413,
     "qcResult": null
   }
 ]
