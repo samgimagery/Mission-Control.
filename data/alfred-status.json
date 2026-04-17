@@ -1,7 +1,1 @@
-{
-  "status": "idle",
-  "task": null,
-  "updatedAt": 0,
-  "contextUsed": null,
-  "contextTotal": null
-}
+{"status": "working", "task": "REQ-052: Fix MC Dashboard", "activeReq": "REQ-052"}

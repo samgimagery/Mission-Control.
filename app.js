@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Team emoji map ──
   const teamEmojis = {
-    'Alfred': '🛎️',
+    'Alfred': '',
     'Claude': '⚡',
     'Claude Code': '⚡',
     'Sam': '👤',
@@ -1311,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignee && assignee !== 'Unassigned') {
       let displayWorker = assignee;
       if (displayWorker === 'Claude Code') displayWorker = 'Claude';
-      const displayEmoji = displayWorker === 'Claude' ? '⚡' : displayWorker === 'Alfred' ? '🛎️' : '👤';
+      const displayEmoji = displayWorker === 'Claude' ? '⚡' : displayWorker === 'Alfred' ? '' : '👤';
       cardHtml += `<span class="card-worker-badge">${escapeHtml(displayWorker)}</span>`;
     }
 
@@ -1999,7 +1999,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <select id="newTaskAssignee" class="inline-select" style="flex:1">
             <option value="Unassigned">Unassigned</option>
-            <option value="Alfred">Alfred 🛎️</option>
+            <option value="Alfred">Alfred</option>
           </select>
           <select id="newTaskPriority" class="inline-select" style="flex:1">
             <option value="normal" selected>Normal</option>
@@ -2126,8 +2126,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (footerCtxFill) footerCtxFill.style.width = `${Math.min(pct, 100)}%`;
       if (footerCtxLabel) footerCtxLabel.textContent = `${pct}%`;
       // Session time (live counter)
-      const sysSessionTime = document.getElementById('sysSessionTime');
-      if (sysSessionTime) sysSessionTime.textContent = data.sessionUptime || '—';
+      // Session time — handled by live timer below
       // Version (bottom right)
       const sysVersion = document.getElementById('sysVersion');
       if (sysVersion) sysVersion.textContent = (data.lastUpdate || '—').replace('OpenClaw ', 'v');
@@ -2545,6 +2544,18 @@ function renderVaultMarkdown(md) {
   // Wikilinks
   html = html.replace(/\[\[([^\]]+)\]\]/g, '<span class="wikilink">[[$1]]</span>');
 
+  // Tables (GFM pipe tables)
+  html = html.replace(/^(\|.+\|)\s*\n\s*(\|[-:| ]+\|)\s*\n((?:\|.+\|\s*\n?)+)/gm, (match, header, sep, body) => {
+    const headerCells = header.split('|').map(c => c.trim()).filter(Boolean);
+    const bodyRows = body.trim().split('\n').map(row => row.split('|').map(c => c.trim()).filter(Boolean));
+    let table = '<table><thead><tr>' + headerCells.map(c => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>';
+    for (const row of bodyRows) {
+      table += '<tr>' + row.map(c => '<td>' + c + '</td>').join('') + '</tr>';
+    }
+    table += '</tbody></table>';
+    return table;
+  });
+
   // Headers
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
@@ -2554,6 +2565,13 @@ function renderVaultMarkdown(md) {
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
 
+  // Strikethrough
+  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+  // Task lists (checkboxes)
+  html = html.replace(/^- \[x\]\s+(.+)$/gm, '<li><input type="checkbox" checked disabled> $1</li>');
+  html = html.replace(/^- \[ \]\s+(.+)$/gm, '<li><input type="checkbox" disabled> $1</li>');
+
   // Code blocks
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -2561,14 +2579,15 @@ function renderVaultMarkdown(md) {
   // Horizontal rules
   html = html.replace(/^---$/gm, '<hr>');
 
-  // Blockquotes
+  // Blockquotes (callout-aware)
+  html = html.replace(/^> \[!(\w+)\]\s*(.+)$/gm, '<blockquote class="callout callout-$1"><p><strong>$1:</strong> $2</p>');
   html = html.replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>');
 
   // Lists
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/^- (?!\[)(.+)$/gm, '<li>$1</li>');
   html = html.replace(/((?:<li>[\s\S]*?<\/li>\n?)+)/g, '<ul>$1</ul>');
-
-  // Paragraphs
+  // Wrap checkbox items into task-list ul
+  html = html.replace(/((?:<li><input[^>]*>[\s\S]*?<\/li>\n?)+)/g, '<ul class="task-list">$1</ul>');
   const lines = html.split('\n');
   let result = '';
   for (const line of lines) {
@@ -2576,7 +2595,9 @@ function renderVaultMarkdown(md) {
     if (!trimmed) { result += '\n'; continue; }
     if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('<li') ||
         trimmed.startsWith('<pre') || trimmed.startsWith('<blockquote') || trimmed.startsWith('<hr') ||
-        trimmed.startsWith('<div') || trimmed.startsWith('</')) {
+        trimmed.startsWith('<div') || trimmed.startsWith('<table') || trimmed.startsWith('<thead') ||
+        trimmed.startsWith('<tbody') || trimmed.startsWith('<tr') || trimmed.startsWith('<th') ||
+        trimmed.startsWith('<td') || trimmed.startsWith('</')) {
       result += line + '\n';
     } else {
       result += '<p>' + line + '</p>\n';

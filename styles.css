@@ -801,22 +801,41 @@ body.dark .task-checkbox.done{color:#22c55e}
 .vault-content::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
 .vault-empty,.vault-loading{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:14px}
 .vault-md h1{font-size:24px;font-weight:700;margin:0 0 16px;color:var(--ink)}
-.vault-md h2{font-size:18px;font-weight:600;margin:24px 0 12px;color:var(--ink)}
+.vault-md h2{font-size:18px;font-weight:600;margin:24px 0 12px;color:var(--ink);padding-bottom:8px;border-bottom:1px solid var(--line)}
 .vault-md h3{font-size:15px;font-weight:600;margin:20px 0 8px;color:var(--ink)}
 .vault-md p{font-size:14px;line-height:1.7;color:var(--ink);margin:0 0 12px}
 .vault-md ul,.vault-md ol{font-size:14px;line-height:1.7;color:var(--ink);margin:0 0 12px;padding-left:24px}
 .vault-md li{margin-bottom:4px}
-.vault-md code{font-family:'SF Mono',Menlo,monospace;font-size:12px;background:rgba(59,130,246,.08);padding:2px 6px;border-radius:4px;color:#3b82f6}
-.vault-md pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:16px;overflow-x:auto;margin:0 0 16px;font-size:12px;line-height:1.5}
-.vault-md pre code{background:none;padding:0;color:var(--ink)}
+.vault-md li input[type=checkbox]{margin-right:6px;accent-color:#3b82f6}
+.vault-md code{font-family:'SF Mono',Menlo,monospace;font-size:12px;background:rgba(59,130,246,.08);padding:2px 6px;border-radius:4px;color:#93c5fd}
+.vault-md pre{background:#0f1219;border:1px solid rgba(59,130,246,.15);border-radius:10px;padding:16px;overflow-x:auto;margin:0 0 16px;font-size:12px;line-height:1.6}
+.vault-md pre code{background:none;padding:0;color:#e2e8f0;font-size:12px}
 .vault-md a{color:#3b82f6;text-decoration:none}
 .vault-md a:hover{text-decoration:underline}
-.vault-md blockquote{border-left:3px solid var(--line);padding-left:16px;margin:0 0 16px;color:var(--muted)}
+.vault-md blockquote{border-left:3px solid #3b82f6;background:rgba(59,130,246,.06);padding:12px 16px;margin:0 0 16px;border-radius:0 8px 8px 0;color:var(--ink)}
+.vault-md blockquote p:last-child{margin-bottom:0}
 .vault-md hr{border:none;border-top:1px solid var(--line);margin:24px 0}
 .vault-md .frontmatter{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:0 0 16px;font-size:12px;color:var(--muted);font-family:'SF Mono',Menlo,monospace}
 .vault-md .tag{display:inline-block;background:rgba(59,130,246,.1);color:#3b82f6;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin:0 4px 4px 0}
 .vault-md .wikilink{color:#8b5cf6;cursor:pointer;text-decoration:none}
 .vault-md .wikilink:hover{text-decoration:underline}
+.vault-md table{width:100%;border-collapse:collapse;margin:0 0 16px;font-size:13px}
+.vault-md th{background:var(--bg);font-weight:600;text-align:left;padding:8px 12px;border-bottom:2px solid var(--line);color:var(--ink)}
+.vault-md td{padding:8px 12px;border-bottom:1px solid var(--line);color:var(--ink)}
+.vault-md tr:hover td{background:rgba(59,130,246,.04)}
+.vault-md img{max-width:100%;border-radius:8px;margin:8px 0}
+.vault-md strong{font-weight:600;color:var(--ink)}
+.vault-md em{font-style:italic;color:var(--ink)}
+.vault-md del{opacity:.5}
+.vault-md .callout{border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px}
+.vault-md .callout-note{border-left:3px solid #3b82f6;background:rgba(59,130,246,.08)}
+.vault-md .callout-warning{border-left:3px solid #f59e0b;background:rgba(245,158,11,.08)}
+.vault-md .callout-tip{border-left:3px solid #22c55e;background:rgba(34,197,94,.08)}
+.vault-md .callout-important{border-left:3px solid #ef4444;background:rgba(239,68,68,.08)}
+.vault-md .callout-caution{border-left:3px solid #f97316;background:rgba(249,115,22,.08)}
+.vault-md .task-list{list-style:none;padding-left:0}
+.vault-md .task-list li{margin-bottom:6px}
+.vault-md .task-list input[type=checkbox]{margin-right:8px;accent-color:#3b82f6}
 .vault-breadcrumb{font-size:12px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:4px}
 .vault-breadcrumb span{cursor:pointer;transition:color .15s}
 .vault-breadcrumb span:hover{color:var(--ink)}
