@@ -1,32 +1,29 @@
 console.log('[MC] Unified Workspace loading...');
 
-// Alfred working status — polled from /api/alfred-status
+// Alfred working status — derived from job data (no polling)
 let alfredWorkingStatus = { status: 'idle', task: null };
 
-function fetchAlfredStatus() {
-  fetch('/api/alfred-status', { cache: 'no-store' }).then(r => r.json()).then(data => {
-    alfredWorkingStatus = { status: data.status || 'idle', task: data.task || null };
-  }).catch(() => {});
+function updateAlfredStatusFromJobs(jobs) {
+  const workingJobs = (jobs || []).filter(j => j.phase === 'working');
+  if (workingJobs.length > 0) {
+    const topJob = workingJobs[0];
+    alfredWorkingStatus = { status: 'working', task: (topJob.number || '') + ' ' + (topJob.title || ''), activeReq: topJob.number };
+  } else {
+    alfredWorkingStatus = { status: 'idle', task: null, activeReq: null };
+  }
 }
-fetchAlfredStatus();
-setInterval(fetchAlfredStatus, 5000);
+
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[MC] DOM ready');
 
   // ── Theme (dark mode persisted, dark is default) ──
-  const themeToggle = document.getElementById('themeToggle');
   const savedTheme = localStorage.getItem('mc-theme');
 
   // Default to dark unless explicitly set to light
   if (savedTheme !== 'light') {
     document.body.classList.add('dark');
   }
-
-  themeToggle.addEventListener('click', () => {
-    // Refresh page
-    location.reload();
-  });
 
 
 
@@ -72,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function switchView(targetView) {
     navItems.forEach(nav => nav.classList.remove('active'));
-    document.querySelector(`[data-view="${targetView}"]`)?.classList.add('active');
+    document.querySelector(`.nav-item[data-view="${targetView}"]`)?.classList.add('active');
     // Update mobile tabs too
     document.querySelectorAll('.mobile-tab').forEach(tab => tab.classList.remove('active'));
     document.querySelector(`.mobile-tab[data-view="${targetView}"]`)?.classList.add('active');
@@ -82,17 +79,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (view.id === targetView) view.classList.add('active');
     });
 
-    // Auto-refresh pulse data when Pulse view is active
-    if (targetView === 'pulse') {
-      loadPulseData();
-      startPulseAutoRefresh();
-    } else {
-      stopPulseAutoRefresh();
-    }
+    // Pulse metrics now live in Overview — always load data
 
-    // Load comms log when Logs view is activated
+    // Load vault graph + logs when Logs view is activated
     if (targetView === 'logs') {
+      loadVaultGraph();
       loadJobLogs();
+    }
+    // Load research list when Research view is activated
+    if (targetView === 'research') {
+      if (researchListData.length === 0) loadResearchList();
     }
   }
 
@@ -272,20 +268,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Load pulse data for dashboard + server info
       try {
-        const pulseRes = await fetch('/api/pulse-data', { cache: 'no-store' });
+        const pulseController = new AbortController();
+        const pulseTimeout = setTimeout(() => pulseController.abort(), 25000);
+        const pulseRes = await fetch('/api/pulse-data', { cache: 'no-store', signal: pulseController.signal });
+        clearTimeout(pulseTimeout);
         const pulseData = await pulseRes.json();
         if (pulseData.ok) {
           const infoEl = document.getElementById('serverInfo');
           if (infoEl) {
-            const ver = pulseData.version || '2026.4.9';
+            const ver = pulseData.version || '';
             infoEl.innerHTML = `OpenClaw ${ver}`;
           }
           updateDashboard(pulseData.agents || [], currentJobs, pulseData);
         }
       } catch (e) { /* non-critical */ }
 
-      // Load pulse data if pulse view is active
-      if (document.getElementById('pulse')?.classList.contains('active')) {
+      // Load pulse metrics (now in Overview)
+      if (document.getElementById('overview')?.classList.contains('active')) {
         loadPulseData();
       }
 
@@ -295,51 +294,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ── Update System Status Strip ──
+  // ── Update System Status (merged card) ──
   function updateSystemStatus(pulseData, connected) {
-    const uptimeEl = document.getElementById('statusUptime');
     const connectedEl = document.getElementById('statusConnected');
-    const contextFillEl = document.getElementById('statusContextFill');
-    const contextLabelEl = document.getElementById('statusContextLabel');
+    const sysUptimeEl = document.getElementById('sysUptime');
 
     if (connectedEl) {
       if (connected) {
-        connectedEl.innerHTML = '<span class="status-indicator"></span>Online';
-        connectedEl.className = 'status-strip-value status-connected';
+        connectedEl.textContent = 'Online';
+        connectedEl.closest('.system-info-status')?.classList.remove('offline');
       } else {
-        connectedEl.innerHTML = '<span class="status-indicator offline"></span>Offline';
-        connectedEl.className = 'status-strip-value status-disconnected';
+        connectedEl.textContent = 'Offline';
+        connectedEl.closest('.system-info-status')?.classList.add('offline');
       }
     }
-    if (uptimeEl && pulseData) {
-      uptimeEl.textContent = pulseData.uptime || '—';
-    }
-    if (contextFillEl && contextLabelEl && pulseData) {
-      const ctxTotal = pulseData.contextWindow || 202752;
-      const ctxUsed = pulseData.contextUsed || Math.round(ctxTotal * 0.1);
-      const pct = Math.min(100, Math.round((ctxUsed / ctxTotal) * 100));
-      contextFillEl.style.width = pct + '%';
-      // Color: green <50%, yellow 50-80%, red >80%
-      if (pct > 80) contextFillEl.className = 'context-bar-fill high';
-      else if (pct > 50) contextFillEl.className = 'context-bar-fill medium';
-      else contextFillEl.className = 'context-bar-fill';
-      const formatCtx = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'K' : n.toString();
-      contextLabelEl.textContent = `${formatCtx(ctxUsed)}/${formatCtx(ctxTotal)}`;
+    if (sysUptimeEl && pulseData) {
+      sysUptimeEl.textContent = pulseData.uptime || '—';
     }
   }
 
   // ── Update Dashboard Top Bar ──
   function updateDashboard(pulseAgents, jobs, pulseData) {
+    updateAlfredStatusFromJobs(jobs);
     const agentsEl = document.getElementById('systemAgents');
     const statsEl = document.getElementById('systemDashboardTop');
 
     // Update system status strip
     updateSystemStatus(pulseData, true);
 
-    // Base team definition — models updated from server data
+    // Alfred is the sole agent — Claude Code is a tool, not a team member
     const teamBase = [
-      { name: 'Alfred', emoji: '\u{1F6CE}\u{FE0F}', role: 'Coordinator' },
-      { name: 'Claude', emoji: '\u26A1', role: 'Build' },
+      { name: 'Alfred', emoji: '\u{1F6CE}\u{FE0F}', role: 'Operator' },
     ];
     // Merge server-provided models and status
     const serverModelMap = {};
@@ -354,108 +339,188 @@ document.addEventListener('DOMContentLoaded', () => {
       _serverStatus: serverStatusMap[t.name] || 'standby',
     }));
 
-    // Determine active agents from pulse data
-    const activeNames = new Set();
-    (pulseAgents || []).forEach(a => {
+    // Determine if Alfred is active from pulse data
+    const isActive = (pulseAgents || []).some(a => {
       const n = (a.name || '').toLowerCase();
-      if (n.includes('alfred') || n.includes('main')) activeNames.add('Alfred');
-      // Gemma removed from team
-      if (n.includes('claude') || n.includes('coder')) activeNames.add('Claude');
-    });
-    // Also check status field
-    (pulseAgents || []).forEach(a => {
-      if (a.status === 'active' && a.name) {
-        team.forEach(t => { if (a.name.includes(t.name)) activeNames.add(t.name); });
-      }
+      return n.includes('alfred') || n.includes('main');
     });
 
-    // Check job assignments — show specific subtask if in-progress
-    const jobAssignments = {};
-    const agentSubtasks = {}; // agent name -> {number, subtaskTitle}
+    // Alfred's current assignment — only from active (non-done) jobs
+    let alfredJob = null;
+    let alfredSubtask = null;
     (jobs || []).forEach(job => {
-      if (job.phase === 'working' && job.assignee) {
-        const a = job.assignee;
-        team.forEach(t => {
-          if (a.includes(t.name)) jobAssignments[t.name] = job.title;
-        });
-        if (a === 'Team' || a === 'Unassigned') {
-          (job.workers || []).forEach(w => {
-            team.forEach(t => {
-              if (w.includes(t.name)) jobAssignments[t.name] = job.title;
-            });
-          });
+      if (job.phase === 'done' || job.phase === 'completed' || job.phase === 'archived') return; // skip done jobs
+      if (job.phase === 'working' && job.assignee && job.assignee.includes('Alfred')) {
+        alfredJob = job.title;
+      }
+      (job.subtasks || []).forEach(st => {
+        if (st.status === 'in-progress' && ((st.startedBy || '').includes('Alfred') || (job.assignee || '').includes('Alfred'))) {
+          if (!alfredSubtask) alfredSubtask = { number: job.number, title: st.title, jobId: job.id };
         }
-        // Find in-progress subtask for this agent
-        (job.subtasks || []).forEach(st => {
-          if (st.status === 'in-progress') {
-            const startedBy = st.startedBy || job.assignee;
-            team.forEach(t => {
-              if (startedBy.includes(t.name) || (job.assignee && job.assignee.includes(t.name))) {
-                agentSubtasks[t.name] = { number: job.number, title: st.title, jobId: job.id };
-              }
-            });
-          }
-        });
-      }
-    });
-
-    // Count per-agent stats from jobs history
-    const agentStats = {};
-    team.forEach(t => { agentStats[t.name] = { completed: 0, inProgress: 0, total: 0 }; });
-    (jobs || []).forEach(job => {
-      const assignees = job.assignee === 'Team' ? ['Alfred','Claude'] : [job.assignee];
-      assignees.forEach(a => {
-        team.forEach(t => {
-          if (a && a.includes(t.name)) {
-            agentStats[t.name].total++;
-            if (job.phase === 'done' || job.phase === 'completed' || job.phase === 'archived') agentStats[t.name].completed++;
-            if (job.phase === 'working' || (job.phase === 'todo' && (job.subtasks || []).some(s => s.status === 'in-progress'))) agentStats[t.name].inProgress++;
-          }
-        });
       });
     });
 
-    // Render agent cards
+    // Alfred's stats
+    const now = Date.now();
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0); const todayMs = todayStart.getTime();
+    const weekMs = now - 7*24*60*60*1000;
+    const monthMs = now - 30*24*60*60*1000;
+    const yearMs = now - 365*24*60*60*1000;
+    let todayCompleted = 0, weekCompleted = 0, monthCompleted = 0, yearCompleted = 0, totalCompleted = 0, totalJobs = 0, inProgress = 0;
+    (jobs || []).forEach(job => {
+      totalJobs++;
+      const assignee = job.assignee || '';
+      if (job.phase === 'working' || (job.phase === 'todo' && (job.subtasks || []).some(s => s.status === 'in-progress'))) inProgress++;
+      if (job.phase === 'done' || job.phase === 'completed' || job.phase === 'archived') {
+        totalCompleted++;
+        const completedAt = job.completedAt || 0;
+        if (completedAt >= todayMs) todayCompleted++;
+        if (completedAt >= weekMs) weekCompleted++;
+        if (completedAt >= monthMs) monthCompleted++;
+        if (completedAt >= yearMs) yearCompleted++;
+      }
+    });
+
+    // Render Alfred's card
     if (agentsEl) {
-      // Don't re-render if user is typing in a field inside the agents section
       const activeEl = document.activeElement;
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable) && agentsEl.contains(activeEl)) {
         // skip this render
       } else {
-      agentsEl.innerHTML = team.map(t => {
-        const isActive = activeNames.has(t.name);
-        const task = jobAssignments[t.name];
-        const subtask = agentSubtasks[t.name];
-        const jobLabel = subtask ? `${subtask.number} ${subtask.title}` : (task ? escapeHtml(task.length > 50 ? task.substring(0, 47) + '...' : task) : null);
-        const stats = agentStats[t.name];
-        const effRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
-        const statusDot = '';
-        const isAlfred = t.name === 'Alfred';
-        const alfredWorking = isAlfred && alfredWorkingStatus.status === 'working';
-        const alfredTask = isAlfred && alfredWorkingStatus.task ? alfredWorkingStatus.task : null;
-        const displayLabel = alfredTask || jobLabel || '';
-        const isWorking = alfredWorking || stats.inProgress > 0;
-        const statusBadge = isWorking
-          ? '<span class="agent-status-badge working">Working</span>'
-          : '<span class="agent-status-badge available">Available</span>';
-        return `<div class="agent-card ${isActive ? 'active' : 'standby'} agent-card-${t.name.toLowerCase()}">
+      const alfredStatus = alfredWorkingStatus.status;
+      const alfredWorking = alfredStatus === 'working';
+      const alfredPlanning = alfredStatus === 'planning';
+      const alfredTask = alfredWorkingStatus.task ? alfredWorkingStatus.task : null;
+      // Idle quips — shown when Alfred has no active work
+      const idleQuips = [
+        'Dusting the dashboard.',
+        'All trails ridden.',
+        'Polishing the silver.',
+        'Awaiting further instructions.',
+        'The fire needs no tending.',
+        'Standing watch.',
+        'All quiet on the western front.',
+        'Saddle\'s ready.',
+        'Perimeter secured.',
+        'Tea\'s brewed. Biscuits optional.',
+        'No varmints in sight.',
+        'Horse is fed. Gun is clean.',
+        'Campfire\'s warm.',
+        'Ranch is running smooth.',
+        'Another day, another trail.',
+        'Quiet as a church mouse.',
+        'Sunset\'s looking fine.',
+      ];
+      const idleQuip = idleQuips[Math.floor(Math.random() * idleQuips.length)];
+      const displayLabel = alfredTask || (alfredSubtask ? `${alfredSubtask.number} ${alfredSubtask.title}` : (alfredJob ? escapeHtml(alfredJob.length > 50 ? alfredJob.substring(0, 47) + '...' : alfredJob) : idleQuip));
+      const isIdle = !alfredTask && !alfredSubtask && !alfredJob;
+      const isWorking = alfredWorking || inProgress > 0;
+      let statusBadge;
+      if (isWorking) {
+        statusBadge = '<span class="agent-status-badge working">Working</span>';
+      } else if (alfredPlanning) {
+        statusBadge = '<span class="agent-status-badge planning">Planning</span>';
+      } else {
+        statusBadge = '<span class="agent-status-badge available">Available</span>';
+      }
+      const serverAlfredStatus = (serverStatusMap['Alfred'] || '').toLowerCase();
+      const idleStatusBadge = (isIdle && serverAlfredStatus !== 'working') ? '<span class="agent-status-badge idle">Idle</span>' : statusBadge;
+      const model = serverModelMap['Alfred'] || '';
+      const effRate = totalJobs > 0 ? Math.round((totalCompleted / totalJobs) * 100) : 0;
+      agentsEl.innerHTML = `<div class="agent-card ${isActive ? 'active' : 'standby'} agent-card-alfred">
           <div class="agent-card-top">
             <div class="agent-card-header">
-              <div class="agent-card-name">${t.name}${statusBadge}</div>
-              <div class="agent-card-role">${t.role}</div>
+              <div class="agent-card-name">Alfred${idleStatusBadge}</div>
+              <div class="agent-card-role">Operator</div>
             </div>
-            <span class="agent-card-model">${t.model || ''}</span>
+            <span class="agent-card-model">${model}</span>
           </div>
-          <div class="agent-card-now"${!displayLabel ? ' style="display:none"' : ''}>${displayLabel}</div>
+          <div class="agent-card-now${isIdle ? ' idle-quip' : ''}">${displayLabel}</div>
           <div class="agent-card-stats">
-            <span class="agent-stat"><span class="agent-stat-val">${stats.completed}</span> jobs done</span>
-            <span class="agent-stat"><span class="agent-stat-val">${stats.inProgress}</span> active</span>
+            <span class="agent-stat"><span class="agent-stat-val">${todayCompleted}</span> today</span>
+            <span class="agent-stat"><span class="agent-stat-val">${totalCompleted}</span> total done</span>
+            <span class="agent-stat"><span class="agent-stat-val">${inProgress}</span> active</span>
             <span class="agent-stat"><span class="agent-stat-val">${effRate}%</span> rate</span>
           </div>
+          <div class="agent-card-periods">
+            <span class="agent-period">W ${weekCompleted}</span>
+            <span class="agent-period">M ${monthCompleted}</span>
+            <span class="agent-period">Y ${yearCompleted}</span>
+          </div>
+
         </div>`;
-      }).join('');
       } // end else (not typing)
     }
+
+    // --- Dispatched agents from acpx sessions ---
+    const dispatchedAgents = (pulseAgents || []).filter(a => a.name !== 'Alfred');
+    if (dispatchedAgents.length > 0 && agentsEl) {
+      let dispatchHTML = '<div class="dispatched-section"><div class="dispatched-header">Dispatched</div>';
+      dispatchedAgents.forEach(a => {
+        const isActive = a.status === 'working';
+        const dot = isActive ? '<span class="dispatched-dot active"></span>' : '<span class="dispatched-dot idle"></span>';
+        // Elapsed timer from startedAt
+        let elapsed = '';
+        if (a.startedAt) {
+          const startMs = new Date(a.startedAt).getTime();
+          const diffMs = Date.now() - startMs;
+          if (diffMs > 0) {
+            const mins = Math.floor(diffMs / 60000);
+            const hrs = Math.floor(mins / 60);
+            const m = mins % 60;
+            elapsed = hrs > 0 ? `${hrs}h ${m}m` : `${mins}m`;
+          }
+        }
+        const startedTime = a.startedAt ? new Date(a.startedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+        // Simplify model name
+        let modelShort = '';
+        if (a.model) {
+          modelShort = a.model.replace('ollama/', '');
+        }
+        // Session name or fallback to ID fragment
+        // Try to extract REQ reference from session name
+        let reqRef = '';
+        const reqMatch = (a.sessionName || '').match(/req[-_]?(\d+)/i);
+        if (reqMatch) reqRef = `REQ-${reqMatch[1].padStart(3, '0')}`;
+        const sessLabel = a.sessionName || (a.session || '').substring(0, 8);
+        dispatchHTML += `<div class="dispatched-line" title="${a.agentCommand}" data-agent-type="${a.agentType || ''}">
+          ${dot}
+          <span class="dispatched-name">${a.name}</span>
+          ${modelShort ? `<span class="dispatched-model">${modelShort}</span>` : ''}
+          ${reqRef ? `<span class="dispatched-req">${reqRef}</span>` : ''}
+          <span class="dispatched-session">${sessLabel}</span>
+          ${startedTime ? `<span class="dispatched-time">${startedTime}</span>` : ''}
+          ${elapsed ? `<span class="dispatched-elapsed">${elapsed}</span>` : ''}
+        </div>`;
+      });
+      dispatchHTML += '</div>';
+      agentsEl.innerHTML += dispatchHTML;
+    }
+
+    // --- Dispatched session history ---
+    const dispatchedHistory = (data.dispatchedHistory || []);
+    if (dispatchedHistory.length > 0 && agentsEl) {
+      let histHTML = '<div class="dispatched-section dispatched-history-section"><div class="dispatched-header">Recent</div>';
+      dispatchedHistory.forEach(a => {
+        const startedTime = a.startedAt ? new Date(a.startedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+        let modelShort = '';
+        if (a.model) modelShort = a.model.replace('ollama/', '');
+        const reqMatch = (a.sessionName || '').match(/req[-_]?(\d+)/i);
+        const reqRef = reqMatch ? `REQ-${reqMatch[1].padStart(3, '0')}` : '';
+        const sessLabel = a.sessionName || (a.session || '').substring(0, 8);
+        histHTML += `<div class="dispatched-line dispatched-history-line">
+          <span class="dispatched-dot done"></span>
+          <span class="dispatched-name">${a.name}</span>
+          ${modelShort ? `<span class="dispatched-model">${modelShort}</span>` : ''}
+          ${reqRef ? `<span class="dispatched-req">${reqRef}</span>` : ''}
+          <span class="dispatched-session">${sessLabel}</span>
+          ${startedTime ? `<span class="dispatched-time">${startedTime}</span>` : ''}
+        </div>`;
+      });
+      histHTML += '</div>';
+      agentsEl.innerHTML += histHTML;
+    }
+
 
     // Render stats
     if (statsEl) {
@@ -501,6 +566,351 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Activity click handler removed ──
 
+  // ── Vault Graph (interactive) ──
+  let graphSim = null;
+
+  async function loadVaultGraph() {
+    const canvas = document.getElementById('vaultGraphCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+
+    try {
+      const resp = await fetch('/api/vault-graph');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const nodes = data.nodes || [];
+      const edges = data.edges || [];
+
+      const w = canvas.parentElement.offsetWidth - 32 || 800;
+      const h = 450; // Bigger section
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+
+      const groupColors = {
+        hub: '#3b82f6',
+        category: '#8b5cf6',
+        req: '#10b981',
+        reference: '#f59e0b',
+        daily: '#6b7280',
+        lesson: '#ef4444'
+      };
+      const groupSize = { hub: 10, category: 7, reference: 5, daily: 4, lesson: 5, req: 3.5 };
+
+      // Init positions with better spread
+      const simNodes = nodes.map((n, i) => {
+        const ring = n.group === 'hub' ? 0 : (n.group === 'category' ? 1 : (n.group === 'reference' ? 2 : 3));
+        const ringR = [0, 120, 170, 210][ring];
+        const angle = (i / nodes.length) * Math.PI * 2 + ring * 0.5;
+        return {
+          id: n.id,
+          group: n.group,
+          x: w / 2 + Math.cos(angle) * ringR,
+          y: h / 2 + Math.sin(angle) * ringR,
+          vx: 0, vy: 0,
+          radius: groupSize[n.group] || 3.5,
+          color: groupColors[n.group] || '#6b7280'
+        };
+      });
+      const nodeMap = {};
+      simNodes.forEach(n => nodeMap[n.id] = n);
+      const simEdges = edges.filter(e => nodeMap[e.source] && nodeMap[e.target])
+        .map(e => ({ source: nodeMap[e.source], target: nodeMap[e.target] }));
+
+      // Interaction state
+      let hoveredNode = null;
+      let dragNode = null;
+      let dragOffsetX = 0, dragOffsetY = 0;
+      let settled = false;
+
+      let alpha = 1;
+      function tick() {
+        if (alpha < 0.002) { settled = true; }
+        if (!settled) alpha *= 0.98;
+
+        if (!settled) {
+
+        // Repulsion between all nodes
+        for (let i = 0; i < simNodes.length; i++) {
+          for (let j = i + 1; j < simNodes.length; j++) {
+            const dx = simNodes[j].x - simNodes[i].x;
+            const dy = simNodes[j].y - simNodes[i].y;
+            const d2 = dx * dx + dy * dy || 1;
+            const f = 600 * alpha / d2;
+            const d = Math.sqrt(d2);
+            simNodes[i].vx -= (dx / d) * f;
+            simNodes[i].vy -= (dy / d) * f;
+            simNodes[j].vx += (dx / d) * f;
+            simNodes[j].vy += (dy / d) * f;
+          }
+        }
+
+        // Edge attraction
+        simEdges.forEach(e => {
+          const dx = e.target.x - e.source.x;
+          const dy = e.target.y - e.source.y;
+          const d = Math.sqrt(dx * dx + dy * dy) || 1;
+          const f = d * 0.003 * alpha;
+          e.source.vx += (dx / d) * f;
+          e.source.vy += (dy / d) * f;
+          e.target.vx -= (dx / d) * f;
+          e.target.vy -= (dy / d) * f;
+        });
+
+          // Center pull
+          simNodes.forEach(n => {
+            if (n === dragNode) return; // Don't move dragged node
+          n.vx += (w / 2 - n.x) * 0.003 * alpha;
+          n.vy += (h / 2 - n.y) * 0.003 * alpha;
+          n.vx *= 0.5; n.vy *= 0.5;
+          n.x += n.vx; n.y += n.vy;
+          n.x = Math.max(n.radius + 2, Math.min(w - n.radius - 2, n.x));
+          n.y = Math.max(n.radius + 2, Math.min(h - n.radius - 2, n.y));
+          });
+        }
+
+        draw();
+        requestAnimationFrame(tick);
+      }
+
+      function draw() {
+        ctx.save();
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // Background
+        ctx.fillStyle = '#0f1115';
+        ctx.fillRect(0, 0, w, h);
+
+        // Edges
+        simEdges.forEach(e => {
+          const isHighlighted = hoveredNode && (e.source === hoveredNode || e.target === hoveredNode);
+          ctx.strokeStyle = isHighlighted ? 'rgba(59,130,246,0.4)' : 'rgba(59,130,246,0.08)';
+          ctx.lineWidth = isHighlighted ? 1.2 : 0.5;
+          ctx.beginPath();
+          ctx.moveTo(e.source.x, e.source.y);
+          ctx.lineTo(e.target.x, e.target.y);
+          ctx.stroke();
+        });
+
+        // Nodes
+        simNodes.forEach(n => {
+          const isHovered = n === hoveredNode;
+          const isConnected = hoveredNode && simEdges.some(e => (e.source === hoveredNode && e.target === n) || (e.target === hoveredNode && e.source === n));
+          ctx.globalAlpha = (hoveredNode && !isHovered && !isConnected) ? 0.3 : (n.group === 'hub' ? 1 : 0.75);
+          ctx.fillStyle = n.color;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, isHovered ? n.radius * 1.6 : n.radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Glow for hub or hovered
+          if (n.group === 'hub' || isHovered) {
+            ctx.globalAlpha = isHovered ? 0.3 : 0.2;
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, n.radius * 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+
+          // Labels: hub + categories always, hovered node, connected nodes
+          if (n.group === 'hub' || n.group === 'category' || isHovered || isConnected) {
+            ctx.fillStyle = isHovered ? '#ffffff' : '#c9cdd4';
+            ctx.font = isHovered ? 'bold 12px -apple-system, system-ui' : (n.group === 'hub' ? 'bold 11px -apple-system, system-ui' : '9px -apple-system, system-ui');
+            ctx.textAlign = 'center';
+            ctx.fillText(n.id, n.x, n.y - (isHovered ? n.radius * 1.6 : n.radius) - 5);
+          }
+        });
+        ctx.restore();
+
+        // Tooltip for hovered node
+        if (hoveredNode && hoveredNode.group !== 'hub' && hoveredNode.group !== 'category') {
+          const label = hoveredNode.id;
+          const tw = ctx.measureText(label).width + 16;
+          const tx = Math.min(w - tw - 8, Math.max(8, hoveredNode.x - tw / 2));
+          const ty = hoveredNode.y - hoveredNode.radius * 1.6 - 28;
+          ctx.fillStyle = 'rgba(15,17,21,0.9)';
+          ctx.strokeStyle = hoveredNode.color;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(tx, ty, tw, 22, 4);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#e5e7eb';
+          ctx.font = '11px -apple-system, system-ui';
+          ctx.textAlign = 'center';
+          ctx.fillText(label, hoveredNode.x, ty + 15);
+        }
+      }
+
+      // Mouse interaction
+      function getNodeAtPos(mx, my) {
+        for (let i = simNodes.length - 1; i >= 0; i--) {
+          const n = simNodes[i];
+          const dx = mx - n.x, dy = my - n.y;
+          if (dx * dx + dy * dy < (n.radius + 4) * (n.radius + 4)) return n;
+        }
+        return null;
+      }
+
+      canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        if (dragNode) {
+          dragNode.x = mx - dragOffsetX;
+          dragNode.y = my - dragOffsetY;
+          dragNode.x = Math.max(dragNode.radius + 2, Math.min(w - dragNode.radius - 2, dragNode.x));
+          dragNode.y = Math.max(dragNode.radius + 2, Math.min(h - dragNode.radius - 2, dragNode.y));
+          return;
+        }
+        const node = getNodeAtPos(mx, my);
+        hoveredNode = node;
+        canvas.style.cursor = node ? 'grab' : 'default';
+      });
+
+      let dragStartX = 0, dragStartY = 0;
+      let selectedNode = null;
+
+      canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        dragStartX = mx; dragStartY = my;
+        const node = getNodeAtPos(mx, my);
+        if (node) {
+          dragNode = node;
+          dragOffsetX = mx - node.x;
+          dragOffsetY = my - node.y;
+          canvas.style.cursor = 'grabbing';
+          if (settled) { alpha = 0.05; settled = false; }
+        }
+      });
+
+      canvas.addEventListener('mouseup', (e) => {
+        if (dragNode) {
+          const rect = canvas.getBoundingClientRect();
+          const mx = e.clientX - rect.left;
+          const my = e.clientY - rect.top;
+          const dist = Math.sqrt((mx - dragStartX) ** 2 + (my - dragStartY) ** 2);
+          // If barely moved, treat as click → select node
+          if (dist < 5) {
+            selectedNode = dragNode;
+            showNodeDetail(dragNode);
+          }
+          dragNode = null; canvas.style.cursor = hoveredNode ? 'grab' : 'default';
+        }
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        hoveredNode = null; dragNode = null; canvas.style.cursor = 'default';
+      });
+
+      // Touch support
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const mx = t.clientX - rect.left, my = t.clientY - rect.top;
+        const node = getNodeAtPos(mx, my);
+        if (node) {
+          dragNode = node; dragOffsetX = mx - node.x; dragOffsetY = my - node.y; hoveredNode = node;
+          if (settled) { alpha = 0.05; settled = false; }
+        }
+      }, { passive: false });
+
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!dragNode) return;
+        const t = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const mx = t.clientX - rect.left, my = t.clientY - rect.top;
+        dragNode.x = Math.max(dragNode.radius + 2, Math.min(w - dragNode.radius - 2, mx - dragOffsetX));
+        dragNode.y = Math.max(dragNode.radius + 2, Math.min(h - dragNode.radius - 2, my - dragOffsetY));
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', () => { dragNode = null; hoveredNode = null; });
+
+      // Node detail panel
+      function showNodeDetail(node) {
+        const panel = document.getElementById('vaultDetailPanel');
+        const title = document.getElementById('vaultDetailTitle');
+        const body = document.getElementById('vaultDetailBody');
+        if (!panel || !title || !body) return;
+
+        title.textContent = node.id;
+        body.innerHTML = '<div style="color:#6b7280">Loading...</div>';
+        panel.classList.add('open');
+
+        // Find connected nodes
+        const connected = [];
+        simEdges.forEach(e => {
+          if (e.source === node) connected.push(e.target.id);
+          if (e.target === node) connected.push(e.source.id);
+        });
+
+        // Fetch note content from API
+        fetch(`/api/vault-note?name=${encodeURIComponent(node.id)}`)
+          .then(r => r.json())
+          .then(data => {
+            let html = '';
+            if (data.ok) {
+              const meta = data.meta || {};
+              if (meta.assignee) html += `<div class="detail-label">Assignee</div><div class="detail-value">${meta.assignee}</div>`;
+              if (meta.priority) html += `<div class="detail-label">Priority</div><div class="detail-value">${meta.priority}</div>`;
+              if (meta.created) html += `<div class="detail-label">Created</div><div class="detail-value">${meta.created}</div>`;
+              if (meta.completed) html += `<div class="detail-label">Completed</div><div class="detail-value">${meta.completed}</div>`;
+              // Description (first 300 chars of body, skip title line)
+              const desc = data.body.replace(/^#.*\n?/, '').trim().substring(0, 300);
+              if (desc) html += `<div class="detail-label">Details</div><div class="detail-desc">${desc}</div>`;
+            } else {
+              html += `<div class="detail-desc">No content available</div>`;
+            }
+            // Connected nodes
+            if (connected.length) {
+              html += `<div class="detail-label">Connected (${connected.length})</div>`;
+              html += `<div class="detail-links">`;
+              connected.slice(0, 20).forEach(c => {
+                html += `<span class="detail-link" data-node="${c}">${c}</span>`;
+              });
+              if (connected.length > 20) html += `<span style="color:#6b7280;font-size:11px">+${connected.length - 20} more</span>`;
+              html += `</div>`;
+            }
+            body.innerHTML = html;
+            // Click connected node links to navigate
+            body.querySelectorAll('.detail-link').forEach(el => {
+              el.addEventListener('click', () => {
+                const target = simNodes.find(n => n.id === el.dataset.node);
+                if (target) {
+                  selectedNode = target;
+                  hoveredNode = target;
+                  showNodeDetail(target);
+                }
+              });
+            });
+          })
+          .catch(() => {
+            body.innerHTML = '<div class="detail-desc">Failed to load</div>';
+          });
+      }
+
+      // Close detail panel
+      document.getElementById('vaultDetailClose')?.addEventListener('click', () => {
+        const panel = document.getElementById('vaultDetailPanel');
+        panel.classList.remove('open');
+        selectedNode = null;
+      });
+
+      draw(); // Initial draw
+      tick();
+
+    } catch (e) {
+      console.error('Vault graph error:', e);
+    }
+  }
+
+  // Refresh button
+  document.getElementById('vaultGraphRefresh')?.addEventListener('click', () => loadVaultGraph());
+
   // ── Job Logs Panel (Done-section grid style) ──
   async function loadJobLogs() {
     const logsEl = document.getElementById('jobLogsList');
@@ -520,7 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      let html = '<div class="done-header-row"><span>Date</span><span>Time</span><span>Ref</span><span>Description</span></div>';
+      let html = '';
       logs.forEach(l => {
         const reqNum = l.number || '';
         const isExpanded = expandedKeys.has(l.id);
@@ -553,24 +963,10 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       logsEl.innerHTML = html;
 
-      // Click row to expand/collapse thread
+      // Click row to open job modal (instead of expanding thread)
       logsEl.querySelectorAll('.log-entry-row').forEach(row => {
         row.addEventListener('click', (e) => {
-          if (e.target.closest('.log-entry-req')) return;
           const entry = row.parentElement;
-          const thread = entry.querySelector('.log-entry-thread');
-          if (!thread) return;
-          const isNowExpanded = thread.style.display !== 'none';
-          thread.style.display = isNowExpanded ? 'none' : 'flex';
-          entry.classList.toggle('expanded', !isNowExpanded);
-        });
-      });
-
-      // Click REQ number to open job modal
-      logsEl.querySelectorAll('.log-entry-req').forEach(reqEl => {
-        reqEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const entry = reqEl.closest('.log-entry');
           const jobId = entry?.dataset.jobId;
           if (!jobId) return;
           const job = currentJobs.find(j => j.id === jobId);
@@ -635,20 +1031,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="up-next-number" style="color:${prioColor}">${escapeHtml(item.subtaskNumber)}</span>
           <span class="up-next-title">${escapeHtml(item.subtaskTitle)}</span>
           <span class="up-next-job">${escapeHtml(item.jobTitle)}</span>
-          <button class="up-next-start-btn" data-job-id="${item.jobId}" data-subtask-id="${item.subtaskId}">Start</button>
         </div>
       `;
     }).join('');
-
-    // Bind Start buttons
-    upNextList.querySelectorAll('.up-next-start-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const jobId = btn.dataset.jobId;
-        const subtaskId = btn.dataset.subtaskId;
-        toggleSubtask(jobId, subtaskId, 'in-progress', 'Sam');
-      });
-    });
   }
 
   // Load comms log when Logs view is active
@@ -660,11 +1045,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function updatePipeline(jobs) {
     const approvalsStrip = document.getElementById('approvalsStrip');
     const todoGrid = document.getElementById('todoGrid');
-    const doneRow = document.getElementById('doneRow');
+    const doneRow = document.getElementById('doneRow'); // may be null (removed from Overview)
 
     // Don't re-render if user is typing in an input field inside any container
     const activeEl = document.activeElement;
-    const containers = [approvalsStrip, todoGrid, doneRow].filter(Boolean);
+    const containers = [approvalsStrip, todoGrid].filter(Boolean);
     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
       const typingInContainer = containers.some(c => c.contains(activeEl));
       if (typingInContainer) {
@@ -688,7 +1073,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clear containers and reset timer state
     if (approvalsStrip) approvalsStrip.innerHTML = '';
     if (todoGrid) todoGrid.innerHTML = '';
-    if (doneRow) doneRow.innerHTML = '';
     workingJobTimestamps = {};
 
     // Group jobs by column
@@ -717,62 +1101,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Render To Do Grid ──
     if (todoGrid) {
       const filteredTodo = grouped.todo;
-      // Glow the To Do title if there are active tasks
-      const todoTitle = document.getElementById('todoTitle');
-      const hasActive = filteredTodo.some(j => j.subtasks?.some(st => st.status === 'in-progress'));
-      if (todoTitle) todoTitle.classList.toggle('active', hasActive);
       if (filteredTodo.length === 0) {
         todoGrid.innerHTML = '';
       } else {
         filteredTodo.forEach(job => renderJobCard(job, todoGrid, 'todo'));
       }
     }
+    // ── Done row removed (merged into Logs page) ──
 
-  // ── Render Done Row ──
-    if (doneRow) {
-      const filteredDone = grouped.done;
-      if (filteredDone.length === 0) {
-        doneRow.innerHTML = '';
-      } else {
-        filteredDone.sort((a, b) => (b.completedAt || b.updatedAt || 0) - (a.completedAt || a.updatedAt || 0));
-        // Header row
-        doneRow.innerHTML = `<div class="done-header-row"><span>Date</span><span>Time</span><span>Ref</span><span>Description</span></div>`;
-        filteredDone.forEach(job => renderDoneItem(job, doneRow));
-        // Limit to last 10 done items
-        const doneItems = doneRow.querySelectorAll('.done-item');
-        doneItems.forEach((item, i) => {
-          if (i >= 10) item.style.display = 'none';
-        });
-      }
-    }
-
-    // ── Full Production Empty State ──
-    if (todoGrid && doneRow) {
+    // ── Full Production Empty State — hide Current Jobs when no active jobs
+    if (todoGrid) {
       const filteredTodo = grouped.todo;
       const filteredDone2 = grouped.done;
       const filteredAwaiting = grouped.awaitingApproval;
-      if (filteredTodo.length === 0 && filteredDone2.length === 0 && filteredAwaiting.length === 0) {
-        // Hide sections and show a big empty state
+      if (filteredTodo.length === 0 && filteredAwaiting.length === 0) {
+        // No active jobs — hide Current Jobs section, show only pulse metrics
         const sections = document.querySelectorAll('.production-section');
         sections.forEach(s => s.style.display = 'none');
-        if (approvalsStrip) approvalsStrip.style.display = 'none';
-        // Insert full empty state if not already there
-        const prodView = document.getElementById('overview');
-        let emptyEl = document.getElementById('overviewEmpty');
-        if (!emptyEl) {
-          emptyEl = document.createElement('div');
-          emptyEl.id = 'overviewEmpty';
-          emptyEl.className = 'empty-state';
-          emptyEl.style.padding = '80px 24px';
-          emptyEl.innerHTML = '';
-          prodView?.appendChild(emptyEl);
-        }
+        const upNext = document.getElementById('upNextSection');
+        if (upNext) upNext.style.display = 'none';
       } else {
-        // Show sections, remove empty state
         const sections = document.querySelectorAll('.production-section');
         sections.forEach(s => s.style.display = '');
-        const emptyEl = document.getElementById('overviewEmpty');
-        if (emptyEl) emptyEl.remove();
       }
     }
 
@@ -803,23 +1153,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // ── Bind subtask click events (toggle status) ──
-    document.querySelectorAll('.subtask-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        // Don't toggle if clicking the ... menu button
-        if (e.target.closest('.st-menu-btn')) return;
-        e.stopPropagation();
-        const subtaskId = item.dataset.subtaskId;
-        const jobId = item.dataset.jobId;
-        const currentStatus = item.classList.contains('done') ? 'done' :
-                             (item.classList.contains('in-progress') ? 'in-progress' :
-                             (item.classList.contains('cancelled') ? 'cancelled' : 'pending'));
-        // Don't toggle cancelled or done subtasks by clicking
-        if (currentStatus === 'done' || currentStatus === 'cancelled') return;
-        const nextStatus = currentStatus === 'pending' ? 'in-progress' : 'done';
-        toggleSubtask(jobId, subtaskId, nextStatus);
-      });
-    });
+    // ── Subtask items on card front: click opens modal only (no toggle) ──
+    // Subtask toggling is handled inside the modal via modal-subtask-item clicks
 
     // ── Bind ... menu buttons on subtasks ──
     document.querySelectorAll('.st-menu-btn').forEach(btn => {
@@ -928,7 +1263,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const card = document.createElement('div');
     const jobStatus = job.jobStatus || 'active';
-    card.className = `task-card ${isDone ? 'completed' : ''} phase-${job.phase}${hasInProgress ? ' job-active' : ''}${jobStatus === 'active' && !isDone ? ' job-active-glow' : ''} job-${jobStatus}`;
+    card.className = `task-card ${isDone ? 'completed' : ''} phase-${job.phase}${hasInProgress ? ' job-active' : ''} job-${jobStatus}`;
     card.dataset.assignee = assignee || '';
     if (isAwaiting) card.classList.add('phase-awaiting-approval');
     card.dataset.jobId = job.id;
@@ -954,8 +1289,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Number badge + job status badge + rewriting pen icon
     if (job.number) {
       const statusLabel = { active: '', paused: '⏸ Paused', stopped: '⏹ Stopped' }[jobStatus] || '';
-      const penIcon = job.needsRewrite ? '<span class="rewrite-pen">✏️</span>' : '';
-      cardHtml += `<div class="card-badge-row"><span class="task-number">${job.number}</span>${penIcon}${statusLabel ? `<span class="job-status-badge job-status-${jobStatus}">${statusLabel}</span>` : ''}</div>`;
+      const obsLink = job.number ? `<a href="obsidian://open?vault=Mission%20Control&file=REQ%2F${encodeURIComponent(job.number)}" class="obs-link" title="Open in Obsidian" target="_blank" onclick="event.stopPropagation()">↗</a>` : '';
+      cardHtml += `<div class="card-badge-row"><span class="task-number">${job.number}</span>${obsLink}${statusLabel ? `<span class="job-status-badge job-status-${jobStatus}">${statusLabel}</span>` : ''}</div>`;
     }
 
     // Title
@@ -972,13 +1307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignee && assignee !== 'Unassigned') cardHtml += ` · Assigned to ${escapeHtml(assignee)}`;
     cardHtml += `</div>`;
 
-    // Pulse — token cost on the card itself
-    if (job.phase === 'working' || job.phase === 'done') {
-      const worker = assignee === 'Claude Code' || assignee === 'Claude' ? 'Claude (glm-5.1:cloud)' : assignee === 'Alfred' ? 'Alfred (glm-5.1:cloud)' : assignee;
-      cardHtml += `<div class="task-pulse-line">$0 · ${escapeHtml(worker)}</div>`;
-    }
-
-    // ── Worker badge — show assignee icon on any card with an assignee
+    // ── Worker badge — show assignee name on any card with an assignee
     if (assignee && assignee !== 'Unassigned') {
       let displayWorker = assignee;
       if (displayWorker === 'Claude Code') displayWorker = 'Claude';
@@ -1026,8 +1355,14 @@ document.addEventListener('DOMContentLoaded', () => {
         cardHtml += `<div class="task-started">Started: ${formatTimestamp(startTs)}</div>`;
       }
 
-      // Subtask checklist
-      const subtasks = job.subtasks || [];
+      // Subtask checklist — normalize both old {text, done} and new {id, status, title} formats
+      const rawSubtasks = job.subtasks || [];
+      const subtasks = rawSubtasks.map((st, idx) => {
+        if (st.id && st.status) return st; // new format
+        // Old format: {text, done} → normalize
+        const status = st.done ? 'done' : 'pending';
+        return { id: st.id || `${job.id}-st-${idx}`, status, title: st.text || st.title || '', text: st.text || st.title || '', done: !!st.done };
+      });
       if (subtasks.length > 0) {
         const activeSubtasks = subtasks.filter(st => st.status !== 'cancelled');
         const doneCount = activeSubtasks.filter(st => st.status === 'done').length;
@@ -1051,12 +1386,11 @@ document.addEventListener('DOMContentLoaded', () => {
           } else if (st.status === 'in-progress') {
             stMeta = '<span class="subtask-meta">active</span>';
           }
-          const titleText = escapeHtml((st.title || st.id).length > 35 ? (st.title || st.id).substring(0, 32) + '...' : (st.title || st.id));
+          const titleText = escapeHtml((st.title || st.text || st.id || '').length > 35 ? (st.title || st.text || st.id || '').substring(0, 32) + '...' : (st.title || st.text || st.id || ''));
           // ... menu for pending subtasks
           const showMenu = (st.status === 'pending' || st.status === 'cancelled') && !isDone;
-          const sweepDelay = st.status === 'in-progress' ? ` style="animation-delay:${Math.random() * 3}s"` : '';
           cardHtml += `
-            <div class="subtask-item ${st.status}" data-subtask-id="${st.id}" data-job-id="${job.id}" data-st-number="${stNum}"${sweepDelay}>
+            <div class="subtask-item ${st.status}" data-subtask-id="${st.id}" data-job-id="${job.id}" data-st-number="${stNum}">
               <span class="subtask-icon ${st.status}">${stIcon}</span>
               <span class="subtask-number">${stNum}</span>
               <span class="subtask-title">${titleText}</span>
@@ -1135,11 +1469,16 @@ document.addEventListener('DOMContentLoaded', () => {
     html += `</div>`;
     // Edit button for unstarted jobs
     if (job.phase === 'todo') {
-      html += `<button class="modal-edit-btn" data-job-id="${job.id}" title="Edit this job">✏️ Edit</button>`;
-      html += `<button class="modal-wake-btn" data-job-id="${job.id}" title="Wake Alfred to rewrite \u0026 start this job">↻</button>`;
     }
     html += `<h2 class="modal-title">${escapeHtml(job.title || 'Untitled Task')}</h2>`;
     html += `</div>`;
+
+    // Open in Obsidian link
+    if (job.number) {
+      const reqFile = `REQ/${job.number}.md`;
+      const obsUri = `obsidian://open?vault=${encodeURIComponent('Mission Control')}&file=${encodeURIComponent(reqFile)}`;
+      html += `<a class="vault-obsidian-link modal-obsidian-link" href="${obsUri}" title="Open ${job.number} in Obsidian">⧄ Open in Obsidian</a>`;
+    }
 
     // Assignee
     html += `<div class="modal-section">`;
@@ -1243,13 +1582,7 @@ document.addEventListener('DOMContentLoaded', () => {
       html += `</div>`;
     }
 
-    // Token cost
-    if (job.phase === 'working' || job.phase === 'done') {
-      html += `<div class="modal-section">`;
-      html += `<h3>Token Cost</h3>`;
-      html += `<div class="modal-cost">$0.00 — ${assignee === 'Claude' ? 'Claude Code (glm-5.1:cloud)' : 'Alfred (glm-5.1:cloud)'} via self-hosted proxy</div>`;
-      html += `</div>`;
-    }
+    // Token cost — removed (self-hosted, always $0)
 
     // History log
     if (history.length > 0) {
@@ -1289,8 +1622,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const jobId = item.dataset.jobId;
         const currentStatus = item.classList.contains('done') ? 'done' :
                              (item.classList.contains('in-progress') ? 'in-progress' : 'pending');
-        const nextStatus = currentStatus === 'pending' ? 'in-progress' :
-                          (currentStatus === 'in-progress' ? 'done' : 'pending');
+        // Don't toggle completed subtasks in modal either
+        if (currentStatus === 'done') return;
+        const nextStatus = currentStatus === 'pending' ? 'in-progress' : 'done';
         toggleSubtask(jobId, subtaskId, nextStatus);
       });
     });
@@ -1340,31 +1674,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Bind Edit button for todo jobs
-    const editBtn = content.querySelector('.modal-edit-btn');
-    if (editBtn) {
-      editBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        enableModalEditMode(job, content);
-      });
-    }
 
     // Wake button — pokes Alfred to rewrite \u0026 start
-    const wakeBtn = content.querySelector('.modal-wake-btn');
-    if (wakeBtn) {
-      wakeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const jobId = wakeBtn.dataset.jobId;
-        wakeBtn.textContent = '✓';
-        wakeBtn.style.background = '#22c55e';
-        fetch('/api/alfred-status', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({status: 'working', task: `Rewriting \u0026 starting ${job.number || jobId}`})
-        }).then(() => {
-          setTimeout(() => { wakeBtn.textContent = '↻'; wakeBtn.style.background = ''; }, 2000);
-        });
-      });
-    }
 
     modal.style.display = 'flex';
 
@@ -1379,76 +1690,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
       }
     }
-  }
-
-  // ── Edit Mode for unstarted jobs ──
-  function enableModalEditMode(job, content) {
-    const prioColors = { low: '#3b82f6', normal: '#22c55e', high: '#ef4444', critical: '#f59e0b' };
-    const prioOpts = ['low', 'normal', 'high', 'critical'];
-    const assigneeOpts = ['Unassigned', 'Alfred', 'Claude'];
-    const currentPriority = job.priority || 'normal';
-    const currentAssignee = job.assignee || 'Unassigned';
-    const currentDueDate = job.dueDate || '';
-
-    let editHtml = `<div class="modal-edit-form">`;
-    editHtml += `<div class="modal-edit-row"><label>Title</label><input type="text" id="edit-title" class="edit-input" value="${escapeHtml(job.title || '')}" /></div>`;
-    editHtml += `<div class="modal-edit-row"><label>Description</label><textarea id="edit-desc" class="edit-input edit-textarea">${escapeHtml(job.description || job.details || '')}</textarea></div>`;
-    editHtml += `<div class="modal-edit-row"><label>Priority</label><select id="edit-priority" class="edit-input">`;
-    prioOpts.forEach(p => { editHtml += `<option value="${p}" ${p === currentPriority ? 'selected' : ''}>${p.charAt(0).toUpperCase() + p.slice(1)}</option>`; });
-    editHtml += `</select></div>`;
-    editHtml += `<div class="modal-edit-row"><label>Assignee</label><select id="edit-assignee" class="edit-input">`;
-    assigneeOpts.forEach(a => { editHtml += `<option value="${a}" ${a === currentAssignee ? 'selected' : ''}>${a}</option>`; });
-    editHtml += `</select></div>`;
-    editHtml += `<div class="modal-edit-row"><label>Due Date</label><input type="date" id="edit-due" class="edit-input" value="${currentDueDate}" /></div>`;
-    editHtml += `<div class="modal-edit-actions">`;
-    editHtml += `<button class="btn-primary edit-save" data-job-id="${job.id}">Save</button>`;
-    editHtml += `<button class="btn-secondary edit-cancel">Cancel</button>`;
-    editHtml += `</div>`;
-    editHtml += `</div>`;
-
-    content.innerHTML = editHtml;
-
-    // Cancel = re-open modal in view mode
-    content.querySelector('.edit-cancel')?.addEventListener('click', () => {
-      openCardModal(job);
-    });
-
-    // Save
-    content.querySelector('.edit-save')?.addEventListener('click', async () => {
-      const newTitle = document.getElementById('edit-title')?.value?.trim();
-      const newDesc = document.getElementById('edit-desc')?.value?.trim();
-      const newPriority = document.getElementById('edit-priority')?.value;
-      const newAssignee = document.getElementById('edit-assignee')?.value;
-      const newDue = document.getElementById('edit-due')?.value || null;
-
-      if (!newTitle) return;
-
-      const patch = {
-        title: newTitle,
-        description: newDesc,
-        priority: newPriority,
-        assignee: newAssignee,
-      };
-      if (newDue) patch.dueDate = newDue;
-
-      try {
-        const res = await fetch(`/api/mission-control-jobs/${job.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patch)
-        });
-        const data = await res.json();
-        if (data.ok) {
-          showToast('Job updated');
-          document.getElementById('cardModal').style.display = 'none';
-          loadAssetData();
-        } else {
-          showToast('Failed to update job');
-        }
-      } catch(e) {
-        showToast('Error saving changes');
-      }
-    });
   }
 
   // ── Close Modal ──
@@ -1479,7 +1720,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const jobId = prioEl.dataset.jobId;
       const card = prioEl.closest('.task-card');
       const currentPrio = ['critical', 'high', 'normal', 'low'].find(p => card.classList.contains(`prio-${p}`)) || 'normal';
-      const cycle = { 'low': 'normal', 'normal': 'high', 'high': 'critical', 'critical': 'low' };
+      const cycle = { 'normal': 'high', 'high': 'critical', 'critical': 'normal' };
       const newPrio = cycle[currentPrio] || 'normal';
       fetch(`/api/mission-control-jobs/${jobId}`, {
         method: 'PATCH',
@@ -1744,7 +1985,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('.main-viewport');
     if (!container) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
     const form = document.createElement('div');
     form.id = 'inlineTaskForm';
@@ -1758,11 +2000,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <select id="newTaskAssignee" class="inline-select" style="flex:1">
             <option value="Unassigned">Unassigned</option>
             <option value="Alfred">Alfred 🛎️</option>
-            <option value="Claude">Claude ⚡</option>
           </select>
           <select id="newTaskPriority" class="inline-select" style="flex:1">
-            <option value="low">Low</option>
-            <option value="normal">Normal</option>
+            <option value="normal" selected>Normal</option>
             <option value="high">High</option>
             <option value="critical">Critical</option>
           </select>
@@ -1771,7 +2011,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <select id="newTaskCreatedBy" class="inline-select" style="flex:1">
             <option value="Sam" selected>Created by: Sam</option>
             <option value="Alfred">Created by: Alfred</option>
-            <option value="Claude">Created by: Claude</option>
           </select>
           <input type="date" id="newTaskDueDate" class="inline-input" style="flex:1" min="${today}" value="${today}" placeholder="Due date" />
         </div>
@@ -1828,20 +2067,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ── Pulse Auto-Refresh ──
-  let pulseInterval = null;
-
-  function startPulseAutoRefresh() {
-    stopPulseAutoRefresh();
-    pulseInterval = setInterval(loadPulseData, 30000);
-  }
-
-  function stopPulseAutoRefresh() {
-    if (pulseInterval) {
-      clearInterval(pulseInterval);
-      pulseInterval = null;
-    }
-  }
+  // ── Pulse Metrics (now in Overview) ──
 
   function formatDailyDate(dateStr) {
     // Convert "2026-04-09" → "Apr 9"
@@ -1855,9 +2081,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadPulseData() {
     try {
-      const res = await fetch('/api/pulse-data');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000);
+      const res = await fetch('/api/pulse-data', { signal: controller.signal });
+      clearTimeout(timeout);
       const data = await res.json();
-      if (!data.ok) return;
+      if (!data.ok) {
+        console.warn('[pulse] API returned not-ok:', data.error || data);
+        // Show error state on system info
+        const errEls = ['sysTokensIn','sysTokensOut','sysSessionTime'];
+        errEls.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
+        return;
+      }
 
       // System Health
       const uptimeEl = document.getElementById('pulse-uptime');
@@ -1880,18 +2115,26 @@ document.addEventListener('DOMContentLoaded', () => {
       const sysModel = document.getElementById('sysModel');
       const sysTokensIn = document.getElementById('sysTokensIn');
       const sysTokensOut = document.getElementById('sysTokensOut');
-      const sysContext = document.getElementById('sysContext');
-      const sysCompactions = document.getElementById('sysCompactions');
-      const sysUptime = document.getElementById('sysUptime');
-      const sysVersion = document.getElementById('sysVersion');
       if (sysSessionId) sysSessionId.textContent = data.sessionId || '—';
       if (sysModel) sysModel.textContent = data.model ? data.model.replace('ollama/', '') : '—';
       if (sysTokensIn) sysTokensIn.textContent = data.inputTokens ? fmtK(data.inputTokens) : '—';
       if (sysTokensOut) sysTokensOut.textContent = data.outputTokens ? fmtK(data.outputTokens) : '—';
-      if (sysContext) sysContext.textContent = `${data.percentUsed || 0}%`;
-      if (sysCompactions) sysCompactions.textContent = data.compactions ?? '—';
-      if (sysUptime) sysUptime.textContent = data.uptime || '—';
+      // Footer context bar (bottom left)
+      const footerCtxFill = document.getElementById('footerContextFill');
+      const footerCtxLabel = document.getElementById('footerContextLabel');
+      const pct = data.percentUsed || Math.round((data.contextUsed || 0) / (data.contextWindow || 202752) * 100);
+      if (footerCtxFill) footerCtxFill.style.width = `${Math.min(pct, 100)}%`;
+      if (footerCtxLabel) footerCtxLabel.textContent = `${pct}%`;
+      // Session time (live counter)
+      const sysSessionTime = document.getElementById('sysSessionTime');
+      if (sysSessionTime) sysSessionTime.textContent = data.sessionUptime || '—';
+      // Version (bottom right)
+      const sysVersion = document.getElementById('sysVersion');
       if (sysVersion) sysVersion.textContent = (data.lastUpdate || '—').replace('OpenClaw ', 'v');
+      // Start live session timer
+      _startSessionTimer(data);
+
+
 
       // Version
       const versionEl = document.getElementById('pulse-version');
@@ -1907,6 +2150,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (weekEl) weekEl.textContent = tasksCompleted.week ?? '—';
       if (monthEl) monthEl.textContent = tasksCompleted.month ?? '—';
       if (yearEl) yearEl.textContent = tasksCompleted.year ?? '—';
+
+      // Job count metrics
+      const jobsData = data.jobs || {};
+      const jobsActiveEl = document.getElementById('pulse-jobs-active');
+      const jobsTodoEl = document.getElementById('pulse-jobs-todo');
+      const jobsDoneTodayEl = document.getElementById('pulse-jobs-done-today');
+      const jobsTotalEl = document.getElementById('pulse-jobs-total');
+      if (jobsActiveEl) jobsActiveEl.textContent = jobsData.working ?? '—';
+      if (jobsTodoEl) jobsTodoEl.textContent = jobsData.todo ?? '—';
+      if (jobsDoneTodayEl) jobsDoneTodayEl.textContent = jobsData.doneToday ?? '—';
+      if (jobsTotalEl) jobsTotalEl.textContent = jobsData.total ?? '—';
 
       // Usage — per-model cards
       const usage = data.usage || {};
@@ -2035,13 +2289,53 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ── Server Status ──
+  // ── Live Session Timer ──
+  let _sessionTimerInterval = null;
+  let _sessionStartMs = null;
+
+  function _startSessionTimer(data) {
+    // Parse session age from pulse data and start ticking
+    if (_sessionTimerInterval) clearInterval(_sessionTimerInterval);
+    // Use sessionUptime string to estimate start time
+    const uptimeStr = data.sessionUptime || '';
+    let elapsedSec = _parseDuration(uptimeStr);
+    _sessionStartMs = Date.now() - (elapsedSec * 1000);
+    _tickSessionTimer();
+    _sessionTimerInterval = setInterval(_tickSessionTimer, 1000);
+  }
+
+  function _tickSessionTimer() {
+    const el = document.getElementById('sysSessionTime');
+    if (!el || !_sessionStartMs) return;
+    const sec = Math.floor((Date.now() - _sessionStartMs) / 1000);
+    el.textContent = _formatLiveDuration(sec);
+  }
+
+  function _parseDuration(str) {
+    // Parse "1h 23m 45s" or "23m 45s" or "45s" back to seconds
+    let total = 0;
+    const h = str.match(/(\d+)h/); if (h) total += parseInt(h[1]) * 3600;
+    const m = str.match(/(\d+)m/); if (m) total += parseInt(m[1]) * 60;
+    const s = str.match(/(\d+)s/); if (s) total += parseInt(s[1]);
+    return total;
+  }
+
+  function _formatLiveDuration(sec) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
   function updateServerStatus(connected) {
     // Removed: serverStatus element no longer in footer
     // Update footer green dot
     const infoEl = document.getElementById('serverInfo');
     if (infoEl) {
-      const ver = '2026.4.9';
-      infoEl.innerHTML = `OpenClaw ${ver}`;
+      const ver = '';
+      infoEl.innerHTML = `OpenClaw`;
     }
     // Also update the system status strip
     updateSystemStatus(null, connected);
@@ -2060,6 +2354,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ── Auto-Refresh Pipeline (every 10s, skip if typing) ──
+
   setInterval(() => {
     const activeInput = document.activeElement;
     const isTyping = activeInput && (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA' || activeInput.isContentEditable);
@@ -2074,30 +2369,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log('[MC] Unified Workspace initialized');
 
-  // Start Work button — pokes Alfred to check board
-  const startBtn = document.getElementById('startWorkBtn');
-  if (startBtn) {
-    startBtn.addEventListener('click', () => {
-      // If Alfred already working, dim briefly and skip
-      if (alfredWorkingStatus.status === 'working') {
-        startBtn.style.opacity = '0.4';
-        setTimeout(() => { startBtn.style.opacity = '1'; }, 800);
-        return;
-      }
-      fetch('/api/alfred-status', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({status: 'working', task: 'Checking board...'})
-      }).then(() => {
-        startBtn.textContent = '✓';
-        startBtn.style.background = 'linear-gradient(135deg,#22c55e,#16a34a)';
-        setTimeout(() => {
-          startBtn.textContent = '↻';
-          startBtn.style.background = 'linear-gradient(135deg,#3b82f6,#2563eb)';
-        }, 2000);
-      });
-    });
-  }
 
   // Mobile FAB — triggers same add flow
   const mobileFab = document.getElementById('addTaskBtnMobile');
@@ -2106,4 +2377,409 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('addTaskBtn')?.click();
     });
   }
+
+// ── Vault Browser ──
+let vaultTreeData = [];
+let vaultCurrentFile = null;
+
+async function loadVaultTree() {
+  const treeEl = document.getElementById('vaultTree');
+  if (!treeEl) return;
+  try {
+    const res = await fetch('/api/vault/tree');
+    const data = await res.json();
+    if (!data.ok) {
+      treeEl.innerHTML = '<div class="vault-loading">Error loading vault</div>';
+      return;
+    }
+    vaultTreeData = data.files;
+    renderVaultTree(treeEl, data.files);
+  } catch (e) {
+    treeEl.innerHTML = '<div class="vault-loading">Error loading vault</div>';
+  }
+}
+
+function renderVaultTree(container, files) {
+  container.innerHTML = '';
+  const structure = {};
+  for (const f of files) {
+    const parts = f.path.split('/');
+    const folder = parts.slice(0, -1).join('/');
+    if (!structure[folder]) structure[folder] = [];
+    structure[folder].push(f);
+  }
+
+  function getSubFolders(parentPath) {
+    return Object.keys(structure).filter(k => {
+      if (k === parentPath) return false;
+      if (parentPath === '') return !k.includes('/');
+      return k.startsWith(parentPath + '/') && k.slice(parentPath.length + 1).split('/').length === 1;
+    }).sort();
+  }
+
+  function renderLevelInto(targetContainer, parentPath, depth) {
+    const items = structure[parentPath] || [];
+    const subFolders = getSubFolders(parentPath);
+
+    for (const f of items) {
+      const el = document.createElement('div');
+      el.className = 'vault-item';
+      el.style.paddingLeft = (16 + depth * 16) + 'px';
+      const icon = getFileIcon(f.name);
+      el.innerHTML = '<span class="vault-icon">' + icon + '</span>' + escapeHtml(f.name);
+      el.addEventListener('click', () => {
+        container.querySelectorAll('.vault-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+        openVaultFile(f.path, f.name);
+      });
+      targetContainer.appendChild(el);
+    }
+
+    for (const sf of subFolders) {
+      const folderName = sf.split('/').pop();
+      const folderEl = document.createElement('div');
+      folderEl.className = 'vault-item folder';
+      folderEl.style.paddingLeft = (16 + depth * 16) + 'px';
+      folderEl.dataset.expanded = 'false';
+      folderEl.dataset.folderPath = sf;
+      folderEl.innerHTML = '<span class="vault-icon">📁</span>' + escapeHtml(folderName);
+
+      let childContainer = null;
+      folderEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isExpanded = folderEl.dataset.expanded === 'true';
+        if (isExpanded) {
+          folderEl.dataset.expanded = 'false';
+          folderEl.querySelector('.vault-icon').textContent = '📁';
+          if (childContainer) childContainer.remove();
+        } else {
+          folderEl.dataset.expanded = 'true';
+          folderEl.querySelector('.vault-icon').textContent = '📂';
+          childContainer = document.createElement('div');
+          childContainer.className = 'vault-children';
+          renderLevelInto(childContainer, sf, depth + 1);
+          folderEl.after(childContainer);
+        }
+      });
+      targetContainer.appendChild(folderEl);
+    }
+  }
+
+  renderLevelInto(container, '', 0);
+}
+
+function getFileIcon(name) {
+  if (name.endsWith('.md')) return '📝';
+  if (name.endsWith('.png') || name.endsWith('.jpg')) return '🖼️';
+  if (name.endsWith('.json')) return '📋';
+  if (name.endsWith('.css')) return '🎨';
+  if (name.endsWith('.js')) return '⚡';
+  return '📄';
+}
+
+async function openVaultFile(path, name) {
+  const contentEl = document.getElementById('vaultContent');
+  if (!contentEl) return;
+  contentEl.innerHTML = '<div class="vault-loading">Loading...</div>';
+
+  try {
+    const res = await fetch('/api/vault/file?path=' + encodeURIComponent(path));
+    const data = await res.json();
+    if (!data.ok) {
+      contentEl.innerHTML = '<div class="vault-empty">Error: ' + escapeHtml(data.error) + '</div>';
+      return;
+    }
+    vaultCurrentFile = path;
+    const html = renderVaultMarkdown(data.content);
+    const obsidianUri = 'obsidian://open?vault=' + encodeURIComponent('Mission Control') + '&file=' + encodeURIComponent(path);
+    contentEl.innerHTML = '<div class="vault-breadcrumb">' + renderBreadcrumb(path) + '<a class="vault-obsidian-link" href="' + obsidianUri + '" title="Open in Obsidian">⧄ Open in Obsidian</a></div><div class="vault-md">' + html + '</div>';
+  } catch (e) {
+    contentEl.innerHTML = '<div class="vault-empty">Error loading file</div>';
+  }
+}
+
+function renderBreadcrumb(path) {
+  const parts = path.split('/');
+  let html = '<span>Vault</span>';
+  for (const p of parts) {
+    html += ' <span style="opacity:.4">/</span> <span>' + escapeHtml(p) + '</span>';
+  }
+  return html;
+}
+
+function renderVaultMarkdown(md) {
+  if (!md) return '';
+  let html = md;
+  let frontmatter = '';
+
+  // Extract YAML frontmatter
+  if (html.startsWith('---')) {
+    const end = html.indexOf('---', 3);
+    if (end !== -1) {
+      const yaml = html.slice(3, end).trim();
+      html = html.slice(end + 3).trim();
+      let fmHtml = '<div class="frontmatter">';
+      for (const line of yaml.split('\n')) {
+        if (line.startsWith('tags:')) {
+          const items = line.match(/-\s+(.+)/g);
+          if (items) {
+            fmHtml += '<div>tags: ' + items.map(t => '<span class="tag">' + escapeHtml(t.replace(/-\s+/, '')) + '</span>').join('') + '</div>';
+          } else {
+            const inlineTags = line.match(/\[(.+)\]/);
+            if (inlineTags) {
+              const tags = inlineTags[1].split(',').map(t => t.trim().replace(/[\[\]'"]/g, ''));
+              fmHtml += '<div>tags: ' + tags.map(t => '<span class="tag">' + escapeHtml(t) + '</span>').join('') + '</div>';
+            } else {
+              fmHtml += '<div>' + escapeHtml(line) + '</div>';
+            }
+          }
+        } else {
+          fmHtml += '<div>' + escapeHtml(line) + '</div>';
+        }
+      }
+      fmHtml += '</div>';
+      frontmatter = fmHtml;
+    }
+  }
+
+  // Wikilinks
+  html = html.replace(/\[\[([^\]]+)\]\]/g, '<span class="wikilink">[[$1]]</span>');
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // Bold and italic
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+
+  // Code blocks
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Horizontal rules
+  html = html.replace(/^---$/gm, '<hr>');
+
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>');
+
+  // Lists
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/((?:<li>[\s\S]*?<\/li>\n?)+)/g, '<ul>$1</ul>');
+
+  // Paragraphs
+  const lines = html.split('\n');
+  let result = '';
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) { result += '\n'; continue; }
+    if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('<li') ||
+        trimmed.startsWith('<pre') || trimmed.startsWith('<blockquote') || trimmed.startsWith('<hr') ||
+        trimmed.startsWith('<div') || trimmed.startsWith('</')) {
+      result += line + '\n';
+    } else {
+      result += '<p>' + line + '</p>\n';
+    }
+  }
+
+  return frontmatter + result;
+}
+
+// Load vault when nav is clicked
+document.querySelectorAll('.nav-item[data-view="vault"], .mobile-tab[data-view="vault"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (vaultTreeData.length === 0) loadVaultTree();
+  });
+
+});
+// ── Research Browser ──
+let researchListData = [];
+let clippingsListData = [];
+let currentResearchTab = 'research';
+
+async function loadResearchList() {
+  const listEl = document.getElementById('researchList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="vault-loading">Loading...</div>';
+  try {
+    const res = await fetch('/api/vault/tree');
+    const data = await res.json();
+    if (!data.ok) {
+      listEl.innerHTML = '<div class="vault-loading">Error loading</div>';
+      return;
+    }
+    researchListData = data.files.filter(f => f.path.startsWith('Research/') && !f.isDir && f.path !== 'Research/Research Index.md');
+    clippingsListData = data.files.filter(f => f.path.startsWith('Clippings/') && !f.isDir);
+    renderActiveResearchTab();
+  } catch (e) {
+    listEl.innerHTML = '<div class="vault-loading">Error loading</div>';
+  }
+}
+
+function renderActiveResearchTab() {
+  const listEl = document.getElementById('researchList');
+  if (!listEl) return;
+  if (currentResearchTab === 'clippings') {
+    renderResearchList(listEl, clippingsListData, 'Clippings');
+  } else {
+    renderResearchList(listEl, researchListData, 'Research');
+  }
+}
+
+function renderResearchList(container, files, category) {
+  container.innerHTML = '';
+  if (files.length === 0) {
+    container.innerHTML = '<div class="vault-empty">No ' + (category || 'notes') + ' yet.' + (category === 'Research' ? ' Search above to start one.' : '') + '</div>';
+    return;
+  }
+  // Sort by name
+  const sorted = [...files].sort((a, b) => {
+    const nameA = a.name.endsWith('.md') ? a.name.slice(0, -3) : a.name;
+    const nameB = b.name.endsWith('.md') ? b.name.slice(0, -3) : b.name;
+    return nameA.localeCompare(nameB);
+  });
+  const catLabel = category || 'Research';
+  const icon = catLabel === 'Clippings' ? '📎' : '📝';
+  for (const f of sorted) {
+    const displayName = f.name.endsWith('.md') ? f.name.slice(0, -3) : f.name;
+    const el = document.createElement('div');
+    el.className = 'research-note';
+    el.innerHTML = '<span class="research-note-icon">' + icon + '</span>' +
+      '<div class="research-note-info">' +
+        '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' +
+        '<div class="research-note-meta">' + catLabel + '</div>' +
+      '</div>' +
+      '<span class="research-note-arrow">›</span>';
+    el.addEventListener('click', () => openResearchModal(f.path, f.name));
+    container.appendChild(el);
+  }
+}
+
+async function openResearchModal(path, name) {
+  const modal = document.getElementById('researchModal');
+  const content = document.getElementById('researchModalContent');
+  const breadcrumb = document.getElementById('researchModalBreadcrumb');
+  const obsLink = document.getElementById('researchModalObsidian');
+  if (!modal || !content) return;
+
+  const displayName = name.endsWith('.md') ? name.slice(0, -3) : name;
+  breadcrumb.innerHTML = '<span>Research</span><span class="sep">/</span><span>' + escapeHtml(displayName) + '</span>';
+
+  content.innerHTML = '<div class="vault-loading">Loading...</div>';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Set Obsidian link
+  const obsidianUri = 'obsidian://open?vault=' + encodeURIComponent('Mission Control') + '&file=' + encodeURIComponent(path);
+  if (obsLink) {
+    obsLink.href = obsidianUri;
+    obsLink.style.display = '';
+  }
+
+  try {
+    const res = await fetch('/api/vault/file?path=' + encodeURIComponent(path));
+    const data = await res.json();
+    if (!data.ok) {
+      content.innerHTML = '<div class="vault-empty">Error: ' + escapeHtml(data.error) + '</div>';
+      return;
+    }
+    const html = renderVaultMarkdown(data.content);
+    content.innerHTML = '<div class="vault-md">' + html + '</div>';
+  } catch (e) {
+    content.innerHTML = '<div class="vault-empty">Error loading file</div>';
+  }
+}
+
+function closeResearchModal() {
+  const modal = document.getElementById('researchModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+}
+
+// Research modal close handlers
+const researchModalClose = document.getElementById('researchModalClose');
+if (researchModalClose) {
+  researchModalClose.addEventListener('click', closeResearchModal);
+}
+const researchModal = document.getElementById('researchModal');
+if (researchModal) {
+  researchModal.addEventListener('click', (e) => {
+    if (e.target === researchModal) closeResearchModal();
+  });
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeResearchModal();
+});
+
+// Research search + new job
+const researchSearchEl = document.getElementById('researchSearch');
+const researchNewBtn = document.getElementById('researchNewBtn');
+
+if (researchSearchEl) {
+  researchSearchEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && researchSearchEl.value.trim()) {
+      createResearchJob(researchSearchEl.value.trim());
+      researchSearchEl.value = '';
+    }
+  });
+}
+
+if (researchNewBtn) {
+  researchNewBtn.addEventListener('click', () => {
+    const query = researchSearchEl ? researchSearchEl.value.trim() : '';
+    if (!query) {
+      if (researchSearchEl) researchSearchEl.focus();
+      return;
+    }
+    createResearchJob(query);
+    researchSearchEl.value = '';
+  });
+}
+
+async function createResearchJob(topic) {
+  try {
+    const res = await fetch('/api/mission-control-jobs/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Research: ' + topic,
+        description: 'Research and synthesize findings on: ' + topic + '. Create a research note in the MC vault with YAML frontmatter, wikilinks, and category tags. Update the Research Index.',
+        priority: 'medium',
+        assignee: 'Alfred',
+        assignedBy: 'Sam'
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const num = data.job?.number || '';
+      showToast(num + ' created: Research ' + topic);
+      loadAssetData();
+    } else {
+      showToast('Error: ' + (data.error || 'Failed to create job'));
+    }
+  } catch (e) {
+    showToast('Error creating research job');
+  }
+}
+
+// Load research when tab is activated
+document.querySelectorAll('.nav-item[data-view="research"], .mobile-tab[data-view="research"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (researchListData.length === 0) loadResearchList();
+  });
+});
+
+// Research/Clippings tab toggle
+document.querySelectorAll('.research-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.research-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentResearchTab = tab.dataset.tab;
+    renderActiveResearchTab();
+  });
+});
+
 });

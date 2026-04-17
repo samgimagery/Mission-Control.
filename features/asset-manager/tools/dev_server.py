@@ -21,6 +21,91 @@ SELECTED_ROOT_LINK = ASSET_MANAGER_ROOT / 'selected_root'
 WORKSPACE_ROOT = Path('/Users/samg/.openclaw/workspace')
 OPENCLAW_AGENTS_ROOT = Path('/Users/samg/.openclaw/agents')
 OPENCLAW_WORKSPACES_ROOT = Path('/Users/samg/.openclaw/workspaces')
+
+# Pulse data cache — avoid rebuilding every 5s
+_pulse_cache = None
+_pulse_cache_ts = 0
+
+# OpenClaw status cache — background refresh every 60s
+_oc_status_cache = None
+_oc_status_cache_lock = None  # threading.Lock, created at startup
+
+import threading as _threading
+
+def _refresh_oc_status():
+    """Background daemon: refresh openclaw status every 60s, then reconcile vault."""
+    global _oc_status_cache
+    while True:
+        try:
+            result = subprocess.run(
+                ['openclaw', 'status', '--json'],
+                capture_output=True, text=True, timeout=30
+            )
+            if result.returncode == 0:
+                _oc_status_cache = json.loads(result.stdout)
+                import sys; print(f'[oc-status] Refreshed ({len(result.stdout)} bytes)', file=sys.stderr)
+        except Exception as e:
+            import sys; print(f'[oc-status] Refresh failed: {e}', file=sys.stderr)
+        # Reconcile vault: ensure every job has a REQ note
+        try:
+            _reconcile_vault()
+        except Exception as e:
+            import sys; print(f'[vault-reconcile] Error: {e}', file=sys.stderr)
+        import time; time.sleep(60)
+
+
+def _reconcile_vault():
+    """Check every job has a vault REQ note. Create missing ones. Best-effort."""
+    jobs = load_mission_control_jobs()
+    vault_req_dir = Path.home() / "Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control/REQ"
+    vault_req_dir.mkdir(parents=True, exist_ok=True)
+    existing = {f.stem for f in vault_req_dir.iterdir() if f.suffix == '.md' and f.stem.startswith('REQ-')}
+    missing = 0
+    for j in jobs:
+        req = j.get('number', '')
+        if not req or not req.startswith('REQ-'):
+            continue
+        if req not in existing:
+            sync_to_vault('create', j)
+            missing += 1
+    if missing:
+        import sys; print(f'[vault-reconcile] Created {missing} missing REQ notes', file=sys.stderr)
+    # Boot file sync: ensure workspace boot files match vault -Boot mirrors
+    try:
+        vault_ref = Path.home() / "Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control/Reference"
+        ws = Path.home() / ".openclaw/workspace"
+        boot_map = {
+            'AGENTS.md': 'AGENTS-Boot.md',
+            'SOUL.md': 'SOUL-Boot.md',
+            'IDENTITY.md': 'IDENTITY-Boot.md',
+            'USER.md': 'USER-Boot.md',
+            'MEMORY.md': 'MEMORY-Boot.md',
+            'TOOLS.md': 'TOOLS-Boot.md',
+        }
+        synced = 0
+        for ws_name, vault_name in boot_map.items():
+            ws_file = ws / ws_name
+            vault_file = vault_ref / vault_name
+            if not ws_file.exists():
+                continue
+            ws_content = ws_file.read_text(encoding='utf-8')
+            if vault_file.exists():
+                vault_content = vault_file.read_text(encoding='utf-8')
+                if ws_content != vault_content:
+                    vault_file.write_text(ws_content, encoding='utf-8')
+                    synced += 1
+            else:
+                vault_file.write_text(ws_content, encoding='utf-8')
+                synced += 1
+        if synced:
+            import sys; print(f'[vault-reconcile] Synced {synced} boot files', file=sys.stderr)
+    except Exception as e:
+        import sys; print(f'[vault-reconcile] Boot sync failed: {e}', file=sys.stderr)
+
+
+def get_oc_status():
+    """Get cached openclaw status data (instant, never blocks)."""
+    return _oc_status_cache
 MISSION_CONTROL_JOBS_JSON = UI_ROOT / 'data' / 'jobs.json'
 MISSION_CONTROL_PROJECTS_JSON = UI_ROOT / 'data' / 'projects.json'
 MISSION_CONTROL_SNAPSHOTS_DIR = UI_ROOT / 'data' / 'snapshots'
@@ -48,7 +133,7 @@ def load_mission_control_jobs():
         data = json.loads(MISSION_CONTROL_JOBS_JSON.read_text(encoding='utf-8'))
         if not isinstance(data, list):
             return []
-        # Normalize legacy phase names
+        # Normalize legacy phase names and timestamps
         for j in data:
             if j.get('phase') == 'review':
                 j['phase'] = 'qc'
@@ -63,6 +148,27 @@ def load_mission_control_jobs():
                 j['subtasks'] = []
             if 'history' not in j:
                 j['history'] = []
+            # Normalize completedAt to int (epoch ms)
+            for ts_field in ('completedAt', 'startedAt', 'createdAt'):
+                val = j.get(ts_field)
+                if val is not None and isinstance(val, str):
+                    try:
+                        from datetime import datetime, timezone
+                        dt = datetime.fromisoformat(val.replace('Z', '+00:00'))
+                        j[ts_field] = int(dt.timestamp() * 1000)
+                    except Exception:
+                        j[ts_field] = 0
+            # Normalize subtask timestamps too
+            for st in j.get('subtasks', []):
+                for ts_field in ('completedAt', 'startedAt'):
+                    val = st.get(ts_field)
+                    if val is not None and isinstance(val, str):
+                        try:
+                            from datetime import datetime, timezone
+                            dt = datetime.fromisoformat(val.replace('Z', '+00:00'))
+                            st[ts_field] = int(dt.timestamp() * 1000)
+                        except Exception:
+                            st[ts_field] = 0
         return data
     except Exception:
         return []
@@ -113,9 +219,17 @@ def transition_job_phase(job_id, new_phase, event_prefix='transitioned', by='Alf
     # Set startedAt when moving to working
     if new_phase == 'working' and 'startedAt' not in job:
         job['startedAt'] = now_ms
+    # Clear needsRewrite when job moves to working (rewrite is done)
+    if new_phase == 'working' and job.get('needsRewrite'):
+        job['needsRewrite'] = False
     # Set completedAt when moving to done
     if new_phase == 'done':
         job['completedAt'] = now_ms
+        # Auto-complete all subtasks
+        for st in job.get('subtasks', []):
+            if st.get('status') != 'done':
+                st['status'] = 'done'
+                st['completedAt'] = st.get('completedAt') or now_ms
     event_record = {
         'ts': now_ms,
         'event': f'{event_prefix}_to_{new_phase}',
@@ -123,7 +237,98 @@ def transition_job_phase(job_id, new_phase, event_prefix='transitioned', by='Alf
     }
     job['history'].append(event_record)
     save_mission_control_jobs(jobs)
+    # Sync to Obsidian vault
+    sync_to_vault('transition', job)
+    # If transitioning to done, check if board is empty — disable cron if so
+    if new_phase == 'done':
+        active_jobs = [j for j in jobs if j.get('phase') in ('todo', 'working')]
+        if not active_jobs:
+            try:
+                subprocess.Popen(
+                    ['openclaw', 'cron', 'disable', 'wake-alfred'],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except Exception:
+                pass
     return job, None
+
+
+def sync_to_vault(action, job):
+    """Push job state to Obsidian vault. Best-effort, never blocks.
+    Uses direct filesystem writes for REQ notes (CLI can target wrong vault).
+    Uses CLI for daily log appends (CLI handles file creation)."""
+    import datetime as _dt
+    vault = "Mission Control"
+    req = job.get("number", "REQ-???")
+    if not req or not req.startswith("REQ-") or req == "REQ-???":
+        return  # Skip jobs without proper REQ numbers
+    title = job.get("title", "")
+    assignee = job.get("assignee", "Unassigned")
+    priority = job.get("priority", "normal")
+    phase = job.get("phase", "todo")
+    desc = job.get("description", "")
+    subtasks = job.get("subtasks", [])
+    created_at = job.get("createdAt")
+    completed_at = job.get("completedAt")
+    tz = _dt.timezone(_dt.timedelta(hours=10))
+    today = _dt.datetime.now(tz=tz).strftime("%Y-%m-%d")
+    created_date = _dt.datetime.fromtimestamp(created_at/1000, tz=tz).strftime("%Y-%m-%d") if created_at else today
+    try:
+        # Build full note content
+        st_lines = ""
+        for st in subtasks:
+            icon = {"done": "✓", "in-progress": "●", "pending": "○", "cancelled": "✗"}.get(st.get("status", "pending"), "○")
+            st_lines += f"\n- {icon} {st.get('title', st.get('id', ''))}"
+        # Determine category from priority/phase/assignee for Dataview
+        category = "feature"  # default
+        title_lower = title.lower()
+        if any(w in title_lower for w in ["fix", "bug", "crash", "broken", "error", "typeerror", "render", "crash"]):
+            category = "bug"
+        elif any(w in title_lower for w in ["clean", "remove", "delete", "dead code", "repo"]):
+            category = "cleanup"
+        elif any(w in title_lower for w in ["pulse", "metric", "token", "system health"]):
+            category = "pulse"
+        elif any(w in title_lower for w in ["theme", "dark mode", "light mode", "colour", "color"]):
+            category = "theme"
+        elif any(w in title_lower for w in ["mobile", "animation", "layout", "card", "modal", "sidebar", "nav", "fab", "ui"]):
+            category = "ui"
+        elif any(w in title_lower for w in ["obsidian", "vault", "wiki", "clipping", "yaml", "wikilink"]):
+            category = "obsidian"
+        elif any(w in title_lower for w in ["api", "context weight", "optimization", "performance"]):
+            category = "performance"
+        elif any(w in title_lower for w in ["build", "create", "add", "implement", "new"]):
+            category = "feature"
+        elif any(w in title_lower for w in ["test", "setup", "reset", "restructure", "verify"]):
+            category = "setup"
+        elif any(w in title_lower for w in ["milestone", "complete", "launch"]):
+            category = "milestone"
+
+        note = (
+            f"---\ncreated: {created_date}\ntags:\n  - req\nassignee: {assignee}\npriority: {priority}\ncategory: {category}\nphase: {phase}\n---\n\n"
+            f"# {req}: {title}\n\n**Assignee:** {assignee}\n**Status:** {phase}\n\n{desc}"
+        )
+        if st_lines:
+            note += f"\n## Subtasks{st_lines}\n"
+        if phase == "done" and completed_at:
+            comp_date = _dt.datetime.fromtimestamp(completed_at/1000, tz=tz).strftime("%Y-%m-%d")
+            note += f"\n## Completed\nCompleted on {comp_date}."
+        # Direct filesystem write — avoids CLI writing to wrong vault
+        vault_req_dir = Path.home() / "Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control/REQ"
+        vault_req_dir.mkdir(parents=True, exist_ok=True)
+        (vault_req_dir / f"{req}.md").write_text(note, encoding="utf-8")
+        # Daily log entry via CLI (append is safe — creates file if needed)
+        if action == "create":
+            subprocess.run(["obsidian", "append", f"path=Daily/{today}.md", f"content=- **{req}** created — {title}", f"vault={vault}"],
+                           capture_output=True, timeout=10)
+        elif phase == "done":
+            subprocess.run(["obsidian", "append", f"path=Daily/{today}.md", f"content=- **{req}** ✅ {title}", f"vault={vault}"],
+                           capture_output=True, timeout=10)
+        else:
+            subprocess.run(["obsidian", "append", f"path=Daily/{today}.md", f"content=- **{req}** → {phase}", f"vault={vault}"],
+                           capture_output=True, timeout=10)
+    except Exception:
+        pass  # Vault sync is best-effort
 
 
 def save_snapshot(job_id, image_data_b64):
@@ -230,19 +435,22 @@ def _recent_dev_files(limit=24):
 
 
 def _load_openclaw_sessions():
+    """Load session data from openclaw status --json (fast, non-blocking)."""
     try:
         proc = subprocess.run(
-            ['openclaw', 'sessions', '--all-agents', '--json'],
+            ['openclaw', 'status', '--json'],
             capture_output=True,
             text=True,
-            timeout=2,
-            check=True,
+            timeout=15,
         )
-        payload = json.loads(proc.stdout or '{}')
-        sessions = payload.get('sessions') if isinstance(payload, dict) else []
-        if not isinstance(sessions, list):
+        if proc.returncode != 0 or not proc.stdout.strip():
             return []
-        return sessions
+        data = json.loads(proc.stdout)
+        # Extract recent sessions from status output
+        recent = data.get('sessions', {}).get('recent', [])
+        if isinstance(recent, list):
+            return recent
+        return []
     except Exception:
         return []
 
@@ -511,11 +719,28 @@ def build_alfred_profile():
     }
 
 
+def _get_openclaw_version():
+    """Get current OpenClaw version string."""
+    try:
+        result = subprocess.run(
+            ['openclaw', '--version'],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0:
+            import re
+            m = re.search(r'(\d+\.\d+\.\d+)', result.stdout.strip())
+            if m:
+                return f'OpenClaw {m.group(1)}'
+    except Exception:
+        pass
+    return 'OpenClaw'
+
+
 def _get_gateway_uptime():
     """Get OpenClaw gateway process uptime in seconds."""
     try:
         proc = subprocess.run(
-            ['pgrep', '-f', 'openclaw.*gateway'],
+            ['pgrep', '-f', 'openclaw-gateway'],
             capture_output=True, text=True, timeout=3
         )
         if proc.returncode != 0:
@@ -531,7 +756,8 @@ def _get_gateway_uptime():
                     uptime_s = status.get('uptimeSeconds') or status.get('uptime')
                     if uptime_s:
                         return int(uptime_s)
-            except Exception:
+            except Exception as e:
+                import sys; print(f'[uptime] gateway status fallback failed: {e}', file=sys.stderr)
                 pass
             return 0
         # Found gateway PID — get its start time via ps
@@ -547,7 +773,8 @@ def _get_gateway_uptime():
         elapsed = ps_proc.stdout.strip()
         # Parse ps etime format: "DD-HH:MM:SS" or "HH:MM:SS" or "MM:SS"
         return _parse_ps_etime(elapsed)
-    except Exception:
+    except Exception as e:
+        import sys; print(f'[uptime] gateway uptime lookup failed: {e}', file=sys.stderr)
         return 0
 
 
@@ -575,6 +802,19 @@ def _parse_ps_etime(etime_str):
         return 0
 
 
+def _compute_today_tokens(ollama_usage, session_input, session_output):
+    """Compute today's total tokens from daily usage data, falling back to session tokens."""
+    from datetime import date
+    today_str = date.today().isoformat()
+    # Check Ollama daily data for today
+    if ollama_usage and ollama_usage.get('available'):
+        for day in ollama_usage.get('daily', []):
+            if day.get('date', '') == today_str:
+                return day.get('totalTokens', 0)
+    # Fallback: session tokens (approximate today's usage)
+    return session_input + session_output
+
+
 def build_pulse_data():
     """Build real Mission Control pulse metrics."""
     import subprocess
@@ -595,32 +835,92 @@ def build_pulse_data():
     STALE_MS = 5 * 60 * 1000  # 5 min — only truly active sessions
     live_sessions = [s for s in sessions if (now_ms - int(s.get('updatedAt', 0))) < STALE_MS]
 
-    # Determine which team members are truly active right now
-    active_names = set()
+    # --- Alfred agent card (sole operator) ---
+    # Derive status from alfred-status.json + session liveness
+    alfred_status = 'standby'
+    alfred_req = None
+    try:
+        status_file = DATA_DIR / 'alfred-status.json'
+        if status_file.exists():
+            with open(status_file) as _sf:
+                _ad = json.load(_sf)
+                alfred_status = _ad.get('status', 'idle')
+                alfred_req = _ad.get('activeReq')
+    except Exception:
+        pass
+    # If main session is live, override idle/standby to working or planning
     for s in live_sessions:
         key = str(s.get('key') or '').lower()
-        # Alfred: always active if main session updated in last 5 min
         if 'main' in key or 'alfred' in key or 'telegram' in key:
-            active_names.add('Alfred')
-        # Gemma: active only if a researcher subagent session updated in last 5 min
-        if 'gemma' in key or 'researcher' in key:
-            active_names.add('Gemma')
+            if alfred_status in ('idle', 'standby'):
+                alfred_status = 'working'
+            break
+    # Map status values to display
+    status_map = {'working': 'working', 'planning': 'planning', 'idle': 'available', 'standby': 'available', 'active': 'working'}
+    display_status = status_map.get(alfred_status, alfred_status)
 
-    # Check if Claude Code is running
-    import subprocess as _sp
+    # --- Dispatched agents from acpx sessions ---
+    # Friendly name mapping: raw command → display name
+    _agent_name_map = {
+        'pi-acp': 'Pi',
+        'codex-acp': 'Codex',
+        'claude-agent-acp': 'Claude Code',
+    }
+    dispatched = []
+    dispatched_history = []
     try:
-        proc = _sp.run(['pgrep', '-f', 'claude.*glm-5.1'], capture_output=True, text=True, timeout=3)
-        claude_running = proc.returncode == 0
+        acpx_dir = Path.home() / '.acpx' / 'sessions'
+        if acpx_dir.exists():
+            for _sf in sorted(acpx_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True):
+                if not _sf.name.endswith('.json') or _sf.name == 'index.json':
+                    continue
+                try:
+                    with open(_sf) as _fh:
+                        _sd = json.load(_fh)
+                    _cmd = _sd.get('agent_command', '')
+                    if not _cmd:
+                        continue
+                    # Extract short name
+                    _parts = _cmd.split()
+                    _bin = _parts[1] if len(_parts) > 1 else _parts[0]
+                    if _bin.startswith('-'):
+                        if len(_parts) > 2:
+                            _bin = _parts[2]
+                        else:
+                            continue
+                    _short = _bin.split('@')[0].split('/')[-1]
+                    if not _short or _short.startswith('-'):
+                        continue
+                    _friendly = _agent_name_map.get(_short, _short)
+                    _acpx = _sd.get('acpx', {})
+                    _model = _acpx.get('current_model_id', '')
+                    _sess_name = _sd.get('name', '') or ''
+                    _cwd = _sd.get('cwd', '')
+                    _started = _sd.get('created_at', '')
+                    _last = _sd.get('last_prompt_at') or _sd.get('updated_at', '')
+                    _closed = _sd.get('closed', False)
+                    _exit_at = _sd.get('last_agent_exit_at', '')
+                    entry = {
+                        'name': _friendly, 'status': 'done' if _closed else 'working',
+                        'agentType': _short, 'agentCommand': _cmd,
+                        'session': _sf.stem, 'sessionName': _sess_name,
+                        'startedAt': _started, 'lastPrompt': _last,
+                        'model': _model, 'cwd': _cwd,
+                        'closedAt': _exit_at if _closed else None,
+                    }
+                    if _closed:
+                        if len(dispatched_history) < 10:
+                            dispatched_history.append(entry)
+                    else:
+                        dispatched.append(entry)
+                except Exception:
+                    pass
     except Exception:
-        claude_running = False
-    if claude_running:
-        active_names.add('Claude')
+        pass
 
     team = [
-        {'name': 'Alfred', 'emoji': '🛎️', 'role': 'Coordinator', 'status': 'active' if 'Alfred' in active_names else 'standby', 'model': 'glm-5.1:cloud'},
-        {'name': 'Gemma', 'emoji': '🔎', 'role': 'Research & Design', 'status': 'active' if 'Gemma' in active_names else 'standby', 'model': 'Gemma4 31B cloud'},
-        {'name': 'Claude', 'emoji': '⚡', 'role': 'Build', 'status': 'active' if 'Claude' in active_names else 'standby', 'model': 'Claude-Code / glm-5.1:cloud'},
-    ]
+        {'name': 'Alfred', 'emoji': '🛎️', 'role': 'Operator', 'status': display_status, 'model': 'glm-5.1:cloud', 'activeReq': alfred_req},
+    ] + dispatched
 
     # --- Model usage from codexbar ---
     codex_usage = _get_codex_usage()
@@ -629,7 +929,7 @@ def build_pulse_data():
     # --- Uptime from OpenClaw gateway ---
     uptime_s = _get_gateway_uptime()
 
-    # --- Context & compaction: read from OpenClaw status --
+    # --- Context & compaction: read from cached OpenClaw status --
     compactions = 0
     context_used = 0
     context_total = 202752
@@ -637,16 +937,12 @@ def build_pulse_data():
     output_tokens = 0
     percent_used = 0
     session_id = ''
-    try:
-        result = subprocess.run(
-            ['openclaw', 'status', '--json'],
-            capture_output=True, text=True, timeout=8
-        )
-        if result.returncode == 0:
-            oc_status = json.loads(result.stdout)
+    session_age_ms = 0
+    oc_status = get_oc_status()
+    if oc_status:
+        try:
             sessions_data = oc_status.get('sessions', {})
             context_total = int(sessions_data.get('defaults', {}).get('contextTokens', 202752))
-            # Get main session's context usage
             for s in sessions_data.get('recent', []):
                 if 'telegram:direct' in s.get('key', ''):
                     inp = s.get('inputTokens', 0)
@@ -657,14 +953,16 @@ def build_pulse_data():
                     output_tokens = out
                     percent_used = s.get('percentUsed', 0)
                     session_id = s.get('sessionId', '').split('-')[0] if s.get('sessionId') else ''
+                    session_age_ms = s.get('age', 0)
                     break
-            # Compaction count not in status API — read from file as fallback
             session_stats_file = DATA_DIR / 'session-stats.json'
             if session_stats_file.exists():
                 with open(session_stats_file, 'r') as f:
                     stats = json.load(f)
                 compactions = int(stats.get('compactions', 0))
-    except Exception:
+        except Exception as e:
+            import sys; print(f'[pulse] oc_status parse failed: {e}', file=sys.stderr)
+    else:
         # Fallback to file
         session_stats_file = DATA_DIR / 'session-stats.json'
         try:
@@ -674,8 +972,8 @@ def build_pulse_data():
                 compactions = int(stats.get('compactions', 0))
                 context_used = int(stats.get('contextUsed', 0))
                 context_total = int(stats.get('contextWindow', 202752))
-        except Exception:
-            pass
+        except Exception as e:
+            import sys; print(f'[pulse] session-stats fallback failed: {e}', file=sys.stderr)
 
     # --- Tasks completed metrics ---
     now_dt = __import__('datetime').datetime.now(__import__('datetime').timezone.utc)
@@ -712,6 +1010,15 @@ def build_pulse_data():
         'total': sum(len([s for s in j.get('subtasks', []) if s.get('status') == 'done']) for j in jobs) + sum(1 for j in jobs if j.get('phase') == 'done'),
     }
 
+    # --- Queue depth from cached OpenClaw status ---
+    queue_depth = 0
+    if oc_status:
+        try:
+            tasks_info = oc_status.get('tasks', {})
+            queue_depth = (tasks_info.get('byStatus', {}) or {}).get('queued', 0)
+        except Exception:
+            pass
+
     return {
         'ok': True,
         'timestamp': now_ms,
@@ -721,6 +1028,7 @@ def build_pulse_data():
             'working': working_count,
             'qc': review_count,
             'done': done_count,
+            'doneToday': sum(1 for j in jobs if j.get('phase') == 'done' and (j.get('completedAt') or 0) >= today_ms),
         },
         'agents': team,
         'usage': {
@@ -729,7 +1037,8 @@ def build_pulse_data():
         },
         'compactions': compactions,
         'tasksCompleted': tasks_completed,
-        'uptime': _format_duration(uptime_s) if uptime_s else 'unknown',
+        'uptime': _format_duration(session_age_ms // 1000) if session_age_ms else (_format_duration(uptime_s) if uptime_s else 'unknown'),
+    'sessionUptime': _format_duration(session_age_ms // 1000) if session_age_ms else '—',
         'model': 'glm-5.1:cloud',
         'contextUsed': context_used,
         'contextWindow': context_total,
@@ -738,7 +1047,11 @@ def build_pulse_data():
         'percentUsed': percent_used,
         'sessionId': session_id,
         'serverRestart': '2026-04-10T11:25:00+10:00',
-        'lastUpdate': 'OpenClaw 2026.4.9',
+        'lastUpdate': _get_openclaw_version(),
+        'version': _get_openclaw_version().replace('OpenClaw ', ''),
+        'queueDepth': queue_depth,
+        'dispatchedHistory': dispatched_history,
+        'todayTokens': _compute_today_tokens(ollama_usage, input_tokens, output_tokens),
     }
 
 
@@ -997,7 +1310,11 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        clean_path = self.path.split('?', 1)[0].split('#', 1)[0]
+        parsed = self.path.split('?', 1)
+        clean_path = parsed[0].split('#', 1)[0]
+        query_string = parsed[1] if len(parsed) > 1 else ''
+        from urllib.parse import parse_qs
+        params = {k: v[0] for k, v in parse_qs(query_string).items()}
 
         media_prefixes = ('/selected_root/', '/media_root/', '/codex_root/')
         if clean_path.startswith(media_prefixes):
@@ -1022,26 +1339,76 @@ class Handler(SimpleHTTPRequestHandler):
             self._send_json(200, state)
             return
         if clean_path == '/api/pulse-data':
-            import threading
-            pulse_result = {}
-            pulse_error = None
-            def _build():
-                nonlocal pulse_result, pulse_error
-                try:
-                    pulse_result = build_pulse_data()
-                except Exception as e:
-                    pulse_error = str(e)
-            t = threading.Thread(target=_build, daemon=True)
-            t.start()
-            t.join(timeout=15)
-            if t.is_alive() or pulse_error:
-                # Timeout or error — return minimal data with real jobs count
+            import time as _time
+            global _pulse_cache, _pulse_cache_ts
+            # Serve cached data if fresh (<30s old)
+            if _pulse_cache and (_time.time() - _pulse_cache_ts) < 30:
+                self._send_json(200, _pulse_cache)
+                return
+            # Build fresh — no more blocking on openclaw status (uses cached oc_status)
+            try:
+                result = build_pulse_data()
+                result['pulseTimestamp'] = int(_time.time() * 1000)
+                result['pulseInterval'] = 60
+                _pulse_cache = result
+                _pulse_cache_ts = _time.time()
+                self._send_json(200, result)
+            except Exception as e:
+                import sys; print(f'[pulse-data ERROR] {e}', file=sys.stderr)
                 jobs = load_mission_control_jobs()
                 done_count = sum(1 for j in jobs if j.get('phase') in ('done', 'completed') and j.get('phase') != 'archived')
-                self._send_json(200, {'ok': True, 'agents': [{'name': 'Alfred', 'emoji': '🛎️', 'role': 'Coordinator', 'status': 'standby', 'model': 'glm-5.1:cloud'}, {'name': 'Claude', 'emoji': '⚡', 'role': 'Build', 'status': 'standby', 'model': 'Claude-Code / glm-5.1:cloud'}], 'jobs': {'total': len(jobs), 'todo': sum(1 for j in jobs if j.get('phase') == 'todo'), 'working': sum(1 for j in jobs if j.get('phase') == 'working'), 'qc': sum(1 for j in jobs if j.get('phase') in ('review', 'qc')), 'done': done_count}, 'usage': {}, 'compactions': 0, 'tasksCompleted': {}, 'uptime': 'unknown', 'contextUsed': 0, 'contextTotal': 202752, 'excludedModels': [], 'modelUsage': []})
-                return
-            self._send_json(200, pulse_result)
+                fallback = {'ok': False, 'error': str(e), 'agents': [{'name': 'Alfred', 'emoji': '🛎️', 'role': 'Operator', 'status': 'available', 'model': 'glm-5.1:cloud', 'activeReq': None}], 'jobs': {'total': len(jobs), 'todo': sum(1 for j in jobs if j.get('phase') == 'todo'), 'working': sum(1 for j in jobs if j.get('phase') == 'working'), 'qc': sum(1 for j in jobs if j.get('phase') in ('review', 'qc')), 'done': done_count}, 'usage': {}, 'compactions': 0, 'tasksCompleted': {}, 'uptime': 'unknown', 'contextUsed': 0, 'contextWindow': 202752, 'excludedModels': [], 'modelUsage': []}
+                _pulse_cache = fallback
+                _pulse_cache_ts = _time.time()
+                self._send_json(200, fallback)
             return
+        if clean_path == '/api/vault/tree':
+            # Return the Mission Control vault file tree
+            vault_dir = Path.home() / 'Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control'
+            if not vault_dir.exists():
+                self._send_json(404, {'ok': False, 'error': 'Vault not found'})
+                return
+            result = []
+            skip = {'.obsidian', '.trash', '.DS_Store', '.git'}
+            for item in sorted(vault_dir.rglob('*')):
+                rel = item.relative_to(vault_dir)
+                # Skip hidden/system dirs
+                if any(p.startswith('.') or p in skip for p in rel.parts):
+                    continue
+                is_dir = item.is_dir()
+                result.append({
+                    'path': str(rel),
+                    'name': item.name,
+                    'isDir': is_dir,
+                    'ext': item.suffix if not is_dir else '',
+                })
+            self._send_json(200, {'ok': True, 'files': result})
+            return
+
+        if clean_path.startswith('/api/vault/file'):
+            # Return a single vault file's content
+            import urllib.parse as _up
+            query = _up.parse_qs(self.path.split('?', 1)[-1]) if '?' in self.path else {}
+            file_path = query.get('path', [''])[0]
+            if not file_path:
+                self._send_json(400, {'ok': False, 'error': 'Missing path parameter'})
+                return
+            vault_dir = Path.home() / 'Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control'
+            full_path = (vault_dir / file_path).resolve()
+            # Security: ensure we don't escape the vault
+            if not str(full_path).startswith(str(vault_dir.resolve())):
+                self._send_json(403, {'ok': False, 'error': 'Access denied'})
+                return
+            if not full_path.exists() or not full_path.is_file():
+                self._send_json(404, {'ok': False, 'error': 'File not found'})
+                return
+            try:
+                content = full_path.read_text(encoding='utf-8')
+                self._send_json(200, {'ok': True, 'content': content, 'path': file_path})
+            except Exception as e:
+                self._send_json(500, {'ok': False, 'error': str(e)})
+            return
+
         if clean_path == '/api/alfred-status':
             status_file = DATA_DIR / 'alfred-status.json'
             status = {}
@@ -1050,6 +1417,32 @@ class Handler(SimpleHTTPRequestHandler):
                     status = json.loads(status_file.read_text(encoding='utf-8'))
                 except Exception:
                     pass
+            # Auto-derive working status from current MC jobs if stale or idle
+            all_jobs = load_mission_control_jobs()
+            working_job = None
+            for j in all_jobs:
+                if j.get('phase') == 'working' and j.get('assignee', '') in ('Alfred', 'alfred'):
+                    working_job = j
+                    break
+            if working_job:
+                req = working_job.get('number', 'REQ-???')
+                title = working_job.get('title', '')
+                # Find in-progress subtask
+                active_subtask = None
+                for st in working_job.get('subtasks', []):
+                    if st.get('status') == 'in-progress':
+                        active_subtask = st.get('title', '')
+                        break
+                task_label = active_subtask or f"{req} {title}"
+                status['status'] = 'working'
+                status['task'] = task_label
+                status['activeReq'] = req
+            else:
+                # No working job — show idle
+                if status.get('status') == 'working':
+                    status['status'] = 'idle'
+                    status['task'] = None
+                    status['activeReq'] = None
             self._send_json(200, {'ok': True, **status})
             return
         if clean_path == '/api/alfred-profile':
@@ -1110,6 +1503,21 @@ class Handler(SimpleHTTPRequestHandler):
 
         if clean_path == '/api/mission-control-jobs/logs':
             # Job-level log entries for the Logs panel
+            from datetime import datetime as _dt, timezone as _tz
+            import re as _re
+
+            def _to_ms(val):
+                """Normalize any timestamp to integer milliseconds."""
+                if not val:
+                    return 0
+                if isinstance(val, (int, float)):
+                    return int(val)
+                # ISO string like "2026-04-15T14:35:00Z"
+                try:
+                    return int(_dt.fromisoformat(val.replace('Z', '+00:00')).timestamp() * 1000)
+                except Exception:
+                    return 0
+
             all_jobs = load_mission_control_jobs()
             log_entries = []
             for j in all_jobs:
@@ -1120,21 +1528,19 @@ class Handler(SimpleHTTPRequestHandler):
                 title = j.get('title', '')
                 description = j.get('description', j.get('details', ''))
                 # Extract last sentence from description
-                import re as _re
                 sentences = _re.split(r'[.!?]+', description.strip())
                 sentences = [s.strip() for s in sentences if s.strip()]
                 summary = sentences[-1] if sentences else title
-                # Get created and completed dates
-                created_at = j.get('createdAt')
-                completed_at = j.get('completedAt')
+                # Normalize timestamps to int ms
+                created_at = _to_ms(j.get('createdAt'))
+                completed_at = _to_ms(j.get('completedAt'))
                 history = j.get('history', [])
                 # Build log text from history
                 log_lines = []
                 for h in history:
                     ev = h.get('event', '')
                     by = h.get('by', '')
-                    ts = h.get('ts', 0)
-                    from datetime import datetime as _dt, timezone as _tz
+                    ts = _to_ms(h.get('ts', 0))
                     try:
                         dt = _dt.fromtimestamp(ts / 1000, tz=_tz.utc)
                         time_str = dt.strftime('%H:%M')
@@ -1165,10 +1571,111 @@ class Handler(SimpleHTTPRequestHandler):
                     'description': description,
                     'subtasks': j.get('subtasks', []),
                 })
-            # Sort by createdAt descending
+            # Sort by createdAt descending (all int ms now, safe to compare)
             log_entries.sort(key=lambda e: e.get('createdAt') or 0, reverse=True)
             self._send_json(200, {'ok': True, 'logs': log_entries})
             return
+
+        if clean_path == '/api/vault-graph':
+            # Generate vault graph data by reading vault files directly
+            vault_dir = Path.home() / 'Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control'
+            import re as _link_re
+            link_pattern = _link_re.compile(r'\[\[([^\]|#]+)')  # [[Name]] or [[Name|alias]]
+            nodes = []
+            edges = []
+            node_ids = set()
+
+            def add_node(nid, group):
+                if nid not in node_ids:
+                    nodes.append({'id': nid, 'group': group})
+                    node_ids.add(nid)
+
+            def scan_folder(folder, group):
+                fdir = vault_dir / folder
+                if not fdir.exists():
+                    return
+                for fpath in sorted(fdir.glob('*.md')):
+                    name = fpath.stem
+                    add_node(name, group)
+                    try:
+                        content = fpath.read_text(encoding='utf-8')
+                        for m in link_pattern.finditer(content):
+                            target = m.group(1).strip()
+                            if target and target != name:
+                                edges.append({'source': name, 'target': target})
+                    except Exception:
+                        pass
+
+            # Scan each folder
+            add_node('Mission Control', 'hub')
+            scan_folder('Categories', 'category')
+            scan_folder('REQ', 'req')
+            scan_folder('Archive/REQ-v1', 'archived')
+            scan_folder('Reference', 'reference')
+            scan_folder('Daily', 'daily')
+            scan_folder('Lessons', 'lesson')
+            scan_folder('Alfred', 'alfred')
+            scan_folder('Skills', 'skill')
+
+            # Read hub links
+            hub_path = vault_dir / 'Mission Control.md'
+            if hub_path.exists():
+                try:
+                    hub_content = hub_path.read_text(encoding='utf-8')
+                    for m in link_pattern.finditer(hub_content):
+                        target = m.group(1).strip()
+                        if target:
+                            edges.append({'source': 'Mission Control', 'target': target})
+                except Exception:
+                    pass
+
+            # Read README if exists
+            readme_path = vault_dir / 'README.md'
+            if readme_path.exists():
+                add_node('README', 'hub')
+                try:
+                    content = readme_path.read_text(encoding='utf-8')
+                    for m in link_pattern.finditer(content):
+                        target = m.group(1).strip()
+                        if target:
+                            edges.append({'source': 'README', 'target': target})
+                except Exception:
+                    pass
+
+            self._send_json(200, {'ok': True, 'nodes': nodes, 'edges': edges})
+            return
+
+        if clean_path == '/api/vault-note':
+            # Fetch a single vault note's content
+            note_name = params.get('name', '')
+            if not note_name:
+                self._send_json(400, {'ok': False, 'error': 'name required'})
+                return
+            vault_dir = Path.home() / 'Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control'
+            # Search common folders
+            for folder in ['', 'REQ', 'Categories', 'Daily', 'Reference', 'Lessons', 'Alfred']:
+                fpath = vault_dir / folder / f'{note_name}.md'
+                if fpath.exists():
+                    try:
+                        content = fpath.read_text(encoding='utf-8')
+                        # Parse YAML frontmatter
+                        meta = {}
+                        body = content
+                        if content.startswith('---'):
+                            parts = content.split('---', 2)
+                            if len(parts) >= 3:
+                                for line in parts[1].strip().split('\n'):
+                                    if ':' in line:
+                                        k, v = line.split(':', 1)
+                                        meta[k.strip()] = v.strip()
+                                body = parts[2].strip()
+                        self._send_json(200, {'ok': True, 'meta': meta, 'body': body})
+                    except Exception as e:
+                        self._send_json(500, {'ok': False, 'error': str(e)})
+                    return
+            self._send_json(404, {'ok': False, 'error': 'Note not found'})
+            return
+
         if clean_path == '/api/mission-control-projects':
             self._send_json(200, {'ok': True, 'projects': load_mission_control_projects()})
             return
@@ -1639,6 +2146,8 @@ class Handler(SimpleHTTPRequestHandler):
                 }
                 jobs.append(new_job)
                 save_mission_control_jobs(jobs)
+                # Sync to Obsidian vault
+                sync_to_vault('create', new_job)
                 self._send_json(200, {'ok': True, 'job': new_job})
             except Exception as e:
                 self._send_json(400, {'ok': False, 'error': str(e)})
@@ -1657,6 +2166,26 @@ class Handler(SimpleHTTPRequestHandler):
             status_file = DATA_DIR / 'alfred-status.json'
             status_file.write_text(json.dumps(payload, indent=2), encoding='utf-8')
             self._send_json(200, {'ok': True, **payload})
+            return
+
+        # Wake Alfred — triggers OpenClaw heartbeat via cron wake
+        if clean_path == '/api/wake-alfred':
+            try:
+                # Immediate wake
+                subprocess.Popen(
+                    ['openclaw', 'cron', 'wake', '--mode', 'now', '--text', 'Wake from MC: job on the board needs attention. Check http://127.0.0.1:8787/'],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                # Enable the board-check cron while work is active
+                subprocess.Popen(
+                    ['openclaw', 'cron', 'enable', 'wake-alfred'],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except Exception:
+                pass
+            self._send_json(200, {'ok': True, 'message': 'Alfred wake triggered, board check enabled'})
             return
 
         if clean_path == '/api/mission-control-message':
@@ -1738,7 +2267,9 @@ class Handler(SimpleHTTPRequestHandler):
                 return
 
             # Allowed fields to patch
-            for field in ('priority', 'assignee', 'title', 'description', 'dueDate', 'jobStatus', 'assignedBy', 'needsRewrite'):
+            _allowed_fields = ('priority', 'assignee', 'title', 'description', 'dueDate', 'jobStatus', 'assignedBy', 'needsRewrite', 'phase')
+            _ignored = [k for k in payload if k not in _allowed_fields and k not in ('subtasks', 'addSubtasks', 'by') and not k.startswith('_')]
+            for field in _allowed_fields:
                 if field in payload:
                     job[field] = payload[field]
                     # Add history entry for jobStatus changes
@@ -1749,6 +2280,14 @@ class Handler(SimpleHTTPRequestHandler):
                             'event': f'job {payload[field]}',
                             'by': payload.get('by', 'Alfred'),
                         })
+                    # Phase transition — use proper transition function
+                    if field == 'phase':
+                        result_job, result_err = transition_job_phase(job_id, payload[field], by=payload.get('by', 'Alfred'))
+                        if result_err:
+                            import sys as _sys_phase_err
+                            print(f'[PATCH] phase transition failed: {result_err}', file=_sys_phase_err.stderr)
+                        # Refresh job reference after transition
+                        job, jobs = find_job_by_id(job_id)
 
             # Support adding new subtasks via PATCH
             if 'addSubtasks' in payload:
@@ -1800,7 +2339,13 @@ class Handler(SimpleHTTPRequestHandler):
             import time as _time_patch
             job['updatedAt'] = int(_time_patch.time() * 1000)
             save_mission_control_jobs(jobs)
-            self._send_json(200, {'ok': True, 'job': job})
+            # Sync to vault if phase or subtasks changed
+            if 'phase' in payload or 'subtasks' in payload or 'addSubtasks' in payload:
+                sync_to_vault('update', job)
+            response = {'ok': True, 'job': job}
+            if _ignored:
+                response['warnings'] = [f'ignored field: {f}' for f in _ignored]
+            self._send_json(200, response)
             return
 
         mc_subtask_match = re.match(r'^/api/mission-control-jobs/([^/]+)/subtasks$', clean_path)
@@ -1895,6 +2440,12 @@ if __name__ == '__main__':
         MISSION_CONTROL_JOBS_JSON.write_text('[]\n', encoding='utf-8')
     MISSION_CONTROL_SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
     sync_selected_root_link()
+    # Start background OpenClaw status refresher
+    _oc_thread = _threading.Thread(target=_refresh_oc_status, daemon=True, name='oc-status-refresher')
+    _oc_thread.start()
+    print('[oc-status] Background refresher started (60s interval)')
+    # Set SO_REUSEADDR on the class before instantiation
+    ThreadingHTTPServer.allow_reuse_address = True
     server = ThreadingHTTPServer(('0.0.0.0', 8787), Handler)
     print('Creative Ops UI dev server running on http://0.0.0.0:8787')
     print('Market Dashboard available at http://0.0.0.0:8787/dashboard/')
