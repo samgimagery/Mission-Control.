@@ -4,6 +4,9 @@ from pathlib import Path
 import json
 import subprocess
 import os
+import re
+import tempfile
+import html as _html
 from urllib.parse import unquote
 
 ROOT = Path('/Users/samg/AI/OpenClaw')
@@ -12,6 +15,119 @@ ASSET_MANAGER_ROOT = ROOT / 'dev' / 'asset-manager'
 DATA_DIR = ASSET_MANAGER_ROOT / 'data'
 DATA_JSON = DATA_DIR / 'assets.json'
 CONFIG_JSON = DATA_DIR / 'library-config.json'
+
+PLAN_JSON = DATA_DIR / 'plan-state.json'
+
+def _default_plan_state():
+    now_ms = int(__import__('time').time() * 1000)
+    return {
+        'ok': True,
+        'title': 'Focus',
+        'philosophy': 'Small team. Clear mission. Council for judgement. Mission Control for the distilled truth.',
+        'mission': 'Build Mission Control into a simple, sturdy operating system for Sam, Alfred, and Alice: one place that makes the mission, focus, and next move obvious.',
+        'currentFocus': 'Simplify Mission Control around Focus instead of a complex Plan interface.',
+        'activeReq': 'REQ-111',
+        'activeProject': 'Mission Control',
+        'updatedAt': now_ms,
+        'recentSuccesses': [
+            'Plan navigation and persistence are working.',
+            'Focus can sync into the vault as a readable note.',
+            'Alice safe read-only exec access is now verified.'
+        ],
+        'recentChallenges': [
+            'The Plan interface became too complex for the job it needs to do.',
+            'Approval and annotation mechanics added UI friction.'
+        ],
+        'upcomingChallenges': [
+            'Keep Council discussion rich while keeping Mission Control calm.',
+            'Avoid turning Focus into another dashboard full of knobs.'
+        ],
+        'nextBestStep': 'Use the Council to discuss the MC plan, then keep this Focus page as the clear distilled source of truth.',
+        'plan': [
+            'Rename Plan to Focus.',
+            'Show Mission, Current Focus, Recent Successes, Recent Challenges, Upcoming Challenges, and Next Best Step.',
+            'Keep editing and judgement in Council; keep Mission Control simple and sturdy.'
+        ],
+        'annotations': []
+    }
+
+def load_plan_state():
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not PLAN_JSON.exists():
+        state = _default_plan_state()
+        save_plan_state(state)
+        return state
+    try:
+        state = json.loads(PLAN_JSON.read_text(encoding='utf-8'))
+        state['ok'] = True
+        return state
+    except Exception:
+        state = _default_plan_state()
+        state['warning'] = 'Recovered from invalid plan state'
+        return state
+
+def _plan_summary_markdown(state):
+    def lines_for(key, label):
+        items = state.get(key, []) or []
+        out = [f'## {label}']
+        if not items:
+            out.append('- None')
+        for item in items:
+            if isinstance(item, str):
+                text = item
+            else:
+                text = item.get('text') or item.get('title') or ''
+            out.append(f'- {text}')
+        return '\n'.join(out)
+    return f"""---
+title: Focus
+category: Focus
+status: active
+updated: 2026-05-02
+tags:
+  - focus
+  - mission-control
+---
+
+# Focus
+
+**Active REQ:** {state.get('activeReq','—')}
+**Project:** {state.get('activeProject','—')}
+
+## Philosophy
+{state.get('philosophy','')}
+
+## Mission
+{state.get('mission') or state.get('objective','')}
+
+## Current Focus
+{state.get('currentFocus','')}
+
+{lines_for('recentSuccesses', 'Recent Successes')}
+
+{lines_for('recentChallenges', 'Recent Challenges')}
+
+{lines_for('upcomingChallenges', 'Upcoming Challenges')}
+
+## Next Best Step
+{state.get('nextBestStep','')}
+
+{lines_for('plan', 'Plan')}
+"""
+
+def save_plan_state(state):
+    import time as _time_plan
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    state['updatedAt'] = int(_time_plan.time() * 1000)
+    state['ok'] = True
+    PLAN_JSON.write_text(json.dumps(state, indent=2), encoding='utf-8')
+    try:
+        vault_dir = Path.home() / 'Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control'
+        focus_dir = vault_dir / 'Mission Control Focus'
+        focus_dir.mkdir(parents=True, exist_ok=True)
+        (focus_dir / 'Current Focus.md').write_text(_plan_summary_markdown(state), encoding='utf-8')
+    except Exception:
+        pass
 IMPORT_SCRIPT = ASSET_MANAGER_ROOT / 'tools' / 'import_assets.py'
 DELETION_LOG = DATA_DIR / 'deletions.log'
 DASHBOARD_ROOT = ROOT / 'dev' / 'market-dashboard'
@@ -21,6 +137,380 @@ SELECTED_ROOT_LINK = ASSET_MANAGER_ROOT / 'selected_root'
 WORKSPACE_ROOT = Path('/Users/samg/.openclaw/workspace')
 OPENCLAW_AGENTS_ROOT = Path('/Users/samg/.openclaw/agents')
 OPENCLAW_WORKSPACES_ROOT = Path('/Users/samg/.openclaw/workspaces')
+
+
+# Mind Vault Marp style — keep MC Present visually identical to Mind Vault decks.
+DECK_STYLE = """
+  html, body { background:#050505 !important; color-scheme:dark; }
+  section {
+    background: #0B0A09 !important;
+    color: #F3ECDF !important;
+    color-scheme: dark;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.005em;
+    padding: 72px 80px 126px !important;
+    overflow: hidden !important;
+    box-sizing: border-box;
+    border: 1px solid #24211D !important;
+    border-radius: 5px;
+    box-shadow: 0 20px 64px rgba(0,0,0,.42);
+  }
+  section::after { color: rgba(243,236,223,.46); bottom: 42px; font-weight: 800; }
+  section.lead { text-align: left; justify-content: center; }
+  h1 {
+    font-size: 86px;
+    font-weight: 500;
+    color: #F3ECDF;
+    line-height: 1.02;
+    letter-spacing: -.03em;
+    max-width: 15ch;
+  }
+  h2 {
+    color: #F3ECDF;
+    font-size: 50px;
+    font-weight: 520;
+    line-height: .98;
+    letter-spacing: -.025em;
+    margin-bottom: .45em;
+  }
+  h3 { color: #E2D8C8; font-size: 31px; font-weight: 520; line-height: 1.08; letter-spacing: -.015em; }
+  p, li { font-size: 23px; line-height: 1.28; color: #F3ECDF; }
+  ul, ol { padding-left: 1.05em; margin-top: .35em; }
+  section > *:last-child { margin-bottom: 0; }
+  img, video, canvas, iframe, section > svg:not([data-marpit-svg]) {
+    max-width: 100%;
+    max-height: 410px;
+    object-fit: contain;
+  }
+  strong { color: #FFF8EC; font-weight:900; }
+  em { color:#E2D8C8; font-style:normal; }
+  a { color: #F3ECDF; text-decoration-color: rgba(243,236,223,.42); }
+  code, pre { background: rgba(255,255,255,.07); color: #FFF8EC; border-radius:4px; }
+  table { border-collapse: collapse; background: #100E0C !important; color:#F3ECDF !important; box-shadow:0 0 0 1px #28241F; font-size:15px; line-height:1.16; max-height:330px; overflow:hidden; }
+  th { background: #161310 !important; color:#F3ECDF !important; border-color: #28241F !important; }
+  td { background: rgba(255,255,255,.025) !important; color:#F3ECDF !important; border-color: #28241F !important; }
+  th, td { padding:.26em .44em; }
+  tr:nth-child(even) td { background: rgba(255,255,255,.045) !important; }
+  footer { color: rgba(243,236,223,.44); }
+"""
+
+MARP_DARK_SHELL_STYLE = r"""
+<style id="mind-vault-marp-dark-shell">
+  html, body, .bespoke-marp-parent, #\:\$p {
+    background:#0D0B0A !important;
+    color-scheme:dark !important;
+  }
+  svg[data-marpit-svg], svg.bespoke-marp-slide, foreignObject {
+    background:#0D0B0A !important;
+  }
+  body[data-bespoke-view="overview"] {
+    background:#0D0B0A !important;
+  }
+  body:not([data-bespoke-view="overview"]) .bespoke-marp-parent {
+    padding-bottom:72px !important;
+    box-sizing:border-box !important;
+  }
+  body[data-bespoke-view=""] .bespoke-marp-parent,
+  body[data-bespoke-view="next"] .bespoke-marp-parent {
+    width:100dvw !important;
+    height:100dvh !important;
+    inset:0 !important;
+    overflow:hidden !important;
+  }
+  body[data-bespoke-view=""] svg.bespoke-marp-slide,
+  body[data-bespoke-view="next"] svg.bespoke-marp-slide {
+    width:100dvw !important;
+    height:100dvh !important;
+    left:50% !important;
+    top:50% !important;
+    transform:translate(-50%, -50%) !important;
+  }
+  body[data-bespoke-view=""] .bespoke-marp-parent > .bespoke-marp-osc,
+  body[data-bespoke-view="next"] .bespoke-marp-parent > .bespoke-marp-osc {
+    bottom:max(18px, calc(env(safe-area-inset-bottom) + 12px)) !important;
+  }
+  body[data-bespoke-view="overview"] .bespoke-marp-parent {
+    background:#0D0B0A !important;
+    gap:28px !important;
+  }
+  body[data-bespoke-view="overview"] .bespoke-marp-parent svg.bespoke-marp-slide {
+    --bov-selected:rgba(232,228,221,.35) !important;
+    --bov-focus:#1A1714 !important;
+    --bov-focus-outline:rgba(232,228,221,.18) !important;
+    background:#0D0B0A !important;
+    background-image:none !important;
+    border-radius:14px !important;
+    box-shadow:0 18px 60px rgba(0,0,0,.48), 0 0 0 1px rgba(232,228,221,.10) !important;
+  }
+  section, section[data-theme="default"] {
+    background:#0B0A09 !important;
+    color:#F3ECDF !important;
+    color-scheme:dark !important;
+    padding:72px 80px 126px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+    border:1px solid #24211D !important;
+    border-radius:5px !important;
+  }
+  section h1{font-size:86px !important;font-weight:1000 !important;line-height:.86 !important;letter-spacing:-.045em !important;color:#F3ECDF !important;}
+  section h2{font-size:50px !important;font-weight:520 !important;line-height:.98 !important;letter-spacing:-.025em !important;color:#F3ECDF !important;}
+  section h3{font-size:31px !important;font-weight:520 !important;line-height:1.08 !important;letter-spacing:-.015em !important;color:#E2D8C8 !important;}
+  section p, section li{font-size:23px !important;line-height:1.28 !important;color:#F3ECDF !important;}
+  section::after { bottom:42px !important; }
+  .mc-marp-exit {
+    position:fixed;
+    top:max(12px, calc(env(safe-area-inset-top) + 10px));
+    right:max(12px, calc(env(safe-area-inset-right) + 10px));
+    z-index:2147483647;
+    border:1px solid rgba(232,228,221,.22);
+    border-radius:999px;
+    background:rgba(13,11,10,.72);
+    color:#F4EFE7;
+    -webkit-backdrop-filter:blur(16px);
+    backdrop-filter:blur(16px);
+    font:600 13px/1 -apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;
+    padding:11px 14px;
+    box-shadow:0 12px 36px rgba(0,0,0,.34);
+    touch-action:manipulation;
+  }
+  @media (hover:hover) and (pointer:fine) {
+    .mc-marp-exit { opacity:.72; }
+    .mc-marp-exit:hover { opacity:1; }
+  }
+</style>
+"""
+
+MARP_MOBILE_PRESENT_FIX_SCRIPT = r"""
+<script id="mc-marp-mobile-present-fix">
+(() => {
+  const isFullscreen = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const exitFullscreen = () => {
+    const fn = document.exitFullscreen || document.webkitExitFullscreen;
+    if (fn && isFullscreen()) {
+      try { fn.call(document); return true; } catch (_) {}
+    }
+    return false;
+  };
+
+  let internalResize = false;
+  const emitResize = () => {
+    internalResize = true;
+    try { window.dispatchEvent(new Event('resize')); }
+    finally { setTimeout(() => { internalResize = false; }, 0); }
+  };
+
+  const refreshLayout = () => {
+    const vv = window.visualViewport;
+    const width = Math.round(vv?.width || window.innerWidth || document.documentElement.clientWidth || 0);
+    const height = Math.round(vv?.height || window.innerHeight || document.documentElement.clientHeight || 0);
+    document.documentElement.style.setProperty('--mc-marp-vw', `${width}px`);
+    document.documentElement.style.setProperty('--mc-marp-vh', `${height}px`);
+    window.scrollTo(0, 0);
+    document.body?.offsetHeight; // force iOS Safari to recalculate before resize observers run
+    emitResize();
+    setTimeout(emitResize, 80);
+    setTimeout(emitResize, 280);
+  };
+
+  const scheduleRefresh = () => requestAnimationFrame(() => requestAnimationFrame(refreshLayout));
+  window.addEventListener('orientationchange', scheduleRefresh, { passive: true });
+  window.addEventListener('resize', () => { if (!internalResize) scheduleRefresh(); }, { passive: true });
+  window.visualViewport?.addEventListener('resize', () => { if (!internalResize) scheduleRefresh(); }, { passive: true });
+  document.addEventListener('fullscreenchange', scheduleRefresh);
+  document.addEventListener('webkitfullscreenchange', scheduleRefresh);
+  window.addEventListener('load', scheduleRefresh, { once: true });
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'mc-marp-exit';
+  button.textContent = 'Done';
+  button.setAttribute('aria-label', 'Exit presentation');
+  button.addEventListener('click', () => {
+    if (exitFullscreen()) return;
+    try { window.close(); } catch (_) {}
+    setTimeout(() => {
+      if (history.length > 1) history.back();
+      else location.href = '/';
+    }, 120);
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.appendChild(button);
+    scheduleRefresh();
+  });
+})();
+</script>
+"""
+
+
+def _note_title_from_markdown(path, markdown):
+    fm = re.match(r"^---\s*\n([\s\S]*?)\n---", markdown or "")
+    if fm:
+        title = re.search(r'^title:\s*["\']?(.+?)["\']?\s*$', fm.group(1), flags=re.M)
+        if title:
+            return title.group(1).strip()
+    h1 = re.search(r'^#\s+(.+)$', markdown or "", flags=re.M)
+    if h1:
+        return h1.group(1).strip()
+    return Path(path).stem
+
+
+def _plain_wikilinks(markdown):
+    def repl(match):
+        inner = match.group(1)
+        return inner.split('|', 1)[1] if '|' in inner else inner.split('#', 1)[0]
+    return re.sub(r'\[\[([^\]]+)\]\]', repl, markdown or "")
+
+
+def _chunk_slide_lines(lines, max_lines=7, max_chars=680):
+    chunks, cur, cur_chars = [], [], 0
+    for line in lines:
+        projected_lines = len(cur) + 1
+        projected_chars = cur_chars + len(line) + 1
+        if cur and (projected_lines > max_lines or projected_chars > max_chars):
+            chunks.append(cur)
+            cur, cur_chars = [], 0
+        cur.append(line)
+        cur_chars += len(line) + 1
+    if cur:
+        chunks.append(cur)
+    return chunks
+
+
+def _deck_markdown(title, markdown):
+    """Convert a full vault note into a Mind Vault-styled Marp deck."""
+    body = re.sub(r"^---[\s\S]*?---", "", markdown or "", count=1).strip()
+    body = _plain_wikilinks(body)
+    body = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", body)
+    body = re.sub(r"^#\s+.+\n+", "", body, count=1).strip()
+
+    slides = [f"<!-- _class: lead -->\n# {title}\n\nA visual reading from Mind Vault", "---"]
+    if not body:
+        slides.append("## Empty note\n\nNo content found.")
+    else:
+        sections = re.split(r"\n(?=##?\s+)", body)
+        for sec in sections:
+            sec = sec.strip()
+            if not sec:
+                continue
+            lines = sec.splitlines()
+            heading = lines[0] if lines and re.match(r"^#{1,3}\s+", lines[0]) else "## Notes"
+            content = lines[1:] if lines and heading != "## Notes" else lines
+            if heading.startswith("###"):
+                heading = "##" + heading.lstrip('#')
+            elif heading.startswith("# "):
+                heading = "## " + heading[2:]
+
+            chunks = _chunk_slide_lines(content)
+            if not chunks:
+                slides.extend([heading, "---"])
+                continue
+            for idx, chunk in enumerate(chunks):
+                slide_heading = heading if idx == 0 else f"{heading} — continued"
+                slides.extend([slide_heading + "\n\n" + "\n".join(chunk).strip(), "---"])
+
+    return (
+        "---\nmarp: true\ntheme: default\npaginate: true\nsize: 16:9\nstyle: |"
+        + DECK_STYLE
+        + "\n---\n\n"
+        + "\n\n".join(slides).rstrip("-\n")
+    )
+
+def _reader_markdown_to_html(markdown):
+    """Small, dependency-free markdown renderer for fast research reading."""
+    body = re.sub(r"^---[\s\S]*?---", "", markdown or "", count=1).strip()
+    body = _plain_wikilinks(body)
+    body = re.sub(r"^#\s+.+\n+", "", body, count=1).strip()
+
+    def inline(text):
+        text = _html.escape(text or "")
+        text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
+        text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
+        text = re.sub(r"__([^_]+)__", r"<strong>\1</strong>", text)
+        text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<em>\1</em>", text)
+        text = re.sub(r"\[([^\]]+)\]\((https?://[^)]+)\)", r'<a href="\2" target="_blank" rel="noopener">\1</a>', text)
+        return text
+
+    blocks = []
+    lines = body.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if not line.strip():
+            i += 1
+            continue
+        if line.startswith('```'):
+            lang = line.strip('`').strip()
+            code = []
+            i += 1
+            while i < len(lines) and not lines[i].startswith('```'):
+                code.append(lines[i]); i += 1
+            i += 1
+            blocks.append(f'<pre><code data-lang="{_html.escape(lang)}">{_html.escape(chr(10).join(code))}</code></pre>')
+            continue
+        if re.match(r"^#{1,4}\s+", line):
+            level = min(len(line) - len(line.lstrip('#')), 3)
+            blocks.append(f'<h{level}>{inline(line.lstrip("#").strip())}</h{level}>')
+            i += 1
+            continue
+        if line.lstrip().startswith('>'):
+            quote = []
+            while i < len(lines) and lines[i].lstrip().startswith('>'):
+                quote.append(lines[i].lstrip()[1:].strip()); i += 1
+            blocks.append('<blockquote>' + '<br>'.join(inline(q) for q in quote) + '</blockquote>')
+            continue
+        if '|' in line and i + 1 < len(lines) and re.match(r"^\s*\|?\s*:?-{3,}:?", lines[i + 1]):
+            table = []
+            while i < len(lines) and '|' in lines[i] and lines[i].strip():
+                table.append(lines[i].strip()); i += 1
+            rows = []
+            for idx, row in enumerate(table):
+                if idx == 1 and re.match(r"^\s*\|?[\s|:\-]+\|?\s*$", row):
+                    continue
+                cells = [c.strip() for c in row.strip('|').split('|')]
+                tag = 'th' if idx == 0 else 'td'
+                rows.append('<tr>' + ''.join(f'<{tag}>{inline(c)}</{tag}>' for c in cells) + '</tr>')
+            blocks.append('<div class="reader-table-wrap"><table>' + ''.join(rows) + '</table></div>')
+            continue
+        if re.match(r"^\s*[-*+]\s+", line) or re.match(r"^\s*\d+\.\s+", line):
+            ordered = bool(re.match(r"^\s*\d+\.\s+", line))
+            tag = 'ol' if ordered else 'ul'
+            pattern = r"^\s*\d+\.\s+" if ordered else r"^\s*[-*+]\s+"
+            items = []
+            while i < len(lines) and re.match(pattern, lines[i]):
+                items.append(re.sub(pattern, '', lines[i]).strip()); i += 1
+            blocks.append(f'<{tag}>' + ''.join(f'<li>{inline(item)}</li>' for item in items) + f'</{tag}>')
+            continue
+        para = [line.strip()]
+        i += 1
+        while i < len(lines) and lines[i].strip() and not re.match(r"^#{1,4}\s+", lines[i]) and not lines[i].startswith('```') and not re.match(r"^\s*[-*+]\s+", lines[i]) and not re.match(r"^\s*\d+\.\s+", lines[i]):
+            if '|' in lines[i] and i + 1 < len(lines) and re.match(r"^\s*\|?\s*:?-{3,}:?", lines[i + 1]):
+                break
+            para.append(lines[i].strip()); i += 1
+        blocks.append('<p>' + inline(' '.join(para)) + '</p>')
+    return '\n'.join(blocks)
+
+
+def _reader_html(note_path, title, markdown):
+    content = _reader_markdown_to_html(markdown)
+    safe_title = _html.escape(title)
+    safe_path = _html.escape(note_path)
+    safe_obs_path = _html.escape(note_path, quote=True)
+    note_label = "Reference note" if str(note_path).startswith("Reference/") else "Research note"
+    safe_label = _html.escape(note_label)
+    css = r"""
+:root{color-scheme:dark;--font-heading:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;--font-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#0b0a09;--paper-edge:#24211d;--text:#f3ecdf;--text-secondary:#e2d8c8;--muted:#a79d8f;--soft:#d6cabb;--glass-bg:rgba(12,11,10,.78);--glass-border:rgba(255,255,255,.16);--glass-shadow:0 20px 64px rgba(0,0,0,.42);--divider:#28241f;--table-head:#161310;--table-row:rgba(255,255,255,.035);--code-bg:rgba(255,255,255,.07);--progress:#f3ecdf}[data-theme=light]{color-scheme:light;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#fbfaf6;--paper-edge:#e2ddd2;--text:#11100f;--text-secondary:#292622;--muted:#6d665d;--soft:#2f2b27;--glass-bg:rgba(255,255,255,.88);--glass-border:rgba(255,255,255,.28);--glass-shadow:0 22px 76px rgba(0,0,0,.34);--divider:#ddd6ca;--table-head:#ebe6dc;--table-row:rgba(0,0,0,.026);--code-bg:rgba(0,0,0,.05);--progress:#fbfaf6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--bg-radial);background-color:#050505;color:var(--text);font:17px/1.68 var(--font-body);transition:color .35s ease}.reader-progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:10;background:linear-gradient(90deg,var(--progress),#b9b1a4);box-shadow:0 0 18px rgba(243,240,232,.25)}.reader-shell{width:min(980px,calc(100vw - 32px));margin:0 auto;padding:calc(env(safe-area-inset-top) + 24px) 0 78px}.reader-top{position:sticky;top:calc(env(safe-area-inset-top) + 10px);z-index:6;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:34px;color:#d9d2c7;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.reader-actions{display:flex;gap:10px;align-items:center}.reader-pill{appearance:none;color:#f5f1ea;text-decoration:none;border:1px solid var(--glass-border);border-radius:6px;padding:9px 13px;background:rgba(20,18,16,.72);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 8px 28px rgba(0,0,0,.18);font:800 11px/1 var(--font-body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}.reader-pill:hover{border-color:rgba(255,255,255,.36)}.theme-toggle{width:38px;height:34px;display:grid;place-items:center;font-size:15px}.theme-toggle .sun{display:none}[data-theme=light] .theme-toggle .moon{display:none}[data-theme=light] .theme-toggle .sun{display:inline}article{position:relative;background:var(--paper);border:1px solid var(--paper-edge);border-radius:5px;padding:clamp(34px,5vw,72px);box-shadow:var(--glass-shadow);overflow:hidden}header{position:relative;margin-bottom:38px;padding-bottom:24px;border-bottom:1px solid var(--divider)}.eyebrow{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px}.kicker{margin-top:18px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.015em;word-break:break-word}h1{font-family:var(--font-heading);font-weight:500;font-style:normal;font-size:clamp(48px,9vw,104px);line-height:1.02;letter-spacing:-.03em;margin:0;color:var(--text);max-width:15ch}h1 em{font-style:normal;color:var(--text)}.reader-content{position:relative;max-width:790px}.reader-content>p:first-of-type{font-size:clamp(18px,2.3vw,23px);line-height:1.48;color:var(--text-secondary);font-weight:650}h2{margin:2em 0 .62em;font-family:var(--font-heading);font-weight:520;font-style:normal;font-size:clamp(34px,5.4vw,58px);line-height:.98;letter-spacing:-.025em;color:var(--text)}h3{margin:1.55em 0 .45em;font:520 clamp(25px,3.2vw,34px)/1.08 var(--font-body);letter-spacing:-.015em;color:var(--text-secondary)}p{margin:0 0 1.05em}a{color:var(--text);text-decoration-color:color-mix(in srgb,var(--text) 32%,transparent);text-underline-offset:3px}strong{color:var(--text);font-weight:900}em{color:var(--text-secondary);font-style:normal}code{font:.9em 'SF Mono',ui-monospace,monospace;background:var(--code-bg);border:1px solid var(--divider);padding:.13em .36em;border-radius:3px}pre{overflow:auto;background:color-mix(in srgb,var(--paper) 88%,var(--text) 8%);border:1px solid var(--divider);border-radius:4px;padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}pre code{background:transparent;border:0;padding:0}ul,ol{padding-left:1.18em;margin:0 0 1.22em}li{margin:.34em 0;padding-left:.08em}li::marker{color:var(--muted)}blockquote{margin:1.45em 0;padding:18px 22px;border-left:3px solid var(--soft);background:color-mix(in srgb,var(--text) 6%,transparent);border-radius:0 4px 4px 0;color:var(--text-secondary);font-weight:650;font-size:1.03em}.reader-table-wrap{width:100%;overflow:auto;margin:1.2em 0 1.65em;border:1px solid var(--divider);border-radius:4px;background:color-mix(in srgb,var(--paper) 92%,var(--text) 5%)}table{width:100%;border-collapse:collapse;min-width:620px;font-size:14px;line-height:1.35}th,td{padding:11px 13px;border-bottom:1px solid var(--divider);vertical-align:top}th{position:sticky;top:0;background:var(--table-head);color:var(--text);text-align:left;font-weight:900}tr:nth-child(even) td{background:var(--table-row)}@media(max-width:640px){.reader-shell{width:min(100vw - 18px,980px);padding-top:calc(env(safe-area-inset-top) + 12px)}.reader-top{top:calc(env(safe-area-inset-top) + 6px);margin-bottom:18px;letter-spacing:.07em}.reader-actions{gap:6px}.reader-pill{padding:9px 10px}.theme-toggle{width:35px}article{border-radius:4px;padding:27px 20px 44px}body{font-size:16px}h1{font-size:clamp(45px,15vw,78px)}table{font-size:13px}}
+"""
+    script = r"""
+const root=document.documentElement;
+const saved=localStorage.getItem('mc-reader-theme');
+if(saved) root.dataset.theme=saved;
+const bar=document.getElementById('readerProgress');
+const tick=()=>{const max=document.documentElement.scrollHeight-innerHeight;bar.style.width=(max>0?(scrollY/max)*100:0)+'%'};
+addEventListener('scroll',tick,{passive:true});addEventListener('resize',tick,{passive:true});tick();
+document.getElementById('themeToggle')?.addEventListener('click',()=>{const next=root.dataset.theme==='light'?'dark':'light';root.dataset.theme=next;localStorage.setItem('mc-reader-theme',next)});
+document.getElementById('doneBtn')?.addEventListener('click',(e)=>{e.preventDefault();try{window.close()}catch(_){};setTimeout(()=>{if(history.length>1)history.back();else location.href=(location.pathname.startsWith('/mc/')?'/mc/':'/')},120)});
+"""
+    return f"""<!doctype html><html lang=\"en\" data-theme=\"dark\"><head><meta charset=\"utf-8\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\" /><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&display=swap\" rel=\"stylesheet\"><title>{safe_title}</title><style>{css}</style></head><body><div class=\"reader-progress\" id=\"readerProgress\"></div><main class=\"reader-shell\"><nav class=\"reader-top\"><div>Mission Control / Read</div><div class=\"reader-actions\"><button class=\"reader-pill theme-toggle\" id=\"themeToggle\" title=\"Toggle light/dark\"><span class=\"moon\">☾</span><span class=\"sun\">☀</span></button><a class=\"reader-pill\" href=\"obsidian://open?vault=Mission%20Control&file={safe_obs_path}\">Obsidian</a><a class=\"reader-pill\" id=\"doneBtn\" href=\"/\">Done</a></div></nav><article><header><div class=\"eyebrow\">{safe_label}</div><h1>{safe_title}</h1><div class=\"kicker\">{safe_path}</div></header><section class=\"reader-content\">{content}</section></article></main><script>{script}</script></body></html>"""
 
 # Pulse data cache — avoid rebuilding every 5s
 _pulse_cache = None
@@ -828,7 +1318,9 @@ def build_pulse_data():
     todo_count = sum(1 for j in jobs if j.get('phase') == 'todo')
     working_count = sum(1 for j in jobs if j.get('phase') == 'working')
     review_count = sum(1 for j in jobs if j.get('phase') in ('review', 'qc'))
-    done_count = sum(1 for j in jobs if j.get('phase') in ('done', 'completed') and j.get('phase') != 'archived')
+    archived_count = sum(1 for j in jobs if j.get('phase') == 'archived')
+    done_count = sum(1 for j in jobs if j.get('phase') in ('done', 'completed', 'archived') or j.get('jobStatus') == 'done')
+    active_count = sum(1 for j in jobs if j.get('phase') not in ('done', 'completed', 'archived'))
 
     # --- Team agents (not raw sessions) ---
     sessions = _load_openclaw_sessions()
@@ -858,6 +1350,29 @@ def build_pulse_data():
     # Map status values to display
     status_map = {'working': 'working', 'planning': 'planning', 'idle': 'available', 'standby': 'available', 'active': 'working'}
     display_status = status_map.get(alfred_status, alfred_status)
+
+    # --- Live OpenClaw sessions by agent ---
+    oc_status = get_oc_status()
+    oc_recent = ((oc_status or {}).get('sessions', {}) or {}).get('recent', [])
+
+    def _find_agent_session(agent_id):
+        """Prefer the current Telegram direct session for a named agent, then the freshest session."""
+        exact_prefix = f'agent:{agent_id}:telegram:direct:'
+        fallback_prefix = f'agent:{agent_id}:'
+        for _s in oc_recent:
+            if str(_s.get('key') or '').startswith(exact_prefix):
+                return _s
+        for _s in oc_recent:
+            if str(_s.get('key') or '').startswith(fallback_prefix):
+                return _s
+        return None
+
+    alfred_session = _find_agent_session('main') or {}
+    alice_session = _find_agent_session('alice') or {}
+    alfred_model = alfred_session.get('model') or 'unknown'
+    alice_model = alice_session.get('model') or 'unknown'
+    alice_age = int(alice_session.get('age') or 999999999)
+    alice_status = 'working' if alice_session and alice_age < (30 * 60 * 1000) else 'available'
 
     # --- Dispatched agents from acpx sessions ---
     # Friendly name mapping: raw command → display name
@@ -919,7 +1434,24 @@ def build_pulse_data():
         pass
 
     team = [
-        {'name': 'Alfred', 'emoji': '🛎️', 'role': 'Operator', 'status': display_status, 'model': 'glm-5.1:cloud', 'activeReq': alfred_req},
+        {
+            'name': 'Alfred', 'emoji': '🛎️', 'role': 'Operator', 'status': display_status,
+            'model': alfred_model, 'activeReq': alfred_req,
+            'percentUsed': alfred_session.get('percentUsed', 0),
+            'inputTokens': alfred_session.get('inputTokens', 0),
+            'outputTokens': alfred_session.get('outputTokens', 0),
+            'sessionId': (alfred_session.get('sessionId') or '').split('-')[0],
+            'age': alfred_session.get('age', 0),
+        },
+        {
+            'name': 'Alice', 'emoji': '', 'role': 'Research Librarian', 'status': alice_status,
+            'model': alice_model, 'activeReq': None,
+            'percentUsed': alice_session.get('percentUsed', 0),
+            'inputTokens': alice_session.get('inputTokens', 0),
+            'outputTokens': alice_session.get('outputTokens', 0),
+            'sessionId': (alice_session.get('sessionId') or '').split('-')[0],
+            'age': alice_session.get('age', 0),
+        },
     ] + dispatched
 
     # --- Model usage from codexbar ---
@@ -938,23 +1470,21 @@ def build_pulse_data():
     percent_used = 0
     session_id = ''
     session_age_ms = 0
-    oc_status = get_oc_status()
     if oc_status:
         try:
             sessions_data = oc_status.get('sessions', {})
-            context_total = int(sessions_data.get('defaults', {}).get('contextTokens', 202752))
-            for s in sessions_data.get('recent', []):
-                if 'telegram:direct' in s.get('key', ''):
-                    inp = s.get('inputTokens', 0)
-                    out = s.get('outputTokens', 0)
-                    remaining = s.get('remainingTokens', context_total - inp - out)
-                    context_used = context_total - remaining
-                    input_tokens = inp
-                    output_tokens = out
-                    percent_used = s.get('percentUsed', 0)
-                    session_id = s.get('sessionId', '').split('-')[0] if s.get('sessionId') else ''
-                    session_age_ms = s.get('age', 0)
-                    break
+            main_session = alfred_session or None
+            if main_session:
+                context_total = int(main_session.get('contextTokens') or sessions_data.get('defaults', {}).get('contextTokens', 202752))
+                inp = main_session.get('inputTokens', 0)
+                out = main_session.get('outputTokens', 0)
+                remaining = main_session.get('remainingTokens', context_total - inp - out)
+                context_used = max(0, context_total - remaining)
+                input_tokens = inp
+                output_tokens = out
+                percent_used = main_session.get('percentUsed', 0)
+                session_id = main_session.get('sessionId', '').split('-')[0] if main_session.get('sessionId') else ''
+                session_age_ms = main_session.get('age', 0)
             session_stats_file = DATA_DIR / 'session-stats.json'
             if session_stats_file.exists():
                 with open(session_stats_file, 'r') as f:
@@ -976,11 +1506,12 @@ def build_pulse_data():
             import sys; print(f'[pulse] session-stats fallback failed: {e}', file=sys.stderr)
 
     # --- Tasks completed metrics ---
-    now_dt = __import__('datetime').datetime.now(__import__('datetime').timezone.utc)
-    today_start = __import__('datetime').datetime(now_dt.year, now_dt.month, now_dt.day, tzinfo=__import__('datetime').timezone.utc)
+    _aest = __import__('datetime').timezone(__import__('datetime').timedelta(hours=10))
+    now_dt = __import__('datetime').datetime.now(_aest)
+    today_start = __import__('datetime').datetime(now_dt.year, now_dt.month, now_dt.day, tzinfo=_aest)
     week_start = today_start - __import__('datetime').timedelta(days=today_start.weekday())
-    month_start = __import__('datetime').datetime(now_dt.year, now_dt.month, 1, tzinfo=__import__('datetime').timezone.utc)
-    year_start = __import__('datetime').datetime(now_dt.year, 1, 1, tzinfo=__import__('datetime').timezone.utc)
+    month_start = __import__('datetime').datetime(now_dt.year, now_dt.month, 1, tzinfo=_aest)
+    year_start = __import__('datetime').datetime(now_dt.year, 1, 1, tzinfo=_aest)
 
     today_ms = int(today_start.timestamp() * 1000)
     week_ms = int(week_start.timestamp() * 1000)
@@ -988,18 +1519,20 @@ def build_pulse_data():
     year_ms = int(year_start.timestamp() * 1000)
 
     def count_completed(since_ms):
-        """Count completed subtasks + completed jobs since a timestamp."""
+        """Count completed subtasks since a timestamp."""
         count = 0
         for j in jobs:
-            # Count completed jobs (by completedAt)
-            if j.get('phase') == 'done' and (j.get('completedAt') or 0) >= since_ms:
-                count += 1
-            # Count completed subtasks
+            # Only count completed subtasks (not jobs themselves)
             for st in j.get('subtasks', []):
                 if st.get('status') == 'done':
                     st_completed = st.get('completedAt') or j.get('completedAt') or 0
                     if st_completed >= since_ms:
                         count += 1
+            # Also count jobs marked done that have no subtasks
+            # (a done job with 0 subs = 1 implicit task completed)
+            if j.get('phase') in ('done', 'completed', 'archived') and len(j.get('subtasks', [])) == 0:
+                if (j.get('completedAt') or 0) >= since_ms:
+                    count += 1
         return count
 
     tasks_completed = {
@@ -1007,7 +1540,7 @@ def build_pulse_data():
         'week': count_completed(week_ms),
         'month': count_completed(month_ms),
         'year': count_completed(year_ms),
-        'total': sum(len([s for s in j.get('subtasks', []) if s.get('status') == 'done']) for j in jobs) + sum(1 for j in jobs if j.get('phase') == 'done'),
+        'total': sum(len([s for s in j.get('subtasks', []) if s.get('status') == 'done']) for j in jobs) + sum(1 for j in jobs if j.get('phase') in ('done', 'completed', 'archived') and len(j.get('subtasks', [])) == 0),
     }
 
     # --- Queue depth from cached OpenClaw status ---
@@ -1024,11 +1557,13 @@ def build_pulse_data():
         'timestamp': now_ms,
         'jobs': {
             'total': total_jobs,
+            'active': active_count,
             'todo': todo_count,
             'working': working_count,
             'qc': review_count,
             'done': done_count,
-            'doneToday': sum(1 for j in jobs if j.get('phase') == 'done' and (j.get('completedAt') or 0) >= today_ms),
+            'archived': archived_count,
+            'doneToday': sum(1 for j in jobs if j.get('phase') in ('done', 'completed', 'archived') and (j.get('completedAt') or 0) >= today_ms),
         },
         'agents': team,
         'usage': {
@@ -1039,7 +1574,7 @@ def build_pulse_data():
         'tasksCompleted': tasks_completed,
         'uptime': _format_duration(session_age_ms // 1000) if session_age_ms else (_format_duration(uptime_s) if uptime_s else 'unknown'),
     'sessionUptime': _format_duration(session_age_ms // 1000) if session_age_ms else '—',
-        'model': 'glm-5.1:cloud',
+        'model': alfred_model,
         'contextUsed': context_used,
         'contextWindow': context_total,
         'inputTokens': input_tokens,
@@ -1338,6 +1873,9 @@ class Handler(SimpleHTTPRequestHandler):
             state = build_mission_control_state()
             self._send_json(200, state)
             return
+        if clean_path == '/api/mission-control-plan':
+            self._send_json(200, load_plan_state())
+            return
         if clean_path == '/api/pulse-data':
             import time as _time
             global _pulse_cache, _pulse_cache_ts
@@ -1356,8 +1894,8 @@ class Handler(SimpleHTTPRequestHandler):
             except Exception as e:
                 import sys; print(f'[pulse-data ERROR] {e}', file=sys.stderr)
                 jobs = load_mission_control_jobs()
-                done_count = sum(1 for j in jobs if j.get('phase') in ('done', 'completed') and j.get('phase') != 'archived')
-                fallback = {'ok': False, 'error': str(e), 'agents': [{'name': 'Alfred', 'emoji': '🛎️', 'role': 'Operator', 'status': 'available', 'model': 'glm-5.1:cloud', 'activeReq': None}], 'jobs': {'total': len(jobs), 'todo': sum(1 for j in jobs if j.get('phase') == 'todo'), 'working': sum(1 for j in jobs if j.get('phase') == 'working'), 'qc': sum(1 for j in jobs if j.get('phase') in ('review', 'qc')), 'done': done_count}, 'usage': {}, 'compactions': 0, 'tasksCompleted': {}, 'uptime': 'unknown', 'contextUsed': 0, 'contextWindow': 202752, 'excludedModels': [], 'modelUsage': []}
+                done_count = sum(1 for j in jobs if j.get('phase') in ('done', 'completed', 'archived') or j.get('jobStatus') == 'done')
+                fallback = {'ok': False, 'error': str(e), 'agents': [{'name': 'Alfred', 'emoji': '🛎️', 'role': 'Operator', 'status': 'available', 'model': 'unknown', 'activeReq': None}], 'jobs': {'total': len(jobs), 'todo': sum(1 for j in jobs if j.get('phase') == 'todo'), 'working': sum(1 for j in jobs if j.get('phase') == 'working'), 'qc': sum(1 for j in jobs if j.get('phase') in ('review', 'qc')), 'done': done_count}, 'usage': {}, 'compactions': 0, 'tasksCompleted': {}, 'uptime': 'unknown', 'contextUsed': 0, 'contextWindow': 202752, 'excludedModels': [], 'modelUsage': []}
                 _pulse_cache = fallback
                 _pulse_cache_ts = _time.time()
                 self._send_json(200, fallback)
@@ -1372,16 +1910,34 @@ class Handler(SimpleHTTPRequestHandler):
             skip = {'.obsidian', '.trash', '.DS_Store', '.git'}
             for item in sorted(vault_dir.rglob('*')):
                 rel = item.relative_to(vault_dir)
-                # Skip hidden/system dirs
                 if any(p.startswith('.') or p in skip for p in rel.parts):
                     continue
                 is_dir = item.is_dir()
-                result.append({
+                try:
+                    mtime_ms = int(item.stat().st_mtime * 1000)
+                except Exception:
+                    mtime_ms = 0
+                entry = {
                     'path': str(rel),
                     'name': item.name,
                     'isDir': is_dir,
                     'ext': item.suffix if not is_dir else '',
-                })
+                    'mtime': mtime_ms,
+                }
+                # Extract source/thumbnail from YouTube clipping frontmatter
+                if not is_dir and item.suffix == '.md' and 'YouTube' in str(rel):
+                    try:
+                        text = item.read_text(encoding='utf-8')[:2000]
+                        for line in text.split('\n'):
+                            line = line.strip()
+                            low = line.lower()
+                            if low.startswith('source:') or low.startswith('thumbnail:'):
+                                key = line.split(':')[0].strip().lower()
+                                val = line[len(key)+1:].strip().strip('"').strip("'")
+                                entry[key] = val
+                    except Exception:
+                        pass
+                result.append(entry)
             self._send_json(200, {'ok': True, 'files': result})
             return
 
@@ -1405,6 +1961,84 @@ class Handler(SimpleHTTPRequestHandler):
             try:
                 content = full_path.read_text(encoding='utf-8')
                 self._send_json(200, {'ok': True, 'content': content, 'path': file_path})
+            except Exception as e:
+                self._send_json(500, {'ok': False, 'error': str(e)})
+            return
+
+        if clean_path.startswith('/api/read'):
+            # Render a vault note as a fast, beautiful reader page
+            import urllib.parse as _up
+            query = _up.parse_qs(self.path.split('?', 1)[-1]) if '?' in self.path else {}
+            note_path = query.get('path', [''])[0]
+            if not note_path:
+                self._send_json(400, {'ok': False, 'error': 'Missing path parameter'})
+                return
+            vault_dir = Path.home() / 'Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control'
+            full_path = (vault_dir / note_path).resolve()
+            if not str(full_path).startswith(str(vault_dir.resolve())):
+                self._send_json(403, {'ok': False, 'error': 'Access denied'})
+                return
+            if not full_path.exists() or not full_path.is_file():
+                self._send_json(404, {'ok': False, 'error': 'File not found'})
+                return
+            try:
+                content = full_path.read_text(encoding='utf-8')
+                title = _note_title_from_markdown(note_path, content)
+                html = _reader_html(note_path, title, content)
+                body = html.encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self._send_json(500, {'ok': False, 'error': str(e)})
+            return
+
+        if clean_path.startswith('/api/marp'):
+            # Render a vault note as Marp presentation HTML
+            import urllib.parse as _up
+            import subprocess as _sp
+            query = _up.parse_qs(self.path.split('?', 1)[-1]) if '?' in self.path else {}
+            note_path = query.get('path', [''])[0]
+            if not note_path:
+                self._send_json(400, {'ok': False, 'error': 'Missing path parameter'})
+                return
+            vault_dir = Path.home() / 'Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control'
+            full_path = (vault_dir / note_path).resolve()
+            if not str(full_path).startswith(str(vault_dir.resolve())):
+                self._send_json(403, {'ok': False, 'error': 'Access denied'})
+                return
+            if not full_path.exists() or not full_path.is_file():
+                self._send_json(404, {'ok': False, 'error': 'File not found'})
+                return
+            try:
+                content = full_path.read_text(encoding='utf-8')
+                title = _note_title_from_markdown(note_path, content)
+                marp_cli = '/opt/homebrew/bin/marp' if Path('/opt/homebrew/bin/marp').exists() else 'marp'
+                with tempfile.TemporaryDirectory(prefix='mc-marp-') as tmp:
+                    md_path = Path(tmp) / 'deck.md'
+                    html_path = Path(tmp) / 'deck.html'
+                    md_path.write_text(_deck_markdown(title, content), encoding='utf-8')
+                    result = _sp.run([marp_cli, str(md_path), '-o', str(html_path), '--html'], capture_output=True, text=True, timeout=20)
+                    if result.returncode == 0 and html_path.exists():
+                        html = html_path.read_text(encoding='utf-8')
+                        html = html.replace('</head>', f'{MARP_DARK_SHELL_STYLE}</head>', 1)
+                        html = html.replace('</body>', f'{MARP_MOBILE_PRESENT_FIX_SCRIPT}</body>', 1)
+                        body = html.encode('utf-8')
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'text/html; charset=utf-8')
+                        self.send_header('Content-Length', str(len(body)))
+                        self.end_headers()
+                        self.wfile.write(body)
+                    else:
+                        err = result.stderr or result.stdout or 'Unknown Marp error'
+                        body = ('<pre>' + err.replace('&', '&amp;').replace('<', '&lt;') + '</pre>').encode('utf-8')
+                        self.send_response(500)
+                        self.send_header('Content-Type', 'text/html; charset=utf-8')
+                        self.send_header('Content-Length', str(len(body)))
+                        self.end_headers()
+                        self.wfile.write(body)
             except Exception as e:
                 self._send_json(500, {'ok': False, 'error': str(e)})
             return
@@ -1466,9 +2100,7 @@ class Handler(SimpleHTTPRequestHandler):
             compacted = []
             for j in all_jobs:
                 phase = j.get('phase', 'todo')
-                if phase == 'archived':
-                    continue
-                if phase in ('done', 'completed'):
+                if phase in ('archived', 'done', 'completed'):
                     completed_by = ''
                     for h in j.get('history', []):
                         ev = h.get('event', '')
@@ -1522,8 +2154,7 @@ class Handler(SimpleHTTPRequestHandler):
             log_entries = []
             for j in all_jobs:
                 phase = j.get('phase', 'todo')
-                if phase == 'archived':
-                    continue
+                # Include done/archived in logs
                 number = j.get('number', '')
                 title = j.get('title', '')
                 description = j.get('description', j.get('details', ''))
@@ -1780,6 +2411,32 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         clean_path = self.path.split('?', 1)[0].split('#', 1)[0]
+
+        if clean_path == '/api/mission-control-plan/annotations':
+            length = int(self.headers.get('Content-Length', '0'))
+            raw = self.rfile.read(length or 0)
+            try:
+                payload = json.loads(raw.decode('utf-8')) if length else {}
+                text = (payload.get('text') or '').strip()
+                if not text:
+                    raise ValueError('Annotation text is required')
+                import time as _time_plan_post
+                now_ms = int(_time_plan_post.time() * 1000)
+                state = load_plan_state()
+                ann = {
+                    'id': f'ann-{now_ms}',
+                    'author': (payload.get('author') or 'Alfred').strip(),
+                    'text': text,
+                    'status': payload.get('status') or 'proposed',
+                    'createdAt': now_ms,
+                    'updatedAt': now_ms,
+                }
+                state.setdefault('annotations', []).insert(0, ann)
+                save_plan_state(state)
+                self._send_json(200, {'ok': True, 'annotation': ann, 'plan': state})
+            except Exception as e:
+                self._send_json(400, {'ok': False, 'error': str(e)})
+            return
 
         # Create a new project
         if clean_path == '/api/mission-control-projects/create':
@@ -2249,6 +2906,35 @@ class Handler(SimpleHTTPRequestHandler):
     def do_PATCH(self):
         clean_path = self.path.split('?', 1)[0].split('#', 1)[0]
         import re
+
+        plan_ann_match = re.match(r'^/api/mission-control-plan/annotations/([^/]+)$', clean_path)
+        if plan_ann_match:
+            ann_id = unquote(plan_ann_match.group(1))
+            length = int(self.headers.get('Content-Length', '0'))
+            raw = self.rfile.read(length or 0)
+            try:
+                payload = json.loads(raw.decode('utf-8')) if length else {}
+                status = (payload.get('status') or '').strip()
+                if status not in ('proposed', 'approved', 'declined'):
+                    raise ValueError('Invalid annotation status')
+                import time as _time_plan_patch
+                state = load_plan_state()
+                target = None
+                for ann in state.get('annotations', []):
+                    if ann.get('id') == ann_id:
+                        target = ann
+                        break
+                if not target:
+                    self._send_json(404, {'ok': False, 'error': 'Annotation not found'})
+                    return
+                target['status'] = status
+                target['decidedBy'] = payload.get('by', 'Sam')
+                target['updatedAt'] = int(_time_plan_patch.time() * 1000)
+                save_plan_state(state)
+                self._send_json(200, {'ok': True, 'annotation': target, 'plan': state})
+            except Exception as e:
+                self._send_json(400, {'ok': False, 'error': str(e)})
+            return
 
         # PATCH /api/mission-control-jobs/{id} — update job fields (priority, etc)
         mc_job_patch_match = re.match(r'^/api/mission-control-jobs/([^/]+)$', clean_path)

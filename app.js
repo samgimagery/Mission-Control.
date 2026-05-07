@@ -1,7 +1,15 @@
 console.log('[MC] Unified Workspace loading...');
 
+const MC_BASE_PATH = window.location.pathname.startsWith('/mc/') || window.location.pathname === '/mc' ? '/mc' : '';
+function apiPath(path) {
+  if (!path) return MC_BASE_PATH || '/';
+  if (/^https?:\/\//.test(path)) return path;
+  return `${MC_BASE_PATH}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
 // Alfred working status — derived from job data (no polling)
 let alfredWorkingStatus = { status: 'idle', task: null };
+let aliceVaultStats = { loaded: false, lastFetch: 0, researchCount: 0, clippingCount: 0, recent: [] };
 
 function updateAlfredStatusFromJobs(jobs) {
   const workingJobs = (jobs || []).filter(j => j.phase === 'working');
@@ -86,9 +94,16 @@ document.addEventListener('DOMContentLoaded', () => {
       loadVaultGraph();
       loadJobLogs();
     }
-    // Load research list when Research view is activated
+    // Load plan when Plan view is activated
+    if (targetView === 'plan') {
+      loadPlanPage();
+    }
+    // Load research/reference lists when vault views are activated
     if (targetView === 'research') {
       if (researchListData.length === 0) loadResearchList();
+    }
+    if (targetView === 'references') {
+      if (referencesListData.length === 0) loadReferencesList();
     }
   }
 
@@ -193,6 +208,43 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${day}.${month}.${year} ${hour}:${min}`;
   }
 
+
+  function collectRecentCompletedTasks(doneJobs, limit = 6) {
+    const tasks = [];
+    (doneJobs || []).forEach(job => {
+      (job.subtasks || []).forEach(st => {
+        if (!['done', 'completed'].includes(st.status)) return;
+        const completedAt = st.completedAt || job.completedAt || 0;
+        tasks.push({
+          req: job.number || '',
+          session: job.project || job.number || 'Mission Control',
+          process: job.title || 'Job',
+          who: st.completedBy || st.startedBy || job.assignee || '—',
+          what: st.title || 'Completed task',
+          completedAt
+        });
+      });
+    });
+    return tasks.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)).slice(0, limit);
+  }
+
+  function renderRecentTaskGrid(tasks) {
+    if (!tasks.length) return '<div class="recent-task-empty">No completed tasks yet</div>';
+    return `<div class="recent-task-grid">${tasks.map(t => `
+      <div class="recent-task-row">
+        <div class="recent-task-top">
+          <span class="recent-task-req">${escapeHtml(t.req || 'REQ')}</span>
+          <span class="recent-task-time">${escapeHtml(formatTimestamp(t.completedAt) || '')}</span>
+        </div>
+        <div class="recent-task-what">${escapeHtml(t.what)}</div>
+        <div class="recent-task-meta">
+          <span>${escapeHtml(t.session)}</span>
+          <span>${escapeHtml(t.process)}</span>
+          <span>${escapeHtml(t.who)}</span>
+        </div>
+      </div>`).join('')}</div>`;
+  }
+
   // ── Format due date ──
   function formatDueDate(dateStr) {
     if (!dateStr) return '';
@@ -243,13 +295,124 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+
+
+  // ── Focus Page ──
+  function normalizeFocusItems(items) {
+    if (!items) return [];
+    return Array.isArray(items) ? items : [items];
+  }
+
+  function renderFocusList(items, emptyText = 'Nothing listed yet') {
+    const rows = normalizeFocusItems(items).filter(Boolean);
+    if (!rows.length) return `<div class="plan-empty">${emptyText}</div>`;
+    return `<ul class="focus-list">${rows.map(item => {
+      const text = typeof item === 'string' ? item : item.text || item.title || '';
+      return `<li>${escapeHtml(text)}</li>`;
+    }).join('')}</ul>`;
+  }
+
+  function renderFocusPanel(title, body, opts = {}) {
+    const wide = opts.wide ? ' plan-panel-wide' : '';
+    const extraClass = opts.className ? ` ${opts.className}` : '';
+    return `
+      <section class="plan-panel focus-panel${wide}${extraClass}">
+        <h3>${escapeHtml(title)}</h3>
+        ${opts.list ? renderFocusList(body, opts.emptyText) : `<p class="focus-text">${escapeHtml(body || opts.emptyText || '')}</p>`}
+      </section>`;
+  }
+
+  function renderFocusPlan(items) {
+    const rows = normalizeFocusItems(items).filter(Boolean);
+    if (!rows.length) return '<div class="plan-empty">No plan steps yet</div>';
+    return `<ol class="focus-plan-list">${rows.map(item => {
+      const text = typeof item === 'string' ? item : item.text || item.title || '';
+      const status = typeof item === 'string' ? '' : (item.status || item.state || '');
+      const cls = status ? ` class="focus-plan-${escapeHtml(status)}"` : '';
+      return `<li${cls}>${escapeHtml(text)}</li>`;
+    }).join('')}</ol>`;
+  }
+
+  function focusLeadSentence(text) {
+    const clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return '';
+    const first = clean.match(/^.{1,118}?[.!?](?=\s|$)/);
+    if (first) return first[0];
+    if (clean.length <= 128) return clean;
+    const cut = clean.slice(0, 125).replace(/\s+\S*$/, '').trim();
+    return `${cut}…`;
+  }
+
+  async function loadPlanPage() {
+    const el = document.getElementById('planContent');
+    if (!el) return;
+    try {
+      const res = await fetch(apiPath('/api/mission-control-plan'), { cache: 'no-store' });
+      const focus = await res.json();
+      const mission = focus.mission || focus.objective || '';
+      const currentFocus = focus.currentFocus || `${focus.activeProject || 'Mission Control'}${focus.activeReq ? ` · ${focus.activeReq}` : ''}`;
+      const topFocus = focusLeadSentence(currentFocus) || 'Keep the current mission clear, calm, and actionable.';
+      const planItems = focus.plan || focus.nextActions;
+      el.innerHTML = `
+        <div class="focus-simple">
+          <section class="plan-hero focus-hero">
+            <div class="focus-title-block">
+              <div class="plan-kicker">${escapeHtml(focus.activeProject || 'Mission Control')}</div>
+              <h2>${escapeHtml(topFocus)}</h2>
+              <button type="button" class="focus-title-req">${escapeHtml(focus.activeReq || 'Current')}</button>
+              ${mission ? `<p class="focus-hero-mission">${escapeHtml(mission)}</p>` : ''}
+            </div>
+          </section>
+          <section class="focus-book plan-panel plan-panel-wide">
+            <h3>Plan</h3>
+            ${renderFocusPlan(planItems)}
+          </section>
+          <section class="focus-next-line">
+            <span class="focus-section-icon">→</span>
+            <span>${escapeHtml(focus.nextBestStep || 'Decide the next move, then keep Mission Control as the distilled source of truth.')}</span>
+          </section>
+          <div class="focus-insight-grid">
+            ${renderFocusPanel('✓ Proven', focus.recentSuccesses, { list: true })}
+            ${renderFocusPanel('→ Testing Now', focus.recentChallenges, { list: true })}
+            ${renderFocusPanel('? Open Questions', focus.upcomingChallenges, { list: true })}
+          </div>
+        </div>`;
+      el.querySelector('.focus-title-req')?.addEventListener('click', () => openReqInOverview(focus.activeReq));
+    } catch (e) {
+      el.innerHTML = '<div class="vault-loading">Focus unavailable</div>';
+    }
+  }
+
+  async function openReqInOverview(reqNumber) {
+    if (!reqNumber) return;
+    let job = currentJobs.find(j => j.number === reqNumber || j.id === reqNumber);
+    if (!job) {
+      try {
+        const [activeRes, doneRes] = await Promise.all([
+          fetch(apiPath('/api/mission-control-jobs'), { cache: 'no-store' }),
+          fetch(apiPath('/api/mission-control-jobs/done'), { cache: 'no-store' })
+        ]);
+        const active = activeRes.ok ? (await activeRes.json()).jobs || [] : [];
+        const done = doneRes.ok ? (await doneRes.json()).jobs || [] : [];
+        currentJobs = [...active, ...done];
+        updatePipeline(currentJobs);
+        job = currentJobs.find(j => j.number === reqNumber || j.id === reqNumber);
+      } catch (e) { /* non-critical */ }
+    }
+    if (!job) return;
+    openCardModal(job);
+  }
+
+  document.getElementById('planRefreshBtn')?.addEventListener('click', loadPlanPage);
+
+
   // ── Load Data ──
   async function loadAssetData() {
     try {
       const [stateRes, jobsRes, doneRes] = await Promise.all([
-        fetch('/api/mission-control-state', { cache: 'no-store' }),
-        fetch('/api/mission-control-jobs', { cache: 'no-store' }),
-        fetch('/api/mission-control-jobs/done', { cache: 'no-store' })
+        fetch(apiPath('/api/mission-control-state'), { cache: 'no-store' }),
+        fetch(apiPath('/api/mission-control-jobs'), { cache: 'no-store' }),
+        fetch(apiPath('/api/mission-control-jobs/done'), { cache: 'no-store' })
       ]);
 
       const stateData = await stateRes.json();
@@ -270,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const pulseController = new AbortController();
         const pulseTimeout = setTimeout(() => pulseController.abort(), 25000);
-        const pulseRes = await fetch('/api/pulse-data', { cache: 'no-store', signal: pulseController.signal });
+        const pulseRes = await fetch(apiPath('/api/pulse-data'), { cache: 'no-store', signal: pulseController.signal });
         clearTimeout(pulseTimeout);
         const pulseData = await pulseRes.json();
         if (pulseData.ok) {
@@ -279,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const ver = pulseData.version || '';
             infoEl.innerHTML = `OpenClaw ${ver}`;
           }
-          updateDashboard(pulseData.agents || [], currentJobs, pulseData);
+          await updateDashboard(pulseData.agents || [], currentJobs, pulseData);
         }
       } catch (e) { /* non-critical */ }
 
@@ -314,7 +477,36 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ── Update Dashboard Top Bar ──
-  function updateDashboard(pulseAgents, jobs, pulseData) {
+  function formatCompactNumber(n) {
+    const val = Number(n || 0);
+    return val >= 1000 ? (val / 1000).toFixed(val >= 100000 ? 0 : 1) + 'K' : val.toString();
+  }
+
+  async function loadAliceVaultStats() {
+    const now = Date.now();
+    if (aliceVaultStats.loaded && now - aliceVaultStats.lastFetch < 60000) return aliceVaultStats;
+    try {
+      const res = await fetch(apiPath('/api/vault/tree'), { cache: 'no-store' });
+      if (!res.ok) throw new Error('vault tree unavailable');
+      const data = await res.json();
+      const files = data.files || [];
+      const research = files.filter(f => !f.isDir && f.path.startsWith('Research/') && f.path !== 'Research/Research Index.md');
+      const clippings = files.filter(f => !f.isDir && f.path.startsWith('Clippings/'));
+      const recentResearch = [...research].sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
+      aliceVaultStats = {
+        loaded: true,
+        lastFetch: now,
+        researchCount: research.length,
+        clippingCount: clippings.length,
+        recent: recentResearch.slice(0, 3).map(f => ({ title: (f.name || '').replace(/\.md$/, ''), path: f.path, mtime: f.mtime || 0 }))
+      };
+    } catch (e) {
+      aliceVaultStats = { ...aliceVaultStats, loaded: true, lastFetch: now };
+    }
+    return aliceVaultStats;
+  }
+
+  async function updateDashboard(pulseAgents, jobs, pulseData) {
     updateAlfredStatusFromJobs(jobs);
     const agentsEl = document.getElementById('systemAgents');
     const statsEl = document.getElementById('systemDashboardTop');
@@ -329,9 +521,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Merge server-provided models and status
     const serverModelMap = {};
     const serverStatusMap = {};
+    const serverAgentMap = {};
     (pulseAgents || []).forEach(a => {
       serverModelMap[a.name] = a.model || '';
       serverStatusMap[a.name] = a.status || 'standby';
+      serverAgentMap[a.name] = a;
     });
     const team = teamBase.map(t => ({
       ...t,
@@ -345,115 +539,142 @@ document.addEventListener('DOMContentLoaded', () => {
       return n.includes('alfred') || n.includes('main');
     });
 
-    // Alfred's current assignment — only from active (non-done) jobs
-    let alfredJob = null;
-    let alfredSubtask = null;
-    (jobs || []).forEach(job => {
-      if (job.phase === 'done' || job.phase === 'completed' || job.phase === 'archived') return; // skip done jobs
-      if (job.phase === 'working' && job.assignee && job.assignee.includes('Alfred')) {
-        alfredJob = job.title;
-      }
-      (job.subtasks || []).forEach(st => {
-        if (st.status === 'in-progress' && ((st.startedBy || '').includes('Alfred') || (job.assignee || '').includes('Alfred'))) {
-          if (!alfredSubtask) alfredSubtask = { number: job.number, title: st.title, jobId: job.id };
-        }
+    const isClosedJob = job => ['done', 'completed', 'archived'].includes(job.phase);
+    const isAliceResearchJob = job => {
+      const haystack = `${job.assignee || ''} ${job.title || ''} ${job.description || ''}`.toLowerCase();
+      return haystack.includes('alice') || haystack.includes('research:') || haystack.includes('research ');
+    };
+    const phaseRank = { working: 0, qc: 1, todo: 2, pending: 3 };
+    const activeJobSort = (a, b) => (phaseRank[a.phase] ?? 9) - (phaseRank[b.phase] ?? 9) || (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+
+    const isActiveSubtask = st => ['in-progress', 'working'].includes(st.status);
+    const personOwnsCurrentWork = (job, person) => {
+      const who = person.toLowerCase();
+      const assignee = (job.assignee || '').toLowerCase();
+      const activeSubtasks = (job.subtasks || []).filter(isActiveSubtask);
+      return assignee.includes(who) || activeSubtasks.some(st =>
+        `${st.startedBy || ''} ${st.assignee || ''} ${st.owner || ''}`.toLowerCase().includes(who)
+      );
+    };
+
+    const alfredCurrentItems = (jobs || [])
+      .filter(job => !isClosedJob(job) && personOwnsCurrentWork(job, 'Alfred'))
+      .sort(activeJobSort)
+      .slice(0, 4)
+      .map(job => {
+        const activeSubtask = (job.subtasks || []).find(st => isActiveSubtask(st) && `${st.startedBy || ''} ${st.assignee || ''} ${st.owner || ''}`.toLowerCase().includes('alfred'))
+          || (job.subtasks || []).find(isActiveSubtask);
+        return {
+          number: job.number || '',
+          title: activeSubtask?.title || job.title || 'Current task',
+          state: activeSubtask ? 'task' : (job.phase || 'active')
+        };
       });
-    });
 
-    // Alfred's stats
-    const now = Date.now();
-    const todayStart = new Date(); todayStart.setHours(0,0,0,0); const todayMs = todayStart.getTime();
-    const weekMs = now - 7*24*60*60*1000;
-    const monthMs = now - 30*24*60*60*1000;
-    const yearMs = now - 365*24*60*60*1000;
-    let todayCompleted = 0, weekCompleted = 0, monthCompleted = 0, yearCompleted = 0, totalCompleted = 0, totalJobs = 0, inProgress = 0;
-    (jobs || []).forEach(job => {
-      totalJobs++;
-      const assignee = job.assignee || '';
-      if (job.phase === 'working' || (job.phase === 'todo' && (job.subtasks || []).some(s => s.status === 'in-progress'))) inProgress++;
-      if (job.phase === 'done' || job.phase === 'completed' || job.phase === 'archived') {
-        totalCompleted++;
-        const completedAt = job.completedAt || 0;
-        if (completedAt >= todayMs) todayCompleted++;
-        if (completedAt >= weekMs) weekCompleted++;
-        if (completedAt >= monthMs) monthCompleted++;
-        if (completedAt >= yearMs) yearCompleted++;
-      }
-    });
+    // Alfred's stats — use pulse data (which includes done jobs) instead of active-only jobs list
+    const pulseJobs = pulseData.jobs || {};
+    const pulseTasks = pulseData.tasksCompleted || {};
+    const alfredAgent = serverAgentMap['Alfred'] || {};
+    const currentActive = alfredCurrentItems.length || (alfredAgent.status === 'working' ? 1 : 0);
+    const todayCompleted = pulseTasks.today ?? 0;
+    const weekCompleted = pulseTasks.week ?? 0;
+    const monthCompleted = pulseTasks.month ?? 0;
+    const yearCompleted = pulseTasks.year ?? 0;
+    const totalCompleted = pulseTasks.total ?? 0;
+    const totalJobs = pulseJobs.total ?? (jobs || []).length;
+    const doneJobs = pulseJobs.done ?? (jobs || []).filter(j => j.phase === 'done' || j.phase === 'completed' || j.phase === 'archived').length;
 
-    // Render Alfred's card
+    // Render overview agent cards
     if (agentsEl) {
       const activeEl = document.activeElement;
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable) && agentsEl.contains(activeEl)) {
         // skip this render
       } else {
-      const alfredStatus = alfredWorkingStatus.status;
-      const alfredWorking = alfredStatus === 'working';
-      const alfredPlanning = alfredStatus === 'planning';
-      const alfredTask = alfredWorkingStatus.task ? alfredWorkingStatus.task : null;
-      // Idle quips — shown when Alfred has no active work
-      const idleQuips = [
-        'Dusting the dashboard.',
-        'All trails ridden.',
-        'Polishing the silver.',
-        'Awaiting further instructions.',
-        'The fire needs no tending.',
-        'Standing watch.',
-        'All quiet on the western front.',
-        'Saddle\'s ready.',
-        'Perimeter secured.',
-        'Tea\'s brewed. Biscuits optional.',
-        'No varmints in sight.',
-        'Horse is fed. Gun is clean.',
-        'Campfire\'s warm.',
-        'Ranch is running smooth.',
-        'Another day, another trail.',
-        'Quiet as a church mouse.',
-        'Sunset\'s looking fine.',
-      ];
-      const idleQuip = idleQuips[Math.floor(Math.random() * idleQuips.length)];
-      const displayLabel = alfredTask || (alfredSubtask ? `${alfredSubtask.number} ${alfredSubtask.title}` : (alfredJob ? escapeHtml(alfredJob.length > 50 ? alfredJob.substring(0, 47) + '...' : alfredJob) : idleQuip));
-      const isIdle = !alfredTask && !alfredSubtask && !alfredJob;
-      const isWorking = alfredWorking || inProgress > 0;
-      let statusBadge;
-      if (isWorking) {
-        statusBadge = '<span class="agent-status-badge working">Working</span>';
-      } else if (alfredPlanning) {
-        statusBadge = '<span class="agent-status-badge planning">Planning</span>';
-      } else {
-        statusBadge = '<span class="agent-status-badge available">Available</span>';
-      }
-      const serverAlfredStatus = (serverStatusMap['Alfred'] || '').toLowerCase();
-      const idleStatusBadge = (isIdle && serverAlfredStatus !== 'working') ? '<span class="agent-status-badge idle">Idle</span>' : statusBadge;
       const model = serverModelMap['Alfred'] || '';
-      const effRate = totalJobs > 0 ? Math.round((totalCompleted / totalJobs) * 100) : 0;
+      const completionRate = totalJobs > 0 ? Math.round((doneJobs / totalJobs) * 100) : 0;
+      const alfredContext = Number(alfredAgent.percentUsed || pulseData.percentUsed || 0);
+      const alfredTokens = Number(alfredAgent.inputTokens || pulseData.inputTokens || 0) + Number(alfredAgent.outputTokens || pulseData.outputTokens || 0);
+      const aliceStats = await loadAliceVaultStats();
+      const aliceAgent = serverAgentMap['Alice'] || {};
+      const aliceModel = aliceAgent.model || serverModelMap['Alice'] || '—';
+      const aliceContext = Number(aliceAgent.percentUsed || 0);
+      const aliceTokens = Number(aliceAgent.inputTokens || 0) + Number(aliceAgent.outputTokens || 0);
+      const aliceJobs = (jobs || [])
+        .filter(j => !isClosedJob(j) && (isAliceResearchJob(j) || personOwnsCurrentWork(j, 'Alice')))
+        .sort(activeJobSort);
+      const aliceActive = aliceJobs.length > 0 || (aliceAgent.status === 'working');
+      const activeJobsCount = pulseJobs.active ?? ((pulseJobs.todo || 0) + (pulseJobs.working || 0) + (pulseJobs.qc || 0));
+      const alfredStateChips = [
+        currentActive ? `<span class="agent-state-chip">${currentActive} current</span>` : '',
+        activeJobsCount ? `<span class="agent-state-chip">${activeJobsCount} active</span>` : '',
+        '<span class="agent-state-chip">live</span>'
+      ].filter(Boolean).join('');
+      const aliceStateChips = [
+        aliceJobs.length ? `<span class="agent-state-chip">${aliceJobs.length} current</span>` : '',
+        aliceActive ? '<span class="agent-state-chip">active</span>' : '<span class="agent-state-chip">idle</span>',
+        '<span class="agent-state-chip">live</span>'
+      ].filter(Boolean).join('');
+      // Build current work feed HTML — deliberately current-only, not old activity.
+      let feedHtml = '';
+      if (alfredCurrentItems.length > 0) {
+        feedHtml = '<div class="agent-card-feed">';
+        alfredCurrentItems.forEach(item => {
+          const reqBadge = item.number ? `<span class="feed-req">${item.number}</span>` : '';
+          const titleShort = escapeHtml(item.title.length > 42 ? item.title.substring(0, 39) + '...' : item.title);
+          feedHtml += `<div class="feed-item">${reqBadge}<span class="feed-title">${titleShort}</span><span class="feed-time">${escapeHtml(item.state)}</span></div>`;
+        });
+        feedHtml += '</div>';
+      } else {
+        feedHtml = '<div class="agent-card-feed empty"><div class="feed-item"><span class="feed-title muted">No current tasks</span></div></div>';
+      }
+      let aliceFeedHtml = '<div class="agent-card-feed">';
+      if (aliceJobs.length > 0) {
+        aliceJobs.slice(0, 3).forEach(job => {
+          const reqBadge = job.number ? `<span class="feed-req">${job.number}</span>` : '';
+          const title = escapeHtml((job.title || 'Research job').slice(0, 42));
+          aliceFeedHtml += `<div class="feed-item">${reqBadge}<span class="feed-title">${title}</span><span class="feed-time">active</span></div>`;
+        });
+      } else {
+        aliceFeedHtml += '<div class="feed-item"><span class="feed-title muted">No current research</span></div>';
+      }
+      aliceFeedHtml += '</div>';
       agentsEl.innerHTML = `<div class="agent-card ${isActive ? 'active' : 'standby'} agent-card-alfred">
           <div class="agent-card-top">
             <div class="agent-card-header">
-              <div class="agent-card-name">Alfred${idleStatusBadge}</div>
+              <div class="agent-card-name">Alfred</div>
               <div class="agent-card-role">Operator</div>
             </div>
-            <span class="agent-card-model">${model}</span>
+            <div class="agent-card-status-top">${alfredStateChips}</div>
           </div>
-          <div class="agent-card-now${isIdle ? ' idle-quip' : ''}">${displayLabel}</div>
+          ${feedHtml}
           <div class="agent-card-stats">
-            <span class="agent-stat"><span class="agent-stat-val">${todayCompleted}</span> today</span>
-            <span class="agent-stat"><span class="agent-stat-val">${totalCompleted}</span> total done</span>
-            <span class="agent-stat"><span class="agent-stat-val">${inProgress}</span> active</span>
-            <span class="agent-stat"><span class="agent-stat-val">${effRate}%</span> rate</span>
+            <span class="agent-stat"><span class="agent-stat-val">${alfredContext}%</span> ctx</span>
+            <span class="agent-stat"><span class="agent-stat-val">${formatCompactNumber(alfredTokens)}</span> tokens</span>
+            <span class="agent-stat"><span class="agent-stat-val">${totalCompleted}</span> tasks</span>
+            <span class="agent-stat"><span class="agent-stat-val">${totalJobs}</span> jobs</span>
           </div>
-          <div class="agent-card-periods">
-            <span class="agent-period">W ${weekCompleted}</span>
-            <span class="agent-period">M ${monthCompleted}</span>
-            <span class="agent-period">Y ${yearCompleted}</span>
+        </div>
+        <div class="agent-card ${aliceActive ? 'active' : 'standby'} agent-card-alice">
+          <div class="agent-card-top">
+            <div class="agent-card-header">
+              <div class="agent-card-name">Alice</div>
+              <div class="agent-card-role">Research Librarian</div>
+            </div>
+            <div class="agent-card-status-top">${aliceStateChips}</div>
           </div>
-
+          ${aliceFeedHtml}
+          <div class="agent-card-stats">
+            <span class="agent-stat"><span class="agent-stat-val">${aliceContext}%</span> ctx</span>
+            <span class="agent-stat"><span class="agent-stat-val">${formatCompactNumber(aliceTokens)}</span> tokens</span>
+            <span class="agent-stat"><span class="agent-stat-val">${aliceStats.researchCount}</span> research</span>
+            <span class="agent-stat"><span class="agent-stat-val">${aliceStats.clippingCount}</span> clippings</span>
+          </div>
         </div>`;
       } // end else (not typing)
     }
 
     // --- Dispatched agents from acpx sessions ---
-    const dispatchedAgents = (pulseAgents || []).filter(a => a.name !== 'Alfred');
+    const dispatchedAgents = (pulseAgents || []).filter(a => a.name !== 'Alfred' && a.name !== 'Alice');
     if (dispatchedAgents.length > 0 && agentsEl) {
       let dispatchHTML = '<div class="dispatched-section"><div class="dispatched-header">Dispatched</div>';
       dispatchedAgents.forEach(a => {
@@ -495,30 +716,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       dispatchHTML += '</div>';
       agentsEl.innerHTML += dispatchHTML;
-    }
-
-    // --- Dispatched session history ---
-    const dispatchedHistory = (data.dispatchedHistory || []);
-    if (dispatchedHistory.length > 0 && agentsEl) {
-      let histHTML = '<div class="dispatched-section dispatched-history-section"><div class="dispatched-header">Recent</div>';
-      dispatchedHistory.forEach(a => {
-        const startedTime = a.startedAt ? new Date(a.startedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-        let modelShort = '';
-        if (a.model) modelShort = a.model.replace('ollama/', '');
-        const reqMatch = (a.sessionName || '').match(/req[-_]?(\d+)/i);
-        const reqRef = reqMatch ? `REQ-${reqMatch[1].padStart(3, '0')}` : '';
-        const sessLabel = a.sessionName || (a.session || '').substring(0, 8);
-        histHTML += `<div class="dispatched-line dispatched-history-line">
-          <span class="dispatched-dot done"></span>
-          <span class="dispatched-name">${a.name}</span>
-          ${modelShort ? `<span class="dispatched-model">${modelShort}</span>` : ''}
-          ${reqRef ? `<span class="dispatched-req">${reqRef}</span>` : ''}
-          <span class="dispatched-session">${sessLabel}</span>
-          ${startedTime ? `<span class="dispatched-time">${startedTime}</span>` : ''}
-        </div>`;
-      });
-      histHTML += '</div>';
-      agentsEl.innerHTML += histHTML;
     }
 
 
@@ -576,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dpr = window.devicePixelRatio || 1;
 
     try {
-      const resp = await fetch('/api/vault-graph');
+      const resp = await fetch(apiPath('/api/vault-graph'));
       if (!resp.ok) return;
       const data = await resp.json();
       const nodes = data.nodes || [];
@@ -921,7 +1118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     try {
-      const resp = await fetch('/api/mission-control-jobs/logs');
+      const resp = await fetch(apiPath('/api/mission-control-jobs/logs'));
       if (!resp.ok) { logsEl.innerHTML = '<div class="log-empty">No logs yet</div>'; return; }
       const data = await resp.json();
       const logs = data.logs || [];
@@ -952,8 +1149,8 @@ document.addEventListener('DOMContentLoaded', () => {
         html += `<div class="log-entry${isExpanded ? ' expanded' : ''}" data-log-id="${l.id}" data-job-id="${l.id}">`;
         html += `<div class="done-item log-entry-row" data-job-id="${l.id}">`;
         html += `<span class="done-item-date">${dateStr}</span>`;
-        html += `<span class="done-item-time">${timeStr}</span>`;
         html += `<span class="done-item-ref log-entry-req">${reqNum ? `<span class="task-number">${reqNum}</span>` : ''}</span>`;
+        html += `<span class="done-item-time">${timeStr}</span>`;
         html += `<span class="done-item-title">${phaseLabel} ${escapeHtml(summaryShort)}</span>`;
         html += '</div>';
         if (logHtml) {
@@ -963,13 +1160,25 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       logsEl.innerHTML = html;
 
-      // Click row to open job modal (instead of expanding thread)
+      // Click row to open job modal
       logsEl.querySelectorAll('.log-entry-row').forEach(row => {
-        row.addEventListener('click', (e) => {
+        row.addEventListener('click', async (e) => {
           const entry = row.parentElement;
           const jobId = entry?.dataset.jobId;
           if (!jobId) return;
-          const job = currentJobs.find(j => j.id === jobId);
+          let job = currentJobs.find(j => j.id === jobId);
+          // If archived job not in currentJobs, fetch it
+          if (!job) {
+            try {
+              const resp = await fetch(`/api/mission-control-jobs`);
+              if (resp.ok) {
+                const data = await resp.json();
+                const allJobs = data.jobs || [];
+                // Also check archived
+                job = allJobs.find(j => j.id === jobId);
+              }
+            } catch(err) {}
+          }
           if (job) openCardModal(job);
         });
       });
@@ -1236,8 +1445,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     item.innerHTML = `
       <span class="done-item-date">${dateStr}</span>
-      <span class="done-item-time">${timeStr}</span>
       <span class="done-item-ref">${job.number ? `<span class="task-number">${job.number}</span>` : ''}</span>
+      <span class="done-item-time">${timeStr}</span>
       <span class="done-item-title">${escapeHtml(job.title || 'Untitled')}</span>
     `;
 
@@ -1317,7 +1526,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Due date — skip if today or if job is actively being worked on
     if (job.dueDate && job.phase !== 'working') {
-      const overdue = isDueDateOverdue(job.dueDate);
+      const overdue = job.dueDate && job.phase !== 'done' && job.phase !== 'completed' && job.phase !== 'archived' && isDueDateOverdue(job.dueDate);
       const isScheduled = !isDone && job.phase === 'todo' && new Date(job.dueDate) > new Date();
       const dueD = new Date(job.dueDate); dueD.setHours(0,0,0,0);
       const nowD = new Date(); nowD.setHours(0,0,0,0);
@@ -1495,7 +1704,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Due date / Scheduled indicator
     if (job.dueDate) {
       html += `<div class="modal-section">`;
-      const overdue = isDueDateOverdue(job.dueDate);
+      const overdue = job.dueDate && job.phase !== 'done' && job.phase !== 'completed' && job.phase !== 'archived' && isDueDateOverdue(job.dueDate);
       const isScheduled = job.phase === 'todo' && new Date(job.dueDate) > new Date();
       if (isScheduled) {
         html += `<h3>Scheduled</h3>`;
@@ -1803,7 +2012,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const subtaskEl = person.closest('.subtask-item');
       const subtaskNumber = subtaskEl?.querySelector('.subtask-number')?.textContent || '';
       try {
-        await fetch('/api/mission-control-message', {
+        await fetch(apiPath('/api/mission-control-message'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ to: name, message: msg, timestamp: Date.now(), jobNumber, subtaskNumber })
@@ -1959,7 +2168,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── API: Archive All Done Jobs ──
   async function archiveAllDone() {
     try {
-      const res = await fetch('/api/mission-control-jobs/archive-all-done', {
+      const res = await fetch(apiPath('/api/mission-control-jobs/archive-all-done'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -1996,21 +2205,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <h3>New Job</h3>
         <input type="text" id="newTaskTitle" placeholder="What needs to be done?" class="inline-input" style="width:100%;margin-bottom:8px" />
         <textarea id="newTaskDetails" placeholder="Extra details (optional)" class="inline-input" style="width:100%;min-height:40px;resize:vertical;margin-bottom:8px"></textarea>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <select id="newTaskAssignee" class="inline-select" style="flex:1">
-            <option value="Unassigned">Unassigned</option>
-            <option value="Alfred">Alfred</option>
-          </select>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
           <select id="newTaskPriority" class="inline-select" style="flex:1">
             <option value="normal" selected>Normal</option>
             <option value="high">High</option>
             <option value="critical">Critical</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <select id="newTaskCreatedBy" class="inline-select" style="flex:1">
-            <option value="Sam" selected>Created by: Sam</option>
-            <option value="Alfred">Created by: Alfred</option>
           </select>
           <input type="date" id="newTaskDueDate" class="inline-input" style="flex:1" min="${today}" value="${today}" placeholder="Due date" />
         </div>
@@ -2041,14 +2240,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = rawTask.length > 50 ? rawTask.substring(0, 47) + '...' : rawTask;
       const details = document.getElementById('newTaskDetails')?.value.trim() || '';
       const description = rawTask + (details ? '\n\n' + details : '');
-      const assignee = document.getElementById('newTaskAssignee')?.value || 'Unassigned';
+      const assignee = 'Unassigned';
       const priority = document.getElementById('newTaskPriority')?.value || 'normal';
-      const createdBy = document.getElementById('newTaskCreatedBy')?.value || 'Sam';
+      const createdBy = 'Sam';
       const dueDate = document.getElementById('newTaskDueDate')?.value || '';
       const project = 'Mission Control';
 
       try {
-        const res = await fetch('/api/mission-control-jobs/create', {
+        const res = await fetch(apiPath('/api/mission-control-jobs/create'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, description, details: description, assignee, priority, createdBy, dueDate, project, addSubtasks: [{ title: rawTask, status: 'pending' }] })
@@ -2083,13 +2282,13 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 25000);
-      const res = await fetch('/api/pulse-data', { signal: controller.signal });
+      const res = await fetch(apiPath('/api/pulse-data'), { signal: controller.signal });
       clearTimeout(timeout);
       const data = await res.json();
       if (!data.ok) {
         console.warn('[pulse] API returned not-ok:', data.error || data);
         // Show error state on system info
-        const errEls = ['sysTokensIn','sysTokensOut','sysSessionTime'];
+        const errEls = ['sysTokensIn','sysTokensOut'];
         errEls.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
         return;
       }
@@ -2125,13 +2324,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const pct = data.percentUsed || Math.round((data.contextUsed || 0) / (data.contextWindow || 202752) * 100);
       if (footerCtxFill) footerCtxFill.style.width = `${Math.min(pct, 100)}%`;
       if (footerCtxLabel) footerCtxLabel.textContent = `${pct}%`;
-      // Session time (live counter)
-      // Session time — handled by live timer below
       // Version (bottom right)
       const sysVersion = document.getElementById('sysVersion');
       if (sysVersion) sysVersion.textContent = (data.lastUpdate || '—').replace('OpenClaw ', 'v');
-      // Start live session timer
-      _startSessionTimer(data);
 
 
 
@@ -2144,21 +2339,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const todayEl = document.getElementById('pulse-tasks-today');
       const weekEl = document.getElementById('pulse-tasks-week');
       const monthEl = document.getElementById('pulse-tasks-month');
-      const yearEl = document.getElementById('pulse-tasks-year');
+      const totalTasksEl = document.getElementById('pulse-tasks-total');
       if (todayEl) todayEl.textContent = tasksCompleted.today ?? '—';
       if (weekEl) weekEl.textContent = tasksCompleted.week ?? '—';
       if (monthEl) monthEl.textContent = tasksCompleted.month ?? '—';
-      if (yearEl) yearEl.textContent = tasksCompleted.year ?? '—';
+      if (totalTasksEl) totalTasksEl.textContent = tasksCompleted.total ?? '—';
 
       // Job count metrics
       const jobsData = data.jobs || {};
       const jobsActiveEl = document.getElementById('pulse-jobs-active');
       const jobsTodoEl = document.getElementById('pulse-jobs-todo');
-      const jobsDoneTodayEl = document.getElementById('pulse-jobs-done-today');
+      const jobsDoneEl = document.getElementById('pulse-jobs-done');
       const jobsTotalEl = document.getElementById('pulse-jobs-total');
-      if (jobsActiveEl) jobsActiveEl.textContent = jobsData.working ?? '—';
+      const activeJobs = jobsData.active ?? ((jobsData.todo || 0) + (jobsData.working || 0) + (jobsData.qc || 0));
+      if (jobsActiveEl) jobsActiveEl.textContent = activeJobs;
       if (jobsTodoEl) jobsTodoEl.textContent = jobsData.todo ?? '—';
-      if (jobsDoneTodayEl) jobsDoneTodayEl.textContent = jobsData.doneToday ?? '—';
+      if (jobsDoneEl) jobsDoneEl.textContent = jobsData.done ?? '—';
       if (jobsTotalEl) jobsTotalEl.textContent = jobsData.total ?? '—';
 
       // Usage — per-model cards
@@ -2289,45 +2485,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Server Status ──
   // ── Live Session Timer ──
-  let _sessionTimerInterval = null;
-  let _sessionStartMs = null;
-
-  function _startSessionTimer(data) {
-    // Parse session age from pulse data and start ticking
-    if (_sessionTimerInterval) clearInterval(_sessionTimerInterval);
-    // Use sessionUptime string to estimate start time
-    const uptimeStr = data.sessionUptime || '';
-    let elapsedSec = _parseDuration(uptimeStr);
-    _sessionStartMs = Date.now() - (elapsedSec * 1000);
-    _tickSessionTimer();
-    _sessionTimerInterval = setInterval(_tickSessionTimer, 1000);
-  }
-
-  function _tickSessionTimer() {
-    const el = document.getElementById('sysSessionTime');
-    if (!el || !_sessionStartMs) return;
-    const sec = Math.floor((Date.now() - _sessionStartMs) / 1000);
-    el.textContent = _formatLiveDuration(sec);
-  }
-
-  function _parseDuration(str) {
-    // Parse "1h 23m 45s" or "23m 45s" or "45s" back to seconds
-    let total = 0;
-    const h = str.match(/(\d+)h/); if (h) total += parseInt(h[1]) * 3600;
-    const m = str.match(/(\d+)m/); if (m) total += parseInt(m[1]) * 60;
-    const s = str.match(/(\d+)s/); if (s) total += parseInt(s[1]);
-    return total;
-  }
-
-  function _formatLiveDuration(sec) {
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
-    if (h > 0) return `${h}h ${m}m ${s}s`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
-  }
-
   function updateServerStatus(connected) {
     // Removed: serverStatus element no longer in footer
     // Update footer green dot
@@ -2364,6 +2521,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Initialize ──
   updateServerStatus(false);
+  loadPlanPage();
   loadAssetData();
 
   console.log('[MC] Unified Workspace initialized');
@@ -2385,7 +2543,7 @@ async function loadVaultTree() {
   const treeEl = document.getElementById('vaultTree');
   if (!treeEl) return;
   try {
-    const res = await fetch('/api/vault/tree');
+    const res = await fetch(apiPath('/api/vault/tree'));
     const data = await res.json();
     if (!data.ok) {
       treeEl.innerHTML = '<div class="vault-loading">Error loading vault</div>';
@@ -2482,7 +2640,7 @@ async function openVaultFile(path, name) {
   contentEl.innerHTML = '<div class="vault-loading">Loading...</div>';
 
   try {
-    const res = await fetch('/api/vault/file?path=' + encodeURIComponent(path));
+    const res = await fetch(apiPath('/api/vault/file?path=' + encodeURIComponent(path)));
     const data = await res.json();
     if (!data.ok) {
       contentEl.innerHTML = '<div class="vault-empty">Error: ' + escapeHtml(data.error) + '</div>';
@@ -2576,6 +2734,12 @@ function renderVaultMarkdown(md) {
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
+  // Images (must come before links)
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />');
+
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
   // Horizontal rules
   html = html.replace(/^---$/gm, '<hr>');
 
@@ -2617,14 +2781,17 @@ document.querySelectorAll('.nav-item[data-view="vault"], .mobile-tab[data-view="
 // ── Research Browser ──
 let researchListData = [];
 let clippingsListData = [];
+let referencesListData = [];
 let currentResearchTab = 'research';
+let researchSortMode = 'date';
+let referencesSortMode = 'name';
 
 async function loadResearchList() {
   const listEl = document.getElementById('researchList');
   if (!listEl) return;
   listEl.innerHTML = '<div class="vault-loading">Loading...</div>';
   try {
-    const res = await fetch('/api/vault/tree');
+    const res = await fetch(apiPath('/api/vault/tree'));
     const data = await res.json();
     if (!data.ok) {
       listEl.innerHTML = '<div class="vault-loading">Error loading</div>';
@@ -2638,56 +2805,130 @@ async function loadResearchList() {
   }
 }
 
+async function loadReferencesList() {
+  const listEl = document.getElementById('referencesList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="vault-loading">Loading...</div>';
+  try {
+    const res = await fetch(apiPath('/api/vault/tree'));
+    const data = await res.json();
+    if (!data.ok) {
+      listEl.innerHTML = '<div class="vault-loading">Error loading</div>';
+      return;
+    }
+    referencesListData = data.files.filter(f => f.path.startsWith('Reference/') && !f.isDir);
+    renderReferencesList();
+  } catch (e) {
+    listEl.innerHTML = '<div class="vault-loading">Error loading</div>';
+  }
+}
+
 function renderActiveResearchTab() {
   const listEl = document.getElementById('researchList');
   if (!listEl) return;
   if (currentResearchTab === 'clippings') {
-    renderResearchList(listEl, clippingsListData, 'Clippings');
+    renderResearchList(listEl, clippingsListData, 'Clippings', null, researchSortMode);
   } else {
-    renderResearchList(listEl, researchListData, 'Research');
+    renderResearchList(listEl, researchListData, 'Research', null, researchSortMode);
   }
 }
 
-function renderResearchList(container, files, category) {
+function renderReferencesList() {
+  const listEl = document.getElementById('referencesList');
+  if (!listEl) return;
+  renderResearchList(listEl, referencesListData, 'References', 'referencesSearch', referencesSortMode);
+}
+
+function renderResearchList(container, files, category, searchId = 'researchSearch', sortMode = researchSortMode) {
   container.innerHTML = '';
-  if (files.length === 0) {
-    container.innerHTML = '<div class="vault-empty">No ' + (category || 'notes') + ' yet.' + (category === 'Research' ? ' Search above to start one.' : '') + '</div>';
+  const query = searchId ? (document.getElementById(searchId)?.value || '').trim().toLowerCase() : '';
+  const filtered = query ? files.filter(f => {
+    const haystack = `${f.name || ''} ${f.path || ''}`.toLowerCase();
+    return haystack.includes(query);
+  }) : files;
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="vault-empty">No matching ' + (category || 'notes') + '.</div>';
     return;
   }
-  // Sort by name
-  const sorted = [...files].sort((a, b) => {
+  const sorted = [...filtered].sort((a, b) => {
     const nameA = a.name.endsWith('.md') ? a.name.slice(0, -3) : a.name;
     const nameB = b.name.endsWith('.md') ? b.name.slice(0, -3) : b.name;
-    return nameA.localeCompare(nameB);
+    if (sortMode === 'name') return nameA.localeCompare(nameB);
+    return (b.mtime || 0) - (a.mtime || 0) || nameA.localeCompare(nameB);
   });
   const catLabel = category || 'Research';
-  const icon = catLabel === 'Clippings' ? '📎' : '📝';
   for (const f of sorted) {
     const displayName = f.name.endsWith('.md') ? f.name.slice(0, -3) : f.name;
+    const isYouTube = f.source && (f.source.includes('youtube.com') || f.source.includes('youtu.be'));
     const el = document.createElement('div');
-    el.className = 'research-note';
-    el.innerHTML = '<span class="research-note-icon">' + icon + '</span>' +
-      '<div class="research-note-info">' +
-        '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' +
-        '<div class="research-note-meta">' + catLabel + '</div>' +
-      '</div>' +
-      '<span class="research-note-arrow">›</span>';
-    el.addEventListener('click', () => openResearchModal(f.path, f.name));
+    el.className = 'research-note' + (isYouTube ? ' research-note-yt' : '');
+    if (isYouTube && f.source) {
+      const videoId = getYouTubeId(f.source);
+      const thumbUrl = videoId ? 'https://img.youtube.com/vi/' + videoId + '/mqdefault.jpg' : '';
+      const dateMeta = f.mtime ? ' · ' + formatTimestamp(f.mtime) : '';
+      if (thumbUrl) {
+        el.innerHTML = '<img class="research-note-thumb" src="' + thumbUrl + '" alt="" loading="lazy" />' +
+          '<div class="research-note-info">' +
+            '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' +
+            '<div class="research-note-meta">' + catLabel + ' · ▶ Video' + dateMeta + '</div>' +
+          '</div>';
+      } else {
+        el.innerHTML =
+          '<div class="research-note-info">' +
+            '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' +
+            '<div class="research-note-meta">' + catLabel + ' · ▶ Video' + dateMeta + '</div>' +
+          '</div>';
+      }
+    } else {
+      el.innerHTML =
+        '<div class="research-note-info">' +
+          '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' +
+          '<div class="research-note-meta">' + catLabel + (f.mtime ? ' · ' + formatTimestamp(f.mtime) : '') + '</div>' +
+        '</div>';
+    }
+    el.addEventListener('click', () => openResearchModal(f.path, f.name, f.source));
     container.appendChild(el);
   }
 }
 
-async function openResearchModal(path, name) {
+function getYouTubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+async function openResearchModal(path, name, source) {
   const modal = document.getElementById('researchModal');
   const content = document.getElementById('researchModalContent');
   const breadcrumb = document.getElementById('researchModalBreadcrumb');
   const obsLink = document.getElementById('researchModalObsidian');
+  const marpBtn = document.getElementById('researchModalMarp');
+  const readBtn = document.getElementById('researchModalRead');
   if (!modal || !content) return;
 
   const displayName = name.endsWith('.md') ? name.slice(0, -3) : name;
-  breadcrumb.innerHTML = '<span>Research</span><span class="sep">/</span><span>' + escapeHtml(displayName) + '</span>';
+  const isYouTube = source && (source.includes('youtube.com') || source.includes('youtu.be'));
+  // Set note path on action buttons
+  if (marpBtn) marpBtn.dataset.notePath = path;
+  if (readBtn) readBtn.dataset.notePath = path;
+  const rootLabel = path.startsWith('Reference/') ? 'References' : path.startsWith('Clippings/') ? 'Clippings' : 'Research';
+  breadcrumb.innerHTML = '<span>' + rootLabel + '</span><span class="sep">/</span><span>' + escapeHtml(displayName) + '</span>';
 
-  content.innerHTML = '<div class="vault-loading">Loading...</div>';
+  // Build YouTube header
+  let ytHeader = '';
+  if (isYouTube) {
+    const videoId = getYouTubeId(source);
+    if (videoId) {
+      ytHeader = '<div class="yt-modal-header">' +
+        '<img class="yt-modal-thumb" src="https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg" alt="" />' +
+        '<div class="yt-modal-actions">' +
+          '<a class="yt-watch-link" href="' + escapeHtml(source) + '" target="_blank" rel="noopener">▶ Watch on YouTube</a>' +
+        '</div>' +
+      '</div>';
+    }
+  }
+
+  content.innerHTML = ytHeader + '<div class="vault-loading">Loading...</div>';
   modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
@@ -2699,14 +2940,14 @@ async function openResearchModal(path, name) {
   }
 
   try {
-    const res = await fetch('/api/vault/file?path=' + encodeURIComponent(path));
+    const res = await fetch(apiPath('/api/vault/file?path=' + encodeURIComponent(path)));
     const data = await res.json();
     if (!data.ok) {
       content.innerHTML = '<div class="vault-empty">Error: ' + escapeHtml(data.error) + '</div>';
       return;
     }
     const html = renderVaultMarkdown(data.content);
-    content.innerHTML = '<div class="vault-md">' + html + '</div>';
+    content.innerHTML = ytHeader + '<div class="vault-md">' + html + '</div>';
   } catch (e) {
     content.innerHTML = '<div class="vault-empty">Error loading file</div>';
   }
@@ -2725,6 +2966,27 @@ const researchModalClose = document.getElementById('researchModalClose');
 if (researchModalClose) {
   researchModalClose.addEventListener('click', closeResearchModal);
 }
+
+// Research action buttons
+const researchModalRead = document.getElementById('researchModalRead');
+if (researchModalRead) {
+  researchModalRead.addEventListener('click', () => {
+    const notePath = researchModalRead.dataset.notePath || '';
+    if (notePath) {
+      window.open(apiPath('/api/read?path=' + encodeURIComponent(notePath)), '_blank');
+    }
+  });
+}
+
+const researchModalMarp = document.getElementById('researchModalMarp');
+if (researchModalMarp) {
+  researchModalMarp.addEventListener('click', () => {
+    const notePath = researchModalMarp.dataset.notePath || '';
+    if (notePath) {
+      window.open(apiPath('/api/marp?path=' + encodeURIComponent(notePath)), '_blank');
+    }
+  });
+}
 const researchModal = document.getElementById('researchModal');
 if (researchModal) {
   researchModal.addEventListener('click', (e) => {
@@ -2732,44 +2994,120 @@ if (researchModal) {
   });
 }
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeResearchModal();
+  if (e.key === 'Escape') {
+    closeResearchModal();
+    closeResearchCreateModal?.();
+  }
 });
 
-// Research search + new job
-const researchSearchEl = document.getElementById('researchSearch');
-const researchNewBtn = document.getElementById('researchNewBtn');
+// Research create modal + sort toggle
+const researchSortToggle = document.getElementById('researchSortToggle');
+const researchCreateBtn = document.getElementById('researchCreateBtn');
+const researchCreateModal = document.getElementById('researchCreateModal');
+const researchCreateInput = document.getElementById('researchCreateInput');
+const researchCreateSubmit = document.getElementById('researchCreateSubmit');
+const researchCreateClose = document.getElementById('researchCreateClose');
+const researchCreateCancel = document.getElementById('researchCreateCancel');
+let researchCreateType = 'research';
+const referencesSearchEl = document.getElementById('referencesSearch');
+const referencesSortEl = document.getElementById('referencesSort');
 
-if (researchSearchEl) {
-  researchSearchEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && researchSearchEl.value.trim()) {
-      createResearchJob(researchSearchEl.value.trim());
-      researchSearchEl.value = '';
+function updateResearchSortToggle() {
+  if (!researchSortToggle) return;
+  researchSortToggle.dataset.mode = researchSortMode;
+  researchSortToggle.textContent = researchSortMode === 'date' ? 'Date' : 'Name';
+}
+
+if (researchSortToggle) {
+  updateResearchSortToggle();
+  researchSortToggle.addEventListener('click', () => {
+    researchSortMode = researchSortMode === 'date' ? 'name' : 'date';
+    updateResearchSortToggle();
+    renderActiveResearchTab();
+  });
+}
+
+function openResearchCreateModal(type = currentResearchTab === 'clippings' ? 'clipping' : 'research') {
+  if (!researchCreateModal) return;
+  researchCreateType = type;
+  document.querySelectorAll('.research-create-type').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.type === researchCreateType);
+  });
+  if (researchCreateInput) {
+    researchCreateInput.value = '';
+    researchCreateInput.placeholder = researchCreateType === 'clipping'
+      ? 'Paste a URL, YouTube link, or describe what to clip...'
+      : 'Research topic or question...';
+  }
+  researchCreateModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => researchCreateInput?.focus(), 0);
+}
+
+function closeResearchCreateModal() {
+  if (!researchCreateModal) return;
+  researchCreateModal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+if (researchCreateBtn) researchCreateBtn.addEventListener('click', () => openResearchCreateModal());
+if (researchCreateClose) researchCreateClose.addEventListener('click', closeResearchCreateModal);
+if (researchCreateCancel) researchCreateCancel.addEventListener('click', closeResearchCreateModal);
+if (researchCreateModal) {
+  researchCreateModal.addEventListener('click', e => {
+    if (e.target === researchCreateModal) closeResearchCreateModal();
+  });
+}
+document.querySelectorAll('.research-create-type').forEach(btn => {
+  btn.addEventListener('click', () => {
+    researchCreateType = btn.dataset.type || 'research';
+    document.querySelectorAll('.research-create-type').forEach(t => t.classList.toggle('active', t === btn));
+    if (researchCreateInput) {
+      researchCreateInput.placeholder = researchCreateType === 'clipping'
+        ? 'Paste a URL, YouTube link, or describe what to clip...'
+        : 'Research topic or question...';
+    }
+  });
+});
+if (researchCreateSubmit) {
+  researchCreateSubmit.addEventListener('click', async () => {
+    const value = (researchCreateInput?.value || '').trim();
+    if (!value) { researchCreateInput?.focus(); return; }
+    if (researchCreateType === 'clipping') await createClippingJob(value);
+    else await createResearchJob(value);
+    closeResearchCreateModal();
+  });
+}
+if (researchCreateInput) {
+  researchCreateInput.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      researchCreateSubmit?.click();
     }
   });
 }
 
-if (researchNewBtn) {
-  researchNewBtn.addEventListener('click', () => {
-    const query = researchSearchEl ? researchSearchEl.value.trim() : '';
-    if (!query) {
-      if (researchSearchEl) researchSearchEl.focus();
-      return;
-    }
-    createResearchJob(query);
-    researchSearchEl.value = '';
+if (referencesSearchEl) {
+  referencesSearchEl.addEventListener('input', renderReferencesList);
+}
+
+if (referencesSortEl) {
+  referencesSortEl.addEventListener('change', () => {
+    referencesSortMode = referencesSortEl.value || 'name';
+    renderReferencesList();
   });
 }
 
 async function createResearchJob(topic) {
   try {
-    const res = await fetch('/api/mission-control-jobs/create', {
+    const res = await fetch(apiPath('/api/mission-control-jobs/create'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: 'Research: ' + topic,
         description: 'Research and synthesize findings on: ' + topic + '. Create a research note in the MC vault with YAML frontmatter, wikilinks, and category tags. Update the Research Index.',
         priority: 'medium',
-        assignee: 'Alfred',
+        assignee: 'Alice',
         assignedBy: 'Sam'
       })
     });
@@ -2786,10 +3124,45 @@ async function createResearchJob(topic) {
   }
 }
 
-// Load research when tab is activated
+async function createClippingJob(input) {
+  const isYoutube = /youtu\.be|youtube\.com/i.test(input);
+  const isWeb = /^https?:\/\//i.test(input);
+  const clippingKind = isYoutube ? 'YouTube' : isWeb ? 'Web' : 'Manual';
+  try {
+    const res = await fetch(apiPath('/api/mission-control-jobs/create'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Clip: ' + input.slice(0, 90),
+        description: 'Create a ' + clippingKind + ' clipping from: ' + input + '. File it in the Mission Control vault under the correct Clippings folder, enrich it with YAML frontmatter, source URL, why saved, transcript or readable extraction when available, and useful wikilinks. If it is YouTube, use the locked YouTube clipping format.',
+        priority: 'medium',
+        assignee: 'Alfred',
+        assignedBy: 'Sam'
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const num = data.job?.number || '';
+      showToast(num + ' created: ' + clippingKind + ' clipping');
+      loadAssetData();
+    } else {
+      showToast('Error: ' + (data.error || 'Failed to create clipping job'));
+    }
+  } catch (e) {
+    showToast('Error creating clipping job');
+  }
+}
+
+// Load research/reference when tabs are activated
 document.querySelectorAll('.nav-item[data-view="research"], .mobile-tab[data-view="research"]').forEach(btn => {
   btn.addEventListener('click', () => {
     if (researchListData.length === 0) loadResearchList();
+  });
+});
+
+document.querySelectorAll('.nav-item[data-view="references"], .mobile-tab[data-view="references"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (referencesListData.length === 0) loadReferencesList();
   });
 });
 

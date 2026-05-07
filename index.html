@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mission Control</title>
-  <link rel="stylesheet" href="./styles.css?v=20260417r23" />
+  <link rel="stylesheet" href="./styles.css?v=20260507focuspure" />
 </head>
 <body class="dark">
   <script>/* Force dark immediately — prevent light flash on iPhone */
@@ -13,10 +13,10 @@
 
   <div class="mobile-header"><span class="mobile-title">Mission Control</span><button id="addTaskBtnMobile" class="fab-mobile" title="Add new job">+</button></div>
   <div class="mobile-tabs">
-    <button class="mobile-tab active" data-view="overview">Overview</button>
-
-    <button class="mobile-tab" data-view="logs">Logs</button>
+    <button class="mobile-tab active" data-view="plan">Focus</button>
     <button class="mobile-tab" data-view="research">Research</button>
+    <button class="mobile-tab" data-view="references">References</button>
+    <button class="mobile-tab" data-view="logs">Logs</button>
   </div>
   <div class="app">
     <!-- Left Navigation -->
@@ -26,10 +26,10 @@
       </div>
 
       <div class="nav-section">
-        <button class="nav-item active" data-view="overview">Overview</button>
-
-        <button class="nav-item" data-view="logs">Logs</button>
+        <button class="nav-item active" data-view="plan">Focus</button>
         <button class="nav-item" data-view="research">Research</button>
+        <button class="nav-item" data-view="references">References</button>
+        <button class="nav-item" data-view="logs">Logs</button>
       </div>
 
       <div class="nav-footer">
@@ -42,124 +42,20 @@
       <button id="addTaskBtn" class="fab" title="Add new job">+</button>
       <main class="main-viewport">
 
-        <!-- Overview = Job Board -->
-        <section id="overview" class="view active">
+        <!-- Focus View -->
+        <section id="plan" class="view active">
           <header class="page-header">
             <div class="page-header-row">
               <div>
-                <h1 class="page-title">Overview</h1>
-                <p class="page-subtitle">Jobs, Tasks & Activity</p>
+                <h1 class="page-title">Focus</h1>
+                <p class="page-subtitle">Mission, current focus, recent truth, next best step</p>
               </div>
             </div>
           </header>
-
-          <!-- Approvals Strip -->
-          <div id="approvalsStrip" class="approvals-strip" style="display:none"></div>
-
-          <!-- Work Pulse (Jobs + Tasks blocks) -->
-          <div class="pulse-section overview-pulse">
-            <div class="pulse-metrics-grid pulse-job-grid">
-              <div class="pulse-metric-card pulse-metric-jobs-active">
-                <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">ACTIVE</span>
-                <span class="metric-value" id="pulse-jobs-active" style="font-size:32px;font-weight:700">—</span>
-                <span class="metric-sublabel">jobs in progress</span>
-              </div>
-              <div class="pulse-metric-card pulse-metric-jobs-todo">
-                <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">TO DO</span>
-                <span class="metric-value" id="pulse-jobs-todo" style="font-size:32px;font-weight:700">—</span>
-                <span class="metric-sublabel">jobs queued</span>
-              </div>
-              <div class="pulse-metric-card pulse-metric-jobs-done-today">
-                <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">DONE</span>
-                <span class="metric-value" id="pulse-jobs-done-today" style="font-size:32px;font-weight:700">—</span>
-                <span class="metric-sublabel">completed today</span>
-              </div>
-              <div class="pulse-metric-card pulse-metric-jobs-total">
-                <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">TOTAL</span>
-                <span class="metric-value" id="pulse-jobs-total" style="font-size:32px;font-weight:700">—</span>
-                <span class="metric-sublabel">all time</span>
-              </div>
-            </div>
-            <div class="pulse-metrics-grid">
-              <div class="pulse-metric-card pulse-metric-today">
-                <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">DAY</span>
-                <span class="metric-value" id="pulse-tasks-today" style="font-size:32px;font-weight:700">—</span>
-                <span class="metric-sublabel">tasks completed</span>
-              </div>
-              <div class="pulse-metric-card pulse-metric-week">
-                <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">WEEK</span>
-                <span class="metric-value" id="pulse-tasks-week" style="font-size:32px;font-weight:700">—</span>
-                <span class="metric-sublabel">tasks completed</span>
-              </div>
-              <div class="pulse-metric-card pulse-metric-month">
-                <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">MONTH</span>
-                <span class="metric-value" id="pulse-tasks-month" style="font-size:32px;font-weight:700">—</span>
-                <span class="metric-sublabel">tasks completed</span>
-              </div>
-              <div class="pulse-metric-card pulse-metric-year">
-                <span class="metric-label" style="font-weight:700;color:#fff;font-size:14px">YEAR</span>
-                <span class="metric-value" id="pulse-tasks-year" style="font-size:32px;font-weight:700">—</span>
-                <span class="metric-sublabel">tasks completed</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Session & Context -->
-          <div class="system-info-card" id="systemInfoCard">
-            <div class="system-info-header">
-              <span class="system-info-title">Session</span>
-              <span class="system-info-status">
-                <span class="status-indicator"></span>
-                <span id="statusConnected">Online</span>
-              </span>
-            </div>
-            <div class="system-info-grid">
-              <div class="system-info-cell">
-                <span class="system-info-value" id="sysTokensIn">—</span>
-                <span class="system-info-label">tokens in</span>
-              </div>
-              <div class="system-info-cell">
-                <span class="system-info-value" id="sysTokensOut">—</span>
-                <span class="system-info-label">tokens out</span>
-              </div>
-              <div class="system-info-cell">
-                <span class="system-info-value" id="sysSessionTime">—</span>
-                <span class="system-info-label">session</span>
-              </div>
-            </div>
-            <div class="system-info-footer">
-              <div class="footer-context-bar" id="footerContextBar">
-                <span class="footer-context-label" id="footerContextLabel">0%</span>
-                <div class="footer-context-track">
-                  <div class="footer-context-fill" id="footerContextFill"></div>
-                </div>
-              </div>
-              <span class="system-info-version" id="sysVersion">—</span>
-            </div>
-          </div>
-
-          <!-- Awaiting Approval -->
-          <div id="systemAwaitingApproval" class="overview-awaiting-approval" style="display:none"></div>
-
-          <!-- Agent Cards -->
-          <div id="systemDashboardTop" class="dashboard-top">
-            <div id="systemAgents" class="dashboard-agents"></div>
-          </div>
-
-          <!-- Up Next -->
-          <div id="upNextSection" class="up-next-section" style="display:none">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <h3 class="production-section-title" style="margin:0">Up Next</h3>
-            </div>
-            <div id="upNextList" class="up-next-list"></div>
-          </div>
-
-          <!-- To Do Grid -->
-          <div class="production-section" id="jobsSection">
-            <div id="todoGrid" class="todo-grid"></div>
+          <div id="planContent" class="plan-shell">
+            <div class="vault-loading">Loading focus...</div>
           </div>
         </section>
-
 
 
         <!-- Logs View -->
@@ -172,8 +68,8 @@
           <div class="logs-container">
             <div class="log-header">
               <span class="log-date">Date</span>
-              <span class="log-time">Time</span>
               <span class="log-ref">REF</span>
+              <span class="log-time">Time</span>
               <span class="log-desc">Description</span>
             </div>
             <div id="jobLogsList" class="log-list">
@@ -188,26 +84,63 @@
             <h1 class="page-title">Research</h1>
             <p class="page-subtitle">Knowledge & Investigation</p>
           </header>
-          <div class="research-toolbar">
-            <input type="text" id="researchSearch" class="research-search" placeholder="Research a topic and press Enter..." />
-            <button id="researchNewBtn" class="research-new-btn" title="Launch research job">+ New</button>
-          </div>
-          <div class="research-tabs">
+          <div class="research-tabs research-tabs-row">
+            <button id="researchSortToggle" class="research-sort-toggle" data-mode="date" title="Toggle sort: Date / Name">Date</button>
             <button class="research-tab active" data-tab="research">Research</button>
             <button class="research-tab" data-tab="clippings">Clippings</button>
+            <button id="researchCreateBtn" class="research-plus-btn" title="Create research or clipping">+</button>
           </div>
           <div class="research-list" id="researchList">
             <div class="vault-loading">Loading research...</div>
           </div>
         </section>
 
+        <!-- References View -->
+        <section id="references" class="view">
+          <header class="page-header">
+            <h1 class="page-title">References</h1>
+            <p class="page-subtitle">Operating manuals, product notes & system truth</p>
+          </header>
+          <div class="research-toolbar">
+            <input type="text" id="referencesSearch" class="research-search" placeholder="Filter reference notes..." />
+            <select id="referencesSort" class="research-sort" title="Sort reference notes">
+              <option value="name">Name</option>
+              <option value="date">Date</option>
+            </select>
+          </div>
+          <div class="research-list" id="referencesList">
+            <div class="vault-loading">Loading references...</div>
+          </div>
+        </section>
+
         <!-- Research note modal -->
+        <div class="modal-overlay" id="researchCreateModal" style="display:none">
+          <div class="modal-card research-create-modal">
+            <button class="modal-close" id="researchCreateClose" title="Close">×</button>
+            <h2 class="research-create-title">Add to the vault</h2>
+            <p class="research-create-subtitle">Choose what Alfred should file, then give the topic, URL, or clipping instruction.</p>
+            <div class="research-create-choice" role="group" aria-label="Vault add type">
+              <button class="research-create-type active" data-type="research">Research</button>
+              <button class="research-create-type" data-type="clipping">Clipping</button>
+            </div>
+            <textarea id="researchCreateInput" class="research-create-input" rows="5" placeholder="Topic, URL, YouTube link, or clipping instruction..."></textarea>
+            <div class="research-create-actions">
+              <button id="researchCreateCancel" class="research-create-cancel">Cancel</button>
+              <button id="researchCreateSubmit" class="research-create-submit">Create</button>
+            </div>
+          </div>
+        </div>
+
         <div class="modal-overlay" id="researchModal" style="display:none">
           <div class="modal-card research-modal">
             <button class="modal-close" id="researchModalClose" title="Close">×</button>
+            <div class="research-modal-actions">
+              <a class="vault-obsidian-link modal-obsidian-link research-action-btn" id="researchModalObsidian" href="#" title="Open in Obsidian">⧄ Open in Obsidian</a>
+              <button class="vault-obsidian-link research-action-btn research-action-button read-btn" id="researchModalRead" title="Open as beautiful reader">▱ Read</button>
+              <button class="vault-obsidian-link research-action-btn research-action-button" id="researchModalMarp" title="Open as Marp presentation">▶ Present</button>
+            </div>
             <div class="research-modal-breadcrumb" id="researchModalBreadcrumb"></div>
             <div class="research-modal-content" id="researchModalContent"></div>
-            <a class="vault-obsidian-link modal-obsidian-link" id="researchModalObsidian" href="#" title="Open in Obsidian">⧄ Open in Obsidian</a>
           </div>
         </div>
 
@@ -223,6 +156,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260417r23"></script>
+  <script src="./app.js?v=20260507focuspure"></script>
 </body>
 </html>
