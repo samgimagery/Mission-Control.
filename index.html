@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mission Control</title>
-  <link rel="stylesheet" href="./styles.css?v=20260507focuspure" />
+  <link rel="stylesheet" href="./styles.css?v=20260509researchsortorder" />
 </head>
 <body class="dark">
   <script>/* Force dark immediately — prevent light flash on iPhone */
@@ -85,10 +85,13 @@
             <p class="page-subtitle">Knowledge & Investigation</p>
           </header>
           <div class="research-tabs research-tabs-row">
-            <button id="researchSortToggle" class="research-sort-toggle" data-mode="date" title="Toggle sort: Date / Name">Date</button>
-            <button class="research-tab active" data-tab="research">Research</button>
-            <button class="research-tab" data-tab="clippings">Clippings</button>
-            <button id="researchCreateBtn" class="research-plus-btn" title="Create research or clipping">+</button>
+            <input type="text" id="researchSearch" class="research-search research-inline-search" placeholder="Filter research notes..." />
+            <div class="research-tab-actions">
+              <button class="research-tab active" data-tab="research">Research</button>
+              <button class="research-tab" data-tab="clippings">Clippings</button>
+              <button id="researchSortToggle" class="research-sort-toggle" data-mode="date" title="Toggle sort: Date / Name">Date</button>
+              <button id="researchCreateBtn" class="research-plus-btn" title="Create research or clipping">+</button>
+            </div>
           </div>
           <div class="research-list" id="researchList">
             <div class="vault-loading">Loading research...</div>
@@ -101,12 +104,11 @@
             <h1 class="page-title">References</h1>
             <p class="page-subtitle">Operating manuals, product notes & system truth</p>
           </header>
-          <div class="research-toolbar">
-            <input type="text" id="referencesSearch" class="research-search" placeholder="Filter reference notes..." />
-            <select id="referencesSort" class="research-sort" title="Sort reference notes">
-              <option value="name">Name</option>
-              <option value="date">Date</option>
-            </select>
+          <div class="research-tabs research-tabs-row references-tabs-row">
+            <input type="text" id="referencesSearch" class="research-search research-inline-search" placeholder="Filter reference notes..." />
+            <div class="research-tab-actions">
+              <button id="referencesSortToggle" class="research-sort-toggle" data-mode="date" title="Toggle sort: Date / Name">Date</button>
+            </div>
           </div>
           <div class="research-list" id="referencesList">
             <div class="vault-loading">Loading references...</div>
@@ -156,6 +158,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260507focuspure"></script>
+  <script src="./app.js?v=20260509researchsortorder"></script>
 </body>
 </html>
