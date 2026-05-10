@@ -1676,3 +1676,60 @@ body.dark .research-create-submit{
 .decision-btn.primary{background:#0b0a09;color:#f3ecdf;border-color:#24211d}.decision-btn:hover{border-color:#171513;background:#f3f0e8;color:#171513}
 .decision-deck-edge{right:14px;top:34px;bottom:34px;width:48px}.decision-edge-line{border-color:rgba(212,199,183,calc(.76 - var(--i)*.05));background:#fbfaf6;border-radius:0 4px 4px 0}
 .decision-side-panel{min-height:244px;padding-left:20px}.decision-technical{font-size:10px;color:#9f968d}.decision-technical b{color:#f3ecdf}.decision-footer-hint{font-size:9px;color:#777067}
+
+/* ── Decision Deck polish (REQ-204): reader typography, white card on black ── */
+.decision-deck-module{border-radius:12px;background:#050505;border:1px solid rgba(255,255,255,.09);box-shadow:0 24px 80px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.045);padding:18px;color:#f5f5f3}
+.decision-deck-module:before{display:none}
+.decision-deck-grid{display:block}
+.decision-deck-stage{min-height:254px;display:grid;place-items:center;position:relative;perspective:none}
+.decision-card{width:min(760px,calc(100% - 54px));min-height:232px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid #d8d2c8;border-radius:7px;background:#fbfaf6;color:#11100f;box-shadow:0 22px 58px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.86);padding:22px 24px 20px;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,sans-serif;cursor:default}
+.decision-card:before{content:"";position:absolute;inset:11px;border:1px solid rgba(17,16,15,.055);border-radius:4px;pointer-events:none}
+.decision-card:after{display:none}
+.decision-card.flick{transform:translateX(-22px);opacity:.2}
+.decision-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:0 0 24px}
+.decision-card-index{font-family:inherit;font-size:18px;font-weight:850;line-height:1;letter-spacing:-.03em;color:#11100f;font-variant-numeric:tabular-nums}
+.decision-card-index span{color:#70675f;font-weight:850;margin-left:3px}
+.decision-deck-count{font-family:inherit;font-size:13px;font-weight:700;line-height:1;letter-spacing:-.01em;text-transform:none;color:#70675f;background:transparent;border:0;border-radius:0;padding:0;font-variant-numeric:tabular-nums;text-align:right}
+.decision-card h2{font-size:31px;font-weight:560;line-height:1.05;letter-spacing:-.045em;color:#11100f;max-width:620px;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,sans-serif}
+.decision-card p,.decision-chips,.decision-chip,.decision-side-panel,.decision-footer-hint{display:none}
+.decision-card-bottom{display:flex;align-items:flex-end;justify-content:flex-end;gap:16px;margin-top:28px}
+.decision-delta-row{display:grid;grid-template-columns:repeat(4,max-content);gap:9px;margin:0;justify-content:end;align-items:end}
+.decision-delta{display:grid;grid-template-columns:auto auto;grid-template-areas:"label arrow" "value arrow";column-gap:8px;min-width:66px;padding:0 0 7px;border-bottom:1px solid #bfb7aa;color:#171513;font-family:inherit;font-size:12px;font-weight:650;line-height:1.05;letter-spacing:-.01em;text-align:right}
+.decision-delta small{grid-area:label;color:#7a7168;font-size:10px;font-weight:750;line-height:1;text-transform:uppercase;letter-spacing:.04em;margin:0}
+.decision-delta b{grid-area:value;color:#171513;font-size:13px;font-weight:750;line-height:1.1;white-space:nowrap}
+.decision-delta i{grid-area:arrow;align-self:center;color:#11100f;font-style:normal;font-size:17px;font-weight:800;line-height:1;width:13px;text-align:center}
+.decision-delta.down i{color:#8f3f3f}.decision-delta.up i{color:#295f3d}.decision-delta.flat i{color:#7a7168}
+.decision-controls{display:flex;align-items:flex-end;gap:8px;margin:0;flex-shrink:0}
+.decision-btn,.decision-next-btn{appearance:none;font-family:inherit;border-radius:7px;font-size:13px;font-weight:760;line-height:1;letter-spacing:-.01em;cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease,color .16s ease}
+.decision-btn{border:1px solid #cfc6b8;color:#171513;background:transparent;padding:10px 13px;text-transform:none}
+.decision-btn.primary{background:#0b0a09;color:#fbfaf6;border-color:#0b0a09;min-width:82px}
+.decision-btn:hover{border-color:#171513;background:#eee8df;color:#171513;transform:translateY(-1px)}
+.decision-btn.primary:hover{background:#171513;color:#fbfaf6}
+.decision-next-btn{width:36px;height:36px;display:grid;place-items:center;border:1px solid #0b0a09;background:#0b0a09;color:#fbfaf6;font-size:20px;padding:0}
+.decision-next-btn:hover{transform:translateY(-1px);background:#171513}
+.decision-deck-edge{right:10px;top:30px;bottom:30px;width:48px;filter:drop-shadow(14px 18px 24px rgba(0,0,0,.38))}
+.decision-edge-line{border-color:rgba(216,210,200,calc(.76 - var(--i)*.05));background:#fbfaf6;border-radius:0 5px 5px 0}
+@media(max-width:980px){.decision-card{width:calc(100% - 36px);min-height:250px}.decision-card h2{font-size:26px}.decision-card-bottom{align-items:stretch;flex-direction:column}.decision-delta-row{justify-content:start;grid-template-columns:repeat(2,max-content)}.decision-controls{align-items:center}.decision-deck-edge{right:0}}
+
+/* ── Decision Deck Time Machine trail + contextual choices ── */
+.decision-deck-module{background:transparent;border:0;box-shadow:none;padding:4px 0 10px;overflow:visible}
+.decision-deck-stage{min-height:268px;display:grid;place-items:start center;overflow:visible;padding:4px 74px 12px 0}
+.decision-card{position:relative;z-index:5;width:min(720px,calc(100% - 28px));min-height:238px;box-shadow:0 24px 64px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.9)}
+.decision-card-main{display:grid;gap:10px}
+.decision-card p{display:block;font-family:inherit;font-size:15px;font-weight:520;line-height:1.32;letter-spacing:-.018em;color:#675e55;max-width:520px;margin:0}
+.decision-trail{position:absolute;z-index:1;inset:4px 0 0 auto;width:min(720px,calc(100% - 28px));height:238px;pointer-events:none;transform:translateX(0)}
+.decision-trail-card{position:absolute;top:0;right:0;width:100%;height:100%;border:1px solid #d8d2c8;border-radius:7px;background:#fbfaf6;box-shadow:0 18px 48px rgba(0,0,0,.28);transform-origin:center right}
+.decision-trail-card:after{content:"";position:absolute;inset:11px;border:1px solid rgba(17,16,15,.045);border-radius:4px}
+.decision-trail-card.trail-1{opacity:.78;transform:translateX(26px) translateY(8px) scale(.965);z-index:3}
+.decision-trail-card.trail-2{opacity:.42;transform:translateX(50px) translateY(16px) scale(.93);z-index:2}
+.decision-trail-card.trail-3{opacity:.16;transform:translateX(72px) translateY(24px) scale(.895);z-index:1;filter:blur(.2px)}
+.decision-card.flick{animation:decision-card-up-out .2s ease forwards}
+.decision-card.end-bump{animation:decision-card-end-bump .24s cubic-bezier(.2,.9,.25,1)}
+@keyframes decision-card-up-out{to{transform:translateY(-24px) scale(.985);opacity:0}}
+@keyframes decision-card-end-bump{0%,100%{transform:translateX(0)}45%{transform:translateX(8px)}70%{transform:translateX(-3px)}}
+@media(max-width:980px){.decision-deck-stage{padding-right:34px}.decision-card{width:calc(100% - 20px)}.decision-trail{width:calc(100% - 20px)}.decision-card-bottom{align-items:stretch;flex-direction:column}.decision-controls{flex-wrap:wrap}.decision-trail-card.trail-1{transform:translateX(17px) translateY(8px) scale(.965)}.decision-trail-card.trail-2{transform:translateX(30px) translateY(16px) scale(.93)}.decision-trail-card.trail-3{display:none}}
+
+/* ── Decision Deck completed trace ── */
+.decision-deck-module.decision-deck-complete{opacity:.42;filter:saturate(.72);pointer-events:none;transition:opacity .22s ease,filter .22s ease}
+.decision-deck-module.decision-deck-complete .decision-card{box-shadow:0 16px 42px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.76)}
+.decision-deck-module.decision-deck-complete .decision-controls{opacity:.35}

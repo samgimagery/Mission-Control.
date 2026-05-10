@@ -3,6 +3,7 @@ __pycache__/
 *.pyo
 data/alfred-status.json
 data/jobs.json
+data/jobs.json.bak-*
 data/messages.json
 data/mission-control-state.json
 data/projects.json

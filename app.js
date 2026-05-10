@@ -367,11 +367,81 @@ document.addEventListener('DOMContentLoaded', () => {
     return Array.from({ length: n }, (_, i) => `<span class="decision-edge-line" style="--i:${i}"></span>`).join('');
   }
 
-  function decisionDeckQueue(items, active) {
-    return (items || []).slice(0, 5).map((item, i) => `
-      <div class="decision-queue-item${i === active ? ' active' : ''}">
-        <span class="decision-queue-dot"></span>${String(i + 1).padStart(2, '0')} / ${escapeHtml(item.action || 'keep')}
-      </div>`).join('');
+  function decisionDeltaDirection(label, value) {
+    const v = String(value || '').toLowerCase();
+    if (label === 'nov') {
+      if (['new', 'adds'].includes(v)) return 'up';
+      if (['duplicate'].includes(v)) return 'flat';
+    }
+    if (label === 'align') {
+      if (['confirms'].includes(v)) return 'up';
+      if (['conflicts'].includes(v)) return 'down';
+      if (['reframes'].includes(v)) return 'flat';
+    }
+    if (label === 'val') {
+      if (['high'].includes(v)) return 'up';
+      if (['low'].includes(v)) return 'down';
+      if (['medium'].includes(v)) return 'flat';
+    }
+    if (label === 'act') {
+      if (['keep', 'merge', 'promote'].includes(v)) return 'up';
+      if (['archive', 'discard'].includes(v)) return 'down';
+      if (['none'].includes(v)) return 'flat';
+    }
+    return 'flat';
+  }
+
+  function decisionDeltaArrow(direction) {
+    if (direction === 'up') return '↑';
+    if (direction === 'down') return '↓';
+    return '—';
+  }
+
+  function decisionActionLabel(action) {
+    const clean = String(action || 'keep').toLowerCase();
+    if (clean === 'promote') return 'promote to Reference';
+    if (clean === 'merge') return 'merge into existing note';
+    if (clean === 'archive') return 'archive';
+    if (clean === 'discard') return 'discard';
+    if (clean === 'keep') return 'keep as-is';
+    return clean;
+  }
+
+  function decisionCardPrompt(item) {
+    const type = String(item?.type || '').toLowerCase();
+    const action = String(item?.action || 'keep').toLowerCase();
+    const recommendation = decisionActionLabel(action);
+    if (type === 'clipping') return 'Research starts Alice. Keep clipping marks this source reviewed as keep.';
+    if (type === 'research') return `Recommendation: ${recommendation}. This records the decision; it does not move files yet.`;
+    return `Recommendation: ${recommendation}. This records the decision.`;
+  }
+
+  function decisionPrimaryAction(item) {
+    const type = String(item?.type || '').toLowerCase();
+    const action = String(item?.action || 'keep').toLowerCase();
+    if (type === 'clipping') return { label: 'Research', value: 'research' };
+    if (action === 'promote') return { label: 'Record: promote', value: 'promote' };
+    if (action === 'merge') return { label: 'Record: merge', value: 'merge' };
+    if (action === 'archive') return { label: 'Record: archive', value: 'archive' };
+    if (action === 'discard') return { label: 'Record: discard', value: 'discard' };
+    if (action === 'keep') return { label: 'Keep / mark reviewed', value: 'keep' };
+    return { label: `Record: ${action || 'reviewed'}`, value: action || 'keep' };
+  }
+
+  function decisionSecondaryAction(item) {
+    const type = String(item?.type || '').toLowerCase();
+    if (type === 'clipping') return { label: 'Keep clipping', value: 'keep' };
+    return null;
+  }
+
+  function renderDecisionTrail(items, active) {
+    const trail = [];
+    for (let n = 1; n <= 3; n++) {
+      const idx = active + n;
+      if (idx >= items.length) break;
+      trail.push(`<span class="decision-trail-card trail-${n}" aria-hidden="true"></span>`);
+    }
+    return trail.join('');
   }
 
   function renderDecisionDeck(items) {
@@ -386,49 +456,39 @@ document.addEventListener('DOMContentLoaded', () => {
       ['val', item.value || 'medium'],
       ['act', item.action || 'keep'],
     ];
-    const width = Math.min(100, (total / 12) * 100);
+    const current = String(decisionDeckIndex + 1).padStart(2, '0');
+    const count = String(total).padStart(2, '0');
+    const primary = decisionPrimaryAction(item);
+    const secondary = decisionSecondaryAction(item);
     return `
       <section class="decision-deck-module" data-count="${total}">
-        <div class="decision-deck-header">
-          <div class="decision-deck-label">Decision deck</div>
-          <div class="decision-deck-count">${String(total).padStart(2, '0')} pending</div>
-        </div>
-        <div class="decision-deck-grid">
-          <div class="decision-deck-stage">
-            <article class="decision-card" role="button" tabindex="0" data-decision-next="1">
-              <div class="decision-card-top">
-                <div class="decision-chips">
-                  <span class="${decisionChipClass(item.action)}">${escapeHtml(item.action || 'keep')}</span>
-                  <span class="decision-chip">${escapeHtml(item.type || 'research')}</span>
-                  <span class="decision-chip">${escapeHtml(item.impact || 'none')}</span>
-                  <span class="decision-chip">${escapeHtml(item.value || 'medium')} value</span>
-                </div>
-                <div class="decision-card-index">${String(decisionDeckIndex + 1).padStart(2, '0')} <span>/ ${String(total).padStart(2, '0')}</span></div>
-              </div>
+        <div class="decision-deck-stage">
+          <div class="decision-trail">${renderDecisionTrail(decisionDeckItems, decisionDeckIndex)}</div>
+          <article class="decision-card">
+            <div class="decision-card-top">
+              <div class="decision-card-index">${current}<span>/${count}</span></div>
+              <div class="decision-deck-count">${count} cards</div>
+            </div>
+            <div class="decision-card-main">
               <h2>${escapeHtml(item.title || 'Untitled decision')}</h2>
-              <p>${escapeHtml(item.bottomLine || 'Open the source note to review this decision.')}</p>
+              <p>${escapeHtml(decisionCardPrompt(item))}</p>
+            </div>
+            <div class="decision-card-bottom">
               <div class="decision-delta-row">
-                ${deltas.map(([label, value]) => `<span class="decision-delta"><small>${label}</small>${escapeHtml(value)}</span>`).join('')}
+                ${deltas.map(([label, value]) => {
+                  const direction = decisionDeltaDirection(label, value);
+                  return `<span class="decision-delta ${direction}"><small>${label}</small><b>${escapeHtml(value)}</b><i>${decisionDeltaArrow(direction)}</i></span>`;
+                }).join('')}
               </div>
               <div class="decision-controls">
-                <button type="button" class="decision-btn primary" data-decision-approve="1">${escapeHtml(item.action || 'Promote')}</button>
+                <button type="button" class="decision-btn primary" data-decision-approve="1" data-decision-action="${escapeHtml(primary.value)}">${escapeHtml(primary.label)}</button>
+                ${secondary ? `<button type="button" class="decision-btn" data-decision-approve="1" data-decision-action="${escapeHtml(secondary.value)}">${escapeHtml(secondary.label)}</button>` : ''}
                 <button type="button" class="decision-btn" data-decision-open="1">File</button>
-                <button type="button" class="decision-btn" data-decision-later="1">Later</button>
+                <button type="button" class="decision-next-btn" data-decision-next="1" aria-label="Next decision card">→</button>
               </div>
-            </article>
-            <div class="decision-deck-edge">${decisionDeckEdge(total)}</div>
-          </div>
-          <aside class="decision-side-panel">
-            <div class="decision-technical">
-              <div><b>PROMOTE</b> / approve recommendation</div>
-              <div><b>FILE</b> / open source note</div>
-              <div><b>LATER</b> / next card</div>
-              <div class="decision-meter"><div class="decision-meter-row"><span>deck thickness</span><span>${total}/12</span></div><div class="decision-bar"><span style="width:${width}%"></span></div></div>
             </div>
-            <div class="decision-queue">${decisionDeckQueue(decisionDeckItems, decisionDeckIndex)}</div>
-          </aside>
+          </article>
         </div>
-        <div class="decision-footer-hint">click card to cycle · action writes review metadata</div>
       </section>`;
   }
 
@@ -437,6 +497,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const rerender = () => {
       const old = el.querySelector('.decision-deck-module');
       if (!old) return;
+      if (!decisionDeckItems.length) {
+        old.classList.add('decision-deck-complete');
+        old.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
+        return;
+      }
       const wrapper = document.createElement('div');
       wrapper.innerHTML = renderDecisionDeck(decisionDeckItems);
       old.replaceWith(wrapper.firstElementChild);
@@ -444,31 +509,47 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const next = () => {
       const card = el.querySelector('.decision-card');
-      if (card) card.classList.add('flick');
+      if (!card) return;
+      if (decisionDeckIndex >= decisionDeckItems.length - 1) {
+        card.classList.remove('end-bump');
+        void card.offsetWidth;
+        card.classList.add('end-bump');
+        return;
+      }
+      card.classList.add('flick');
       setTimeout(() => {
-        decisionDeckIndex = (decisionDeckIndex + 1) % decisionDeckItems.length;
+        decisionDeckIndex += 1;
         rerender();
-      }, 180);
+      }, 190);
     };
-    el.querySelector('[data-decision-next]')?.addEventListener('click', next);
-    el.querySelector('[data-decision-next]')?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); next(); }
-    });
-    el.querySelector('[data-decision-later]')?.addEventListener('click', (e) => { e.stopPropagation(); next(); });
+    el.querySelector('[data-decision-next]')?.addEventListener('click', (e) => { e.stopPropagation(); next(); });
     el.querySelector('[data-decision-open]')?.addEventListener('click', (e) => {
       e.stopPropagation();
       const item = decisionDeckItems[decisionDeckIndex];
       if (item?.obsidianUri) window.open(item.obsidianUri, '_blank');
     });
-    el.querySelector('[data-decision-approve]')?.addEventListener('click', async (e) => {
+    el.querySelectorAll('[data-decision-approve]').forEach(btn => btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const item = decisionDeckItems[decisionDeckIndex];
       if (!item) return;
+      const action = e.currentTarget.dataset.decisionAction || item.action || 'approved';
       try {
+        let reviewAction = action;
+        if (action === 'research') {
+          const researchInput = `Create a deeper Research/ synthesis from this vault clipping: ${item.path}. Read the clipping, inspect connected Mission Control vault context, follow the Research Intake Standard, and update Research/Research Index.md.`;
+          const researchRes = await fetch(apiPath('/api/alice/research'), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ input: researchInput, type: 'research' })
+          });
+          const researchData = await researchRes.json();
+          if (!researchRes.ok || !researchData.ok) throw new Error(researchData.error || 'Could not start Alice research');
+          reviewAction = `research-started ${researchData.job?.number || ''}`.trim();
+        }
         const res = await fetch(apiPath('/api/decision-deck/review'), {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ path: item.path, action: item.action || 'approved' })
+          body: JSON.stringify({ path: item.path, action: reviewAction })
         });
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || 'Review failed');
@@ -476,9 +557,9 @@ document.addEventListener('DOMContentLoaded', () => {
         decisionDeckIndex = Math.min(decisionDeckIndex, Math.max(0, decisionDeckItems.length - 1));
         rerender();
       } catch (err) {
-        alert('Could not approve decision: ' + err.message);
+        alert('Could not complete decision: ' + err.message);
       }
-    });
+    }));
   }
 
   async function loadPlanPage() {
@@ -1781,7 +1862,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardHtml += `<div class="task-completed">Completed: ${formatTimestamp(job.completedAt)}</div>`;
       }
       if (job.qcResult && job.qcResult.status) {
-        const qcIcon = job.qcResult.status === 'approved' ? '✅' : '❌';
+        const qcIcon = qcStatusIcon(job.qcResult.status);
         cardHtml += `<div class="task-qc-result">${qcIcon} QC ${job.qcResult.status}</div>`;
       }
     }
@@ -1805,6 +1886,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     container.appendChild(card);
+  }
+
+
+  function qcStatusIcon(status) {
+    const safe = String(status || '').toLowerCase();
+    if (['approved', 'completed', 'complete', 'done', 'passed', 'success'].includes(safe)) return '✅';
+    if (['failed', 'rejected', 'denied', 'blocked', 'error'].includes(safe)) return '❌';
+    return '•';
   }
 
   // ── Card Modal Expansion ──
@@ -1939,7 +2028,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (job.qcResult) {
       html += `<div class="modal-section">`;
       html += `<h3>QC Result</h3>`;
-      const qcIcon = job.qcResult.status === 'approved' ? '✅' : '❌';
+      const qcIcon = qcStatusIcon(job.qcResult.status);
       html += `<div class="modal-qc-result">${qcIcon} ${job.qcResult.status} by ${escapeHtml(job.qcResult.by || 'Unknown')}`;
       if (job.qcResult.notes) html += ` &mdash; "${escapeHtml(job.qcResult.notes)}"`;
       html += `</div>`;

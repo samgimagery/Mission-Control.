@@ -960,36 +960,287 @@ def _make_alice_job(user_input, request_type, kind_label):
     return job
 
 
+def _normalise_alice_paths(payload):
+    paths = payload.get('paths') or payload.get('createdPaths') or payload.get('updatedPaths') or []
+    if isinstance(paths, str):
+        paths = [paths]
+    clean = []
+    for pth in paths:
+        if not isinstance(pth, str):
+            continue
+        pth = pth.strip().lstrip('/')
+        if pth and pth not in clean:
+            clean.append(pth)
+    return clean
+
+
+def _safe_vault_path(rel_path):
+    rel = (rel_path or '').strip().lstrip('/')
+    full = (VAULT_DIR / rel).resolve()
+    try:
+        full.relative_to(VAULT_DIR.resolve())
+    except ValueError:
+        return None
+    return full
+
+
+def _markdown_frontmatter_ok(text):
+    if not text.startswith('---'):
+        return True
+    parts = text.split('---', 2)
+    if len(parts) < 3:
+        return False
+    front = parts[1]
+    if any(marker in front for marker in ('"}]},{', 'undefined', '<error')):
+        return False
+    for line in front.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith('#'):
+            continue
+        # YAML values often contain apostrophes in plain strings; only flag
+        # obviously unbalanced double-quoted lines here. Full YAML parsing would
+        # add a dependency the MC dev server does not currently carry.
+        if stripped.count('"') % 2 == 1:
+            return False
+    return True
+
+
+def _alice_source_clipping_paths(job):
+    text = (job.get('aliceInput') or '') + '\n' + (job.get('description') or '')
+    matches = re.findall(r'(Clippings/(?:Web|YouTube)/[^\n\r]+?\.md)', text)
+    out = []
+    for match in matches:
+        match = re.split(r'\s+(?:Read|Create|Update|Then|and)\b', match, 1)[0].strip(' .,)"\'')
+        if match not in out:
+            out.append(match)
+    return out
+
+
+def _research_sections_present(text):
+    required = ('Bottom Line', 'What it means here', 'Knowledge Delta', 'Recommended Action')
+    missing = []
+    for heading in required:
+        if not re.search(rf'^##\s+{re.escape(heading)}\s*$', text, re.M | re.I):
+            missing.append(heading)
+    return missing
+
+
+def _verify_alice_completion(job, payload):
+    """Verify Alice's callback against vault artifacts before closing the MC job."""
+    paths = _normalise_alice_paths(payload)
+    warnings = []
+    verified = []
+    research_paths = []
+    clipping_paths = []
+    texts = {}
+
+    if not paths:
+        warnings.append('No vault paths were reported by Alice')
+
+    for rel in paths:
+        full = _safe_vault_path(rel)
+        if full is None:
+            warnings.append(f'Path escapes vault: {rel}')
+            continue
+        if full.suffix.lower() != '.md':
+            warnings.append(f'Path is not markdown: {rel}')
+            continue
+        if not full.exists():
+            warnings.append(f'Path does not exist: {rel}')
+            continue
+        try:
+            note_text = full.read_text(encoding='utf-8')
+        except Exception as e:
+            warnings.append(f'Cannot read path {rel}: {e}')
+            continue
+        if not _markdown_frontmatter_ok(note_text):
+            warnings.append(f'Frontmatter needs repair: {rel}')
+            continue
+        verified.append(rel)
+        texts[rel] = note_text
+        if rel.startswith('Research/') and rel != 'Research/Research Index.md':
+            research_paths.append(rel)
+        if rel.startswith('Clippings/'):
+            clipping_paths.append(rel)
+
+    kind = (job.get('kind') or '').lower()
+    alice_input = (job.get('aliceInput') or '').strip()
+    looks_like_url = bool(re.match(r'^https?://', alice_input, re.I))
+    source_clippings = _alice_source_clipping_paths(job)
+    wants_research_note = kind == 'research' and (
+        not looks_like_url
+        or source_clippings
+        or re.search(r'\b(deeper|synthesis|research note|push the research)\b', alice_input, re.I)
+    )
+
+    if wants_research_note and not research_paths:
+        warnings.append('Research request did not report a Research/*.md note')
+
+    if kind in ('web', 'youtube') and not clipping_paths:
+        warnings.append('Clipping request did not report a Clippings/*.md note')
+
+    for rel in research_paths:
+        missing = _research_sections_present(texts.get(rel, ''))
+        if missing:
+            warnings.append(f'Research note missing sections in {rel}: {", ".join(missing)}')
+
+    if source_clippings and research_paths:
+        for src in source_clippings:
+            src_full = _safe_vault_path(src)
+            if not src_full or not src_full.exists():
+                warnings.append(f'Source clipping not found for backlink check: {src}')
+                continue
+            try:
+                src_text = src_full.read_text(encoding='utf-8')
+            except Exception as e:
+                warnings.append(f'Cannot read source clipping {src}: {e}')
+                continue
+            for rel in research_paths:
+                stem = Path(rel).stem
+                if rel not in src_text and stem not in src_text:
+                    warnings.append(f'Source clipping missing backlink to {rel}')
+
+    return {'ok': not warnings, 'warnings': warnings, 'paths': verified, 'reportedPaths': paths}
+
+
 def _complete_alice_job(job_id, payload):
     import time
     now_ms = int(time.time() * 1000)
     job, jobs = find_job_by_id(job_id)
     if not job:
         return None, 'Job not found'
-    paths = payload.get('paths') or payload.get('createdPaths') or payload.get('updatedPaths') or []
-    if isinstance(paths, str):
-        paths = [paths]
+    if job.get('phase') == 'done' and job.get('completedAt'):
+        return job, None
+    paths = _normalise_alice_paths(payload)
     summary = (payload.get('summary') or payload.get('message') or 'Alice completed the request').strip()
     status = (payload.get('status') or 'done').strip().lower()
     if 'history' not in job:
         job['history'] = []
-    for st in job.get('subtasks', []):
-        st['status'] = 'done'
-        st['completedAt'] = st.get('completedAt') or now_ms
-    job['phase'] = 'done' if status != 'failed' else 'qc'
+
+    verification = {'ok': False, 'warnings': [], 'paths': paths, 'reportedPaths': paths}
+    if status == 'failed':
+        verification['warnings'].append(summary or 'Alice reported failure')
+    else:
+        verification = _verify_alice_completion(job, payload)
+
+    if status != 'failed' and verification.get('ok'):
+        for st in job.get('subtasks', []):
+            st['status'] = 'done'
+            st['completedAt'] = st.get('completedAt') or now_ms
+        job['phase'] = 'done'
+    else:
+        for st in job.get('subtasks', []):
+            title = (st.get('title') or '').lower()
+            if 'create or update' in title and verification.get('paths'):
+                st['status'] = 'done'
+                st['completedAt'] = st.get('completedAt') or now_ms
+            elif 'report result' in title:
+                st['status'] = 'done'
+                st['completedAt'] = st.get('completedAt') or now_ms
+        job['phase'] = 'qc'
     job['status'] = job['phase']
     job['updatedAt'] = now_ms
     if job['phase'] == 'done':
         job['completedAt'] = now_ms
-    job['aliceResult'] = {'status': status, 'summary': summary, 'paths': paths, 'timestamp': now_ms}
-    job['qcResult'] = {'status': 'completed' if status != 'failed' else 'needs-review', 'by': 'Alice', 'notes': summary, 'timestamp': now_ms}
-    event = 'Alice completed request' if status != 'failed' else 'Alice reported failure'
+    job['aliceResult'] = {'status': status, 'summary': summary, 'paths': paths, 'verification': verification, 'timestamp': now_ms}
+    qc_status = 'completed' if job['phase'] == 'done' else 'needs-review'
+    qc_notes = summary
+    if verification.get('warnings'):
+        qc_notes = (summary + '\n\nVerification warnings:\n- ' + '\n- '.join(verification.get('warnings'))).strip()
+    job['qcResult'] = {'status': qc_status, 'by': 'Mission Control', 'notes': qc_notes, 'timestamp': now_ms}
+    if status == 'failed':
+        event = 'Alice reported failure'
+    elif job['phase'] == 'done':
+        event = 'Alice completed request — verified'
+    else:
+        event = 'Alice completion needs review'
     if paths:
         event += ' — ' + ', '.join(paths[:3])
-    job['history'].append({'ts': now_ms, 'event': event, 'by': 'Alice', 'summary': summary})
+    job['history'].append({'ts': now_ms, 'event': event, 'by': 'Mission Control', 'summary': summary, 'warnings': verification.get('warnings', [])})
     save_mission_control_jobs(jobs)
     sync_to_vault('transition', job)
     return job, None
+
+
+def _infer_alice_completion_paths(job):
+    paths = []
+    existing = ((job.get('aliceResult') or {}).get('paths') or [])
+    if isinstance(existing, str):
+        existing = [existing]
+    for rel in existing:
+        if isinstance(rel, str) and rel not in paths:
+            paths.append(rel)
+
+    req = job.get('number') or ''
+    source_clips = _alice_source_clipping_paths(job)
+    needle = (job.get('aliceInput') or '').strip()
+    is_url = bool(re.match(r'^https?://', needle, re.I))
+    roots = [VAULT_DIR / 'Research', VAULT_DIR / 'Clippings']
+    for root in roots:
+        if not root.exists():
+            continue
+        for note in root.rglob('*.md'):
+            rel = str(note.relative_to(VAULT_DIR))
+            if rel in paths:
+                continue
+            try:
+                note_text = note.read_text(encoding='utf-8')
+            except Exception:
+                continue
+            matched = False
+            if req and req in note_text:
+                matched = True
+            if is_url and needle in note_text:
+                matched = True
+            for src in source_clips:
+                if src in note_text or Path(src).stem in note_text:
+                    matched = True
+            if matched:
+                paths.append(rel)
+    return paths
+
+
+def _reconcile_alice_jobs():
+    import time
+    now_ms = int(time.time() * 1000)
+    jobs = load_mission_control_jobs()
+    results = []
+    changed = False
+    for job in jobs:
+        if job.get('source') != 'alice-research':
+            continue
+        if job.get('phase') == 'done' and job.get('completedAt'):
+            continue
+        paths = _infer_alice_completion_paths(job)
+        payload = {
+            'jobId': job.get('id'),
+            'status': 'done',
+            'summary': 'Reconciled from existing vault artifacts.',
+            'paths': paths,
+        }
+        verification = _verify_alice_completion(job, payload)
+        if verification.get('ok'):
+            for st in job.get('subtasks', []):
+                st['status'] = 'done'
+                st['completedAt'] = st.get('completedAt') or now_ms
+            job['phase'] = 'done'
+            job['status'] = 'done'
+            job['completedAt'] = job.get('completedAt') or now_ms
+            job['updatedAt'] = now_ms
+            job['aliceResult'] = {'status': 'done', 'summary': payload['summary'], 'paths': paths, 'verification': verification, 'timestamp': now_ms, 'reconciled': True}
+            job['qcResult'] = {'status': 'completed', 'by': 'Mission Control', 'notes': payload['summary'], 'timestamp': now_ms}
+            job.setdefault('history', []).append({'ts': now_ms, 'event': 'Alice job reconciled from vault artifacts', 'by': 'Mission Control', 'paths': paths})
+            sync_to_vault('transition', job)
+            changed = True
+            results.append({'jobId': job.get('id'), 'number': job.get('number'), 'status': 'closed', 'paths': paths})
+        else:
+            # Reconcile is a repair pass, not a live-progress watchdog. If the
+            # evidence is insufficient, report the gap without mutating the job;
+            # Alice may still be working or may call /complete later.
+            results.append({'jobId': job.get('id'), 'number': job.get('number'), 'status': 'unverified', 'warnings': verification.get('warnings', []), 'paths': paths})
+    if changed:
+        save_mission_control_jobs(jobs)
+    return results
 
 def sync_to_vault(action, job):
     """Push job state to Obsidian vault. Best-effort, never blocks.
@@ -2723,11 +2974,24 @@ class Handler(SimpleHTTPRequestHandler):
                 job_id = (payload.get('jobId') or payload.get('id') or '').strip()
                 if not job_id:
                     raise ValueError('jobId is required')
+                already_done = False
+                existing, _jobs = find_job_by_id(job_id)
+                if existing and existing.get('phase') == 'done' and existing.get('completedAt'):
+                    already_done = True
                 job, err = _complete_alice_job(job_id, payload)
                 if err:
                     self._send_json(404, {'ok': False, 'error': err})
                     return
-                self._send_json(200, {'ok': True, 'job': job})
+                verification = ((job or {}).get('aliceResult') or {}).get('verification') or {'ok': True, 'warnings': []}
+                self._send_json(200, {'ok': True, 'alreadyComplete': already_done, 'verified': verification.get('ok', False), 'warnings': verification.get('warnings', []), 'job': job})
+            except Exception as e:
+                self._send_json(400, {'ok': False, 'error': str(e)})
+            return
+
+        if clean_path == '/api/alice/reconcile':
+            try:
+                results = _reconcile_alice_jobs()
+                self._send_json(200, {'ok': True, 'results': results})
             except Exception as e:
                 self._send_json(400, {'ok': False, 'error': str(e)})
             return
