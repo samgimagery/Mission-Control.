@@ -1652,3 +1652,27 @@ body.dark .research-create-submit{
 .decision-side-panel{border-left:1px solid rgba(244,239,230,.14);padding-left:23px;min-height:290px;display:flex;flex-direction:column;justify-content:space-between}.decision-technical{font-family:"SF Mono",Menlo,monospace;color:#a59d93;font-size:10px;line-height:1.75;letter-spacing:.03em}.decision-technical b{color:#f4efe6;font-weight:850}.decision-meter{margin-top:17px}.decision-meter-row{display:flex;justify-content:space-between;margin-bottom:7px}.decision-bar{height:8px;border:1px solid rgba(244,239,230,.28);border-radius:5px;overflow:hidden;background:#050505}.decision-bar span{display:block;height:100%;background:repeating-linear-gradient(90deg,#f4efe6 0 8px,transparent 8px 11px)}
 .decision-queue{display:grid;gap:9px}.decision-queue-item{display:flex;align-items:center;gap:9px;color:#9e968c;font-family:"SF Mono",Menlo,monospace;font-size:10px;font-weight:800;line-height:1.2;text-transform:uppercase;letter-spacing:.08em}.decision-queue-dot{width:7px;height:7px;border:1px solid currentColor;border-radius:50%}.decision-queue-item.active{color:#f4efe6}.decision-queue-item:nth-child(2){color:#60a5fa}.decision-queue-item:nth-child(3){color:#a78bfa}.decision-footer-hint{margin-top:13px;color:#81786e;font-family:"SF Mono",Menlo,monospace;font-size:10px;font-weight:800;line-height:1;letter-spacing:.08em;text-align:center;text-transform:uppercase}
 @media(max-width:980px){.decision-deck-grid{grid-template-columns:1fr}.decision-side-panel{border-left:none;border-top:1px solid rgba(244,239,230,.14);padding:18px 0 0;min-height:0}.decision-card h2{font-size:25px}.decision-deck-edge{right:2px}}
+
+/* ── Decision Deck refinement (REQ-204): calmer MC-native card ── */
+.decision-deck-module{border-radius:10px;background:rgba(11,11,12,.54);box-shadow:0 24px 70px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.045);padding:18px}
+.decision-deck-module:before{opacity:.42;background-size:34px 34px}
+.decision-deck-grid{grid-template-columns:minmax(0,1fr) 190px;gap:22px}
+.decision-deck-stage{min-height:270px}
+.decision-card{width:min(720px,100%);min-height:244px;border:1px solid #d4c7b7;border-radius:5px;background:#fbfaf6;color:#171513;box-shadow:0 20px 54px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.72);padding:21px 22px}
+.decision-card:before{inset:10px;border-color:rgba(23,21,19,.07);border-radius:3px}
+.decision-card:after{background:linear-gradient(transparent,rgba(23,21,19,.12),transparent)}
+.decision-card-top{margin-bottom:22px}
+.decision-chip{border-color:#d4c7b7;background:#f3f0e8;color:#6f6256;border-radius:4px;font-weight:800}
+.decision-chip.action-promote{color:#7c3aed;border-color:rgba(124,58,237,.28);background:rgba(124,58,237,.08)}
+.decision-chip.action-merge{color:#2563eb;border-color:rgba(37,99,235,.24);background:rgba(37,99,235,.07)}
+.decision-chip.action-archive{color:#8a6424;border-color:rgba(138,100,36,.25);background:rgba(215,168,80,.13)}
+.decision-chip.action-discard{color:#9f4e4e;border-color:rgba(159,78,78,.24);background:rgba(196,106,106,.1)}
+.decision-chip.action-keep{color:#5f554c;border-color:#d4c7b7;background:#f3f0e8}
+.decision-card-index{color:#5f554c}.decision-card-index span{color:#9a9085}
+.decision-card h2{font-size:28px;font-weight:520;line-height:1.08;letter-spacing:-.035em;color:#111;margin-bottom:15px;max-width:590px}
+.decision-card p{font-size:14px;line-height:1.52;color:#4f453b;margin-bottom:22px;max-width:620px}
+.decision-delta-row{margin-bottom:22px}.decision-delta{color:#171513;border-bottom-color:#c8bcac}.decision-delta small{color:#8b8177}
+.decision-btn{border-radius:4px;border-color:#d4c7b7;color:#171513;background:transparent;padding:9px 13px;font-size:10px}
+.decision-btn.primary{background:#0b0a09;color:#f3ecdf;border-color:#24211d}.decision-btn:hover{border-color:#171513;background:#f3f0e8;color:#171513}
+.decision-deck-edge{right:14px;top:34px;bottom:34px;width:48px}.decision-edge-line{border-color:rgba(212,199,183,calc(.76 - var(--i)*.05));background:#fbfaf6;border-radius:0 4px 4px 0}
+.decision-side-panel{min-height:244px;padding-left:20px}.decision-technical{font-size:10px;color:#9f968d}.decision-technical b{color:#f3ecdf}.decision-footer-hint{font-size:9px;color:#777067}

@@ -411,24 +411,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${deltas.map(([label, value]) => `<span class="decision-delta"><small>${label}</small>${escapeHtml(value)}</span>`).join('')}
               </div>
               <div class="decision-controls">
-                <button type="button" class="decision-btn primary" data-decision-approve="1">Approve</button>
+                <button type="button" class="decision-btn primary" data-decision-approve="1">${escapeHtml(item.action || 'Promote')}</button>
+                <button type="button" class="decision-btn" data-decision-open="1">File</button>
                 <button type="button" class="decision-btn" data-decision-later="1">Later</button>
-                <button type="button" class="decision-btn" data-decision-open="1">Open</button>
               </div>
             </article>
             <div class="decision-deck-edge">${decisionDeckEdge(total)}</div>
           </div>
           <aside class="decision-side-panel">
             <div class="decision-technical">
-              <div><b>SOURCE</b> / Alice intake</div>
-              <div><b>SCAN</b> / Knowledge Delta</div>
-              <div><b>WRITEBACK</b> / review_status + review_action</div>
+              <div><b>PROMOTE</b> / approve recommendation</div>
+              <div><b>FILE</b> / open source note</div>
+              <div><b>LATER</b> / next card</div>
               <div class="decision-meter"><div class="decision-meter-row"><span>deck thickness</span><span>${total}/12</span></div><div class="decision-bar"><span style="width:${width}%"></span></div></div>
             </div>
             <div class="decision-queue">${decisionDeckQueue(decisionDeckItems, decisionDeckIndex)}</div>
           </aside>
         </div>
-        <div class="decision-footer-hint">click card to cycle · approve writes review metadata</div>
+        <div class="decision-footer-hint">click card to cycle · action writes review metadata</div>
       </section>`;
   }
 
