@@ -7,6 +7,7 @@ import os
 import re
 import tempfile
 import html as _html
+from datetime import datetime, timedelta, timezone
 from urllib.parse import unquote
 
 ROOT = Path('/Users/samg/AI/OpenClaw')
@@ -15,6 +16,126 @@ ASSET_MANAGER_ROOT = ROOT / 'dev' / 'asset-manager'
 DATA_DIR = ASSET_MANAGER_ROOT / 'data'
 DATA_JSON = DATA_DIR / 'assets.json'
 CONFIG_JSON = DATA_DIR / 'library-config.json'
+VAULT_INGEST_SCRIPT = ROOT / 'dev' / 'vault-ingest' / 'vault_ingest.py'
+
+VAULT_DIR = Path.home() / 'Library/Mobile Documents/iCloud~md~obsidian/Documents/Mission Control'
+
+def _split_frontmatter(text):
+    if text.startswith('---\n'):
+        end = text.find('\n---\n', 4)
+        if end != -1:
+            return text[4:end], text[end + 5:]
+    return '', text
+
+def _frontmatter_value(front, key):
+    m = re.search(rf'^\s*{re.escape(key)}\s*:\s*(.*?)\s*$', front or '', re.M)
+    if not m:
+        return ''
+    return m.group(1).strip().strip('"\'')
+
+def _section_text(text, heading):
+    pat = rf'^##\s+{re.escape(heading)}\s*$'
+    m = re.search(pat, text, re.M | re.I)
+    if not m:
+        return ''
+    start = m.end()
+    nxt = re.search(r'^##\s+', text[start:], re.M)
+    end = start + nxt.start() if nxt else len(text)
+    return text[start:end].strip()
+
+def _delta_field(delta, label):
+    m = re.search(rf'\*\*{re.escape(label)}:\*\*\s*([^\n]+)', delta or '', re.I)
+    if not m:
+        return ''
+    value = re.split(r'\s+[—-]\s+', m.group(1).strip(), 1)[0].strip()
+    return value.strip('`*_ .').lower()
+
+def _first_meaningful_line(text, limit=220):
+    clean = []
+    for line in (text or '').splitlines():
+        line = re.sub(r'^[-*>\s]+', '', line).strip()
+        line = re.sub(r'\*\*([^*]+)\*\*', r'\1', line)
+        if line:
+            clean.append(line)
+    out = ' '.join(clean).strip()
+    return out[:limit-1].rstrip() + '…' if len(out) > limit else out
+
+def build_decision_deck(limit=24):
+    roots = [VAULT_DIR / 'Research', VAULT_DIR / 'Clippings']
+    cards = []
+    for root in roots:
+        if not root.exists():
+            continue
+        for path in sorted(root.rglob('*.md'), key=lambda p: p.stat().st_mtime, reverse=True):
+            try:
+                text = path.read_text(encoding='utf-8')
+            except Exception:
+                continue
+            front, body = _split_frontmatter(text)
+            if (_frontmatter_value(front, 'review_status') or '').lower() in ('approved', 'reviewed', 'done', 'dismissed'):
+                continue
+            delta_heading = 'Initial Knowledge Delta' if '/Clippings/' in str(path) else 'Knowledge Delta'
+            delta = _section_text(body, delta_heading)
+            if not delta:
+                continue
+            action = _delta_field(delta, 'Action') or _frontmatter_value(front, 'action') or 'keep'
+            value = _delta_field(delta, 'Value') or _frontmatter_value(front, 'value') or 'medium'
+            impact = _delta_field(delta, 'Decision impact') or _frontmatter_value(front, 'decision_impact') or 'none'
+            novelty = _delta_field(delta, 'Novelty') or 'adds'
+            alignment = _delta_field(delta, 'Alignment') or 'confirms'
+            title = _frontmatter_value(front, 'title') or re.sub(r'^#\s+', '', (body.strip().splitlines() or [path.stem])[0]).strip() or path.stem
+            bottom = _section_text(body, 'Bottom Line') or _section_text(body, 'Summary') or _section_text(body, 'Why Saved')
+            rel = str(path.relative_to(VAULT_DIR))
+            cards.append({
+                'id': rel,
+                'path': rel,
+                'title': title,
+                'type': 'clipping' if rel.startswith('Clippings/') else 'research',
+                'action': action.lower(),
+                'value': value.lower(),
+                'impact': impact.lower(),
+                'novelty': novelty.lower(),
+                'alignment': alignment.lower(),
+                'bottomLine': _first_meaningful_line(bottom or delta, 230),
+                'knowledgeDelta': delta,
+                'obsidianUri': 'obsidian://open?vault=Mission%20Control&file=' + rel.replace(' ', '%20').replace('/', '%2F'),
+                'mtime': int(path.stat().st_mtime * 1000),
+            })
+            if len(cards) >= limit:
+                return cards
+    return cards
+
+def review_decision_card(rel_path, action='approved'):
+    rel_path = (rel_path or '').strip().lstrip('/')
+    full = (VAULT_DIR / rel_path).resolve()
+    root = VAULT_DIR.resolve()
+    if not str(full).startswith(str(root) + '/') or not full.exists() or full.suffix.lower() != '.md':
+        raise ValueError('Invalid decision note path')
+    text = full.read_text(encoding='utf-8')
+    front, body = _split_frontmatter(text)
+    today = datetime.now().strftime('%Y-%m-%d')
+    fields = {
+        'review_status': 'approved',
+        'review_action': action or 'approved',
+        'reviewed_by': 'Sam',
+        'reviewed': today,
+    }
+    if front:
+        lines = front.splitlines()
+        for key, value in fields.items():
+            replaced = False
+            for i, line in enumerate(lines):
+                if re.match(rf'^\s*{re.escape(key)}\s*:', line):
+                    lines[i] = f'{key}: {value}'
+                    replaced = True
+                    break
+            if not replaced:
+                lines.append(f'{key}: {value}')
+        new_text = '---\n' + '\n'.join(lines).rstrip() + '\n---\n' + body
+    else:
+        new_text = '---\n' + '\n'.join(f'{k}: {v}' for k, v in fields.items()) + '\n---\n' + text
+    full.write_text(new_text, encoding='utf-8')
+    return {'path': rel_path, **fields}
 
 PLAN_JSON = DATA_DIR / 'plan-state.json'
 
@@ -141,40 +262,40 @@ OPENCLAW_WORKSPACES_ROOT = Path('/Users/samg/.openclaw/workspaces')
 
 # Mind Vault Marp style — keep MC Present visually identical to Mind Vault decks.
 DECK_STYLE = """
-  html, body { background:#050505 !important; color-scheme:dark; }
+  html, body { background:#050505 !important; color-scheme:light; }
   section {
-    background: #0B0A09 !important;
-    color: #F3ECDF !important;
-    color-scheme: dark;
+    background: #FBFAF6 !important;
+    color: #11100F !important;
+    color-scheme: light;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
     letter-spacing: -0.005em;
     padding: 72px 80px 126px !important;
     overflow: hidden !important;
     box-sizing: border-box;
-    border: 1px solid #24211D !important;
+    border: 1px solid #E2DDD2 !important;
     border-radius: 5px;
     box-shadow: 0 20px 64px rgba(0,0,0,.42);
   }
-  section::after { color: rgba(243,236,223,.46); bottom: 42px; font-weight: 800; }
+  section::after { color: rgba(17,16,15,.42); bottom: 42px; font-weight: 800; }
   section.lead { text-align: left; justify-content: center; }
   h1 {
-    font-size: 86px;
+    font-size: 78px;
     font-weight: 500;
-    color: #F3ECDF;
+    color: #11100F;
     line-height: 1.02;
     letter-spacing: -.03em;
     max-width: 15ch;
   }
   h2 {
-    color: #F3ECDF;
-    font-size: 50px;
+    color: #11100F;
+    font-size: 54px;
     font-weight: 520;
     line-height: .98;
     letter-spacing: -.025em;
-    margin-bottom: .45em;
+    margin-bottom: .62em;
   }
-  h3 { color: #E2D8C8; font-size: 31px; font-weight: 520; line-height: 1.08; letter-spacing: -.015em; }
-  p, li { font-size: 23px; line-height: 1.28; color: #F3ECDF; }
+  h3 { color: #292622; font-size: 32px; font-weight: 520; line-height: 1.08; letter-spacing: -.015em; }
+  p, li { font-size: 21px; line-height: 1.42; color: #292622; }
   ul, ol { padding-left: 1.05em; margin-top: .35em; }
   section > *:last-child { margin-bottom: 0; }
   img, video, canvas, iframe, section > svg:not([data-marpit-svg]) {
@@ -182,16 +303,16 @@ DECK_STYLE = """
     max-height: 410px;
     object-fit: contain;
   }
-  strong { color: #FFF8EC; font-weight:900; }
-  em { color:#E2D8C8; font-style:normal; }
-  a { color: #F3ECDF; text-decoration-color: rgba(243,236,223,.42); }
-  code, pre { background: rgba(255,255,255,.07); color: #FFF8EC; border-radius:4px; }
-  table { border-collapse: collapse; background: #100E0C !important; color:#F3ECDF !important; box-shadow:0 0 0 1px #28241F; font-size:15px; line-height:1.16; max-height:330px; overflow:hidden; }
-  th { background: #161310 !important; color:#F3ECDF !important; border-color: #28241F !important; }
-  td { background: rgba(255,255,255,.025) !important; color:#F3ECDF !important; border-color: #28241F !important; }
+  strong { color: #11100F; font-weight:900; }
+  em { color:#292622; font-style:normal; }
+  a { color: #11100F; text-decoration-color: rgba(17,16,15,.32); }
+  code, pre { background: rgba(0,0,0,.05); color: #11100F; border-radius:4px; }
+  table { border-collapse: collapse; background: #FBFAF6 !important; color:#11100F !important; box-shadow:0 0 0 1px #DDD6CA; font-size:15px; line-height:1.16; max-height:330px; overflow:hidden; }
+  th { background: #EBE6DC !important; color:#11100F !important; border-color: #DDD6CA !important; }
+  td { background: rgba(0,0,0,.018) !important; color:#11100F !important; border-color: #DDD6CA !important; }
   th, td { padding:.26em .44em; }
-  tr:nth-child(even) td { background: rgba(255,255,255,.045) !important; }
-  footer { color: rgba(243,236,223,.44); }
+  tr:nth-child(even) td { background: rgba(0,0,0,.032) !important; }
+  footer { color: rgba(17,16,15,.42); }
 """
 
 MARP_DARK_SHELL_STYLE = r"""
@@ -243,40 +364,48 @@ MARP_DARK_SHELL_STYLE = r"""
     box-shadow:0 18px 60px rgba(0,0,0,.48), 0 0 0 1px rgba(232,228,221,.10) !important;
   }
   section, section[data-theme="default"] {
-    background:#0B0A09 !important;
-    color:#F3ECDF !important;
-    color-scheme:dark !important;
+    background:#FBFAF6 !important;
+    color:#11100F !important;
+    color-scheme:light !important;
     padding:72px 80px 126px !important;
     overflow:hidden !important;
     box-sizing:border-box !important;
-    border:1px solid #24211D !important;
+    border:1px solid #E2DDD2 !important;
     border-radius:5px !important;
   }
-  section h1{font-size:86px !important;font-weight:1000 !important;line-height:.86 !important;letter-spacing:-.045em !important;color:#F3ECDF !important;}
-  section h2{font-size:50px !important;font-weight:520 !important;line-height:.98 !important;letter-spacing:-.025em !important;color:#F3ECDF !important;}
-  section h3{font-size:31px !important;font-weight:520 !important;line-height:1.08 !important;letter-spacing:-.015em !important;color:#E2D8C8 !important;}
-  section p, section li{font-size:23px !important;line-height:1.28 !important;color:#F3ECDF !important;}
+  section h1{font-size:78px !important;font-weight:500 !important;line-height:1.02 !important;letter-spacing:-.03em !important;color:#11100F !important;max-width:15ch !important;}
+  section h2{font-size:54px !important;font-weight:520 !important;line-height:.98 !important;letter-spacing:-.025em !important;color:#11100F !important;margin-bottom:.62em !important;}
+  section h3{font-size:32px !important;font-weight:520 !important;line-height:1.08 !important;letter-spacing:-.015em !important;color:#292622 !important;}
+  section p, section li{font-size:21px !important;line-height:1.42 !important;color:#292622 !important;}
   section::after { bottom:42px !important; }
-  .mc-marp-exit {
+  .mc-marp-actions {
     position:fixed;
     top:max(12px, calc(env(safe-area-inset-top) + 10px));
     right:max(12px, calc(env(safe-area-inset-right) + 10px));
     z-index:2147483647;
-    border:1px solid rgba(232,228,221,.22);
-    border-radius:999px;
-    background:rgba(13,11,10,.72);
-    color:#F4EFE7;
-    -webkit-backdrop-filter:blur(16px);
-    backdrop-filter:blur(16px);
-    font:600 13px/1 -apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;
-    padding:11px 14px;
-    box-shadow:0 12px 36px rgba(0,0,0,.34);
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .mc-marp-pill {
+    appearance:none;
+    border:1px solid rgba(255,255,255,.28);
+    border-radius:10px;
+    background:rgba(255,255,255,.88);
+    color:#11100F;
+    -webkit-backdrop-filter:blur(18px);
+    backdrop-filter:blur(18px);
+    font:700 12px/1 -apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;
+    letter-spacing:.02em;
+    text-transform:none;
+    text-decoration:none;
+    padding:9px 13px;
+    min-height:34px;
+    box-shadow:0 8px 28px rgba(0,0,0,.18);
     touch-action:manipulation;
+    cursor:pointer;
   }
-  @media (hover:hover) and (pointer:fine) {
-    .mc-marp-exit { opacity:.72; }
-    .mc-marp-exit:hover { opacity:1; }
-  }
+  .mc-marp-pill:hover{border-color:rgba(255,255,255,.36)}
 </style>
 """
 
@@ -320,10 +449,12 @@ MARP_MOBILE_PRESENT_FIX_SCRIPT = r"""
   document.addEventListener('webkitfullscreenchange', scheduleRefresh);
   window.addEventListener('load', scheduleRefresh, { once: true });
 
+  const actions = document.createElement('div');
+  actions.className = 'mc-marp-actions';
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'mc-marp-exit';
-  button.textContent = 'Done';
+  button.className = 'mc-marp-pill mc-marp-exit';
+  button.textContent = '× Done';
   button.setAttribute('aria-label', 'Exit presentation');
   button.addEventListener('click', () => {
     if (exitFullscreen()) return;
@@ -334,7 +465,8 @@ MARP_MOBILE_PRESENT_FIX_SCRIPT = r"""
     }, 120);
   });
   document.addEventListener('DOMContentLoaded', () => {
-    document.body.appendChild(button);
+    actions.appendChild(button);
+    document.body.appendChild(actions);
     scheduleRefresh();
   });
 })();
@@ -447,6 +579,13 @@ def _reader_markdown_to_html(markdown):
             i += 1
             blocks.append(f'<pre><code data-lang="{_html.escape(lang)}">{_html.escape(chr(10).join(code))}</code></pre>')
             continue
+        img_match = re.match(r"^!\[([^\]]*)\]\(([^)]+)\)\s*$", line.strip())
+        if img_match:
+            alt = _html.escape(img_match.group(1) or "")
+            src = _html.escape(img_match.group(2), quote=True)
+            blocks.append(f'<figure class="reader-media"><img src="{src}" alt="{alt}" loading="lazy" /></figure>')
+            i += 1
+            continue
         if re.match(r"^#{1,4}\s+", line):
             level = min(len(line) - len(line.lstrip('#')), 3)
             blocks.append(f'<h{level}>{inline(line.lstrip("#").strip())}</h{level}>')
@@ -498,7 +637,7 @@ def _reader_html(note_path, title, markdown):
     note_label = "Reference note" if str(note_path).startswith("Reference/") else "Research note"
     safe_label = _html.escape(note_label)
     css = r"""
-:root{color-scheme:dark;--font-heading:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;--font-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#0b0a09;--paper-edge:#24211d;--text:#f3ecdf;--text-secondary:#e2d8c8;--muted:#a79d8f;--soft:#d6cabb;--glass-bg:rgba(12,11,10,.78);--glass-border:rgba(255,255,255,.16);--glass-shadow:0 20px 64px rgba(0,0,0,.42);--divider:#28241f;--table-head:#161310;--table-row:rgba(255,255,255,.035);--code-bg:rgba(255,255,255,.07);--progress:#f3ecdf}[data-theme=light]{color-scheme:light;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#fbfaf6;--paper-edge:#e2ddd2;--text:#11100f;--text-secondary:#292622;--muted:#6d665d;--soft:#2f2b27;--glass-bg:rgba(255,255,255,.88);--glass-border:rgba(255,255,255,.28);--glass-shadow:0 22px 76px rgba(0,0,0,.34);--divider:#ddd6ca;--table-head:#ebe6dc;--table-row:rgba(0,0,0,.026);--code-bg:rgba(0,0,0,.05);--progress:#fbfaf6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--bg-radial);background-color:#050505;color:var(--text);font:17px/1.68 var(--font-body);transition:color .35s ease}.reader-progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:10;background:linear-gradient(90deg,var(--progress),#b9b1a4);box-shadow:0 0 18px rgba(243,240,232,.25)}.reader-shell{width:min(980px,calc(100vw - 32px));margin:0 auto;padding:calc(env(safe-area-inset-top) + 24px) 0 78px}.reader-top{position:sticky;top:calc(env(safe-area-inset-top) + 10px);z-index:6;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:34px;color:#d9d2c7;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.reader-actions{display:flex;gap:10px;align-items:center}.reader-pill{appearance:none;color:#f5f1ea;text-decoration:none;border:1px solid var(--glass-border);border-radius:6px;padding:9px 13px;background:rgba(20,18,16,.72);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 8px 28px rgba(0,0,0,.18);font:800 11px/1 var(--font-body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}.reader-pill:hover{border-color:rgba(255,255,255,.36)}.theme-toggle{width:38px;height:34px;display:grid;place-items:center;font-size:15px}.theme-toggle .sun{display:none}[data-theme=light] .theme-toggle .moon{display:none}[data-theme=light] .theme-toggle .sun{display:inline}article{position:relative;background:var(--paper);border:1px solid var(--paper-edge);border-radius:5px;padding:clamp(34px,5vw,72px);box-shadow:var(--glass-shadow);overflow:hidden}header{position:relative;margin-bottom:38px;padding-bottom:24px;border-bottom:1px solid var(--divider)}.eyebrow{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px}.kicker{margin-top:18px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.015em;word-break:break-word}h1{font-family:var(--font-heading);font-weight:500;font-style:normal;font-size:clamp(48px,9vw,104px);line-height:1.02;letter-spacing:-.03em;margin:0;color:var(--text);max-width:15ch}h1 em{font-style:normal;color:var(--text)}.reader-content{position:relative;max-width:790px}.reader-content>p:first-of-type{font-size:clamp(18px,2.3vw,23px);line-height:1.48;color:var(--text-secondary);font-weight:650}h2{margin:2em 0 .62em;font-family:var(--font-heading);font-weight:520;font-style:normal;font-size:clamp(34px,5.4vw,58px);line-height:.98;letter-spacing:-.025em;color:var(--text)}h3{margin:1.55em 0 .45em;font:520 clamp(25px,3.2vw,34px)/1.08 var(--font-body);letter-spacing:-.015em;color:var(--text-secondary)}p{margin:0 0 1.05em}a{color:var(--text);text-decoration-color:color-mix(in srgb,var(--text) 32%,transparent);text-underline-offset:3px}strong{color:var(--text);font-weight:900}em{color:var(--text-secondary);font-style:normal}code{font:.9em 'SF Mono',ui-monospace,monospace;background:var(--code-bg);border:1px solid var(--divider);padding:.13em .36em;border-radius:3px}pre{overflow:auto;background:color-mix(in srgb,var(--paper) 88%,var(--text) 8%);border:1px solid var(--divider);border-radius:4px;padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}pre code{background:transparent;border:0;padding:0}ul,ol{padding-left:1.18em;margin:0 0 1.22em}li{margin:.34em 0;padding-left:.08em}li::marker{color:var(--muted)}blockquote{margin:1.45em 0;padding:18px 22px;border-left:3px solid var(--soft);background:color-mix(in srgb,var(--text) 6%,transparent);border-radius:0 4px 4px 0;color:var(--text-secondary);font-weight:650;font-size:1.03em}.reader-table-wrap{width:100%;overflow:auto;margin:1.2em 0 1.65em;border:1px solid var(--divider);border-radius:4px;background:color-mix(in srgb,var(--paper) 92%,var(--text) 5%)}table{width:100%;border-collapse:collapse;min-width:620px;font-size:14px;line-height:1.35}th,td{padding:11px 13px;border-bottom:1px solid var(--divider);vertical-align:top}th{position:sticky;top:0;background:var(--table-head);color:var(--text);text-align:left;font-weight:900}tr:nth-child(even) td{background:var(--table-row)}@media(max-width:640px){.reader-shell{width:min(100vw - 18px,980px);padding-top:calc(env(safe-area-inset-top) + 12px)}.reader-top{top:calc(env(safe-area-inset-top) + 6px);margin-bottom:18px;letter-spacing:.07em}.reader-actions{gap:6px}.reader-pill{padding:9px 10px}.theme-toggle{width:35px}article{border-radius:4px;padding:27px 20px 44px}body{font-size:16px}h1{font-size:clamp(45px,15vw,78px)}table{font-size:13px}}
+:root{color-scheme:dark;--font-heading:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;--font-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#0b0a09;--paper-edge:#24211d;--text:#f3ecdf;--text-secondary:#e2d8c8;--muted:#a79d8f;--soft:#d6cabb;--glass-bg:rgba(12,11,10,.78);--glass-border:rgba(255,255,255,.16);--glass-shadow:0 20px 64px rgba(0,0,0,.42);--divider:#28241f;--table-head:#161310;--table-row:rgba(255,255,255,.035);--code-bg:rgba(255,255,255,.07);--progress:#f3ecdf}[data-theme=light]{color-scheme:light;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#fbfaf6;--paper-edge:#e2ddd2;--text:#11100f;--text-secondary:#292622;--muted:#6d665d;--soft:#2f2b27;--glass-bg:rgba(255,255,255,.88);--glass-border:rgba(255,255,255,.28);--glass-shadow:0 22px 76px rgba(0,0,0,.34);--divider:#ddd6ca;--table-head:#ebe6dc;--table-row:rgba(0,0,0,.026);--code-bg:rgba(0,0,0,.05);--progress:#fbfaf6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--bg-radial);background-color:#050505;color:var(--text);font:17px/1.68 var(--font-body);transition:color .35s ease}.reader-progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:10;background:linear-gradient(90deg,var(--progress),#b9b1a4);box-shadow:0 0 18px rgba(243,240,232,.25)}.reader-shell{width:min(980px,calc(100vw - 32px));margin:0 auto;padding:calc(env(safe-area-inset-top) + 24px) 0 78px}.reader-top{position:sticky;top:calc(env(safe-area-inset-top) + 10px);z-index:6;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:34px;color:#d9d2c7;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.reader-actions{display:flex;gap:10px;align-items:center}.reader-pill{appearance:none;color:#f3ecdf;text-decoration:none;border:1px solid rgba(243,236,223,.82);border-radius:10px;padding:9px 13px;background:rgba(12,11,10,.44);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:none;font:700 12px/1 var(--font-body);letter-spacing:.02em;text-transform:none;cursor:pointer}.reader-pill:hover{background:rgba(243,236,223,.10);border-color:#f3ecdf;color:#fff8ec}.theme-toggle{width:38px;height:34px;display:grid;place-items:center;font-size:15px;color:#f3ecdf}.theme-toggle .sun{display:none}[data-theme=light] .theme-toggle .moon{display:none}[data-theme=light] .theme-toggle .sun{display:inline}article{position:relative;background:var(--paper);border:1px solid var(--paper-edge);border-radius:5px;padding:clamp(34px,5vw,72px);box-shadow:var(--glass-shadow);overflow:hidden}header{position:relative;margin-bottom:38px;padding-bottom:24px;border-bottom:1px solid var(--divider)}.eyebrow{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px}.kicker{margin-top:18px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.015em;word-break:break-word}h1{font-family:var(--font-heading);font-weight:500;font-style:normal;font-size:clamp(48px,9vw,104px);line-height:1.02;letter-spacing:-.03em;margin:0;color:var(--text);max-width:15ch}h1 em{font-style:normal;color:var(--text)}.reader-content{position:relative;max-width:790px}.reader-content>p:first-of-type{font-size:clamp(18px,2.3vw,23px);line-height:1.48;color:var(--text-secondary);font-weight:650}h2{margin:2em 0 .62em;font-family:var(--font-heading);font-weight:520;font-style:normal;font-size:clamp(34px,5.4vw,58px);line-height:.98;letter-spacing:-.025em;color:var(--text)}h3{margin:1.55em 0 .45em;font:520 clamp(25px,3.2vw,34px)/1.08 var(--font-body);letter-spacing:-.015em;color:var(--text-secondary)}p{margin:0 0 1.05em}a{color:var(--text);text-decoration-color:color-mix(in srgb,var(--text) 32%,transparent);text-underline-offset:3px}strong{color:var(--text);font-weight:900}em{color:var(--text-secondary);font-style:normal}code{font:.9em 'SF Mono',ui-monospace,monospace;background:var(--code-bg);border:1px solid var(--divider);padding:.13em .36em;border-radius:3px}pre{overflow:auto;background:color-mix(in srgb,var(--paper) 88%,var(--text) 8%);border:1px solid var(--divider);border-radius:4px;padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}pre code{background:transparent;border:0;padding:0}ul,ol{padding-left:1.18em;margin:0 0 1.22em}li{margin:.34em 0;padding-left:.08em}li::marker{color:var(--muted)}blockquote{margin:1.45em 0;padding:18px 22px;border-left:3px solid var(--soft);background:color-mix(in srgb,var(--text) 6%,transparent);border-radius:0 4px 4px 0;color:var(--text-secondary);font-weight:650;font-size:1.03em}.reader-media{margin:0 0 1.6em}.reader-media img{display:block;max-width:min(100%,720px);height:auto;border-radius:4px;border:1px solid var(--divider);box-shadow:0 16px 48px rgba(0,0,0,.22)}.reader-table-wrap{width:100%;overflow:auto;margin:1.2em 0 1.65em;border:1px solid var(--divider);border-radius:4px;background:color-mix(in srgb,var(--paper) 92%,var(--text) 5%)}table{width:100%;border-collapse:collapse;min-width:620px;font-size:14px;line-height:1.35}th,td{padding:11px 13px;border-bottom:1px solid var(--divider);vertical-align:top}th{position:sticky;top:0;background:var(--table-head);color:var(--text);text-align:left;font-weight:900}tr:nth-child(even) td{background:var(--table-row)}@media(max-width:640px){.reader-shell{width:min(100vw - 18px,980px);padding-top:calc(env(safe-area-inset-top) + 12px)}.reader-top{top:calc(env(safe-area-inset-top) + 6px);margin-bottom:18px;letter-spacing:.07em}.reader-actions{gap:6px}.reader-pill{padding:9px 10px}.theme-toggle{width:35px}article{border-radius:4px;padding:27px 20px 44px}body{font-size:16px}h1{font-size:clamp(45px,15vw,78px)}table{font-size:13px}}
 """
     script = r"""
 const root=document.documentElement;
@@ -510,7 +649,7 @@ addEventListener('scroll',tick,{passive:true});addEventListener('resize',tick,{p
 document.getElementById('themeToggle')?.addEventListener('click',()=>{const next=root.dataset.theme==='light'?'dark':'light';root.dataset.theme=next;localStorage.setItem('mc-reader-theme',next)});
 document.getElementById('doneBtn')?.addEventListener('click',(e)=>{e.preventDefault();try{window.close()}catch(_){};setTimeout(()=>{if(history.length>1)history.back();else location.href=(location.pathname.startsWith('/mc/')?'/mc/':'/')},120)});
 """
-    return f"""<!doctype html><html lang=\"en\" data-theme=\"dark\"><head><meta charset=\"utf-8\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\" /><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&display=swap\" rel=\"stylesheet\"><title>{safe_title}</title><style>{css}</style></head><body><div class=\"reader-progress\" id=\"readerProgress\"></div><main class=\"reader-shell\"><nav class=\"reader-top\"><div>Mission Control / Read</div><div class=\"reader-actions\"><button class=\"reader-pill theme-toggle\" id=\"themeToggle\" title=\"Toggle light/dark\"><span class=\"moon\">☾</span><span class=\"sun\">☀</span></button><a class=\"reader-pill\" href=\"obsidian://open?vault=Mission%20Control&file={safe_obs_path}\">Obsidian</a><a class=\"reader-pill\" id=\"doneBtn\" href=\"/\">Done</a></div></nav><article><header><div class=\"eyebrow\">{safe_label}</div><h1>{safe_title}</h1><div class=\"kicker\">{safe_path}</div></header><section class=\"reader-content\">{content}</section></article></main><script>{script}</script></body></html>"""
+    return f"""<!doctype html><html lang=\"en\" data-theme=\"dark\"><head><meta charset=\"utf-8\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\" /><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&display=swap\" rel=\"stylesheet\"><title>{safe_title}</title><style>{css}</style></head><body><div class=\"reader-progress\" id=\"readerProgress\"></div><main class=\"reader-shell\"><nav class=\"reader-top\"><div>Mission Control / Read</div><div class=\"reader-actions\"><button class=\"reader-pill theme-toggle\" id=\"themeToggle\" title=\"Toggle light/dark\"><span class=\"moon\">☾</span><span class=\"sun\">☀</span></button><a class=\"reader-pill\" href=\"obsidian://open?vault=Mission%20Control&file={safe_obs_path}\">⧉ Obsidian</a><a class=\"reader-pill\" id=\"doneBtn\" href=\"/\">× Done</a></div></nav><article><header><div class=\"eyebrow\">{safe_label}</div><h1>{safe_title}</h1><div class=\"kicker\">{safe_path}</div></header><section class=\"reader-content\">{content}</section></article></main><script>{script}</script></body></html>"""
 
 # Pulse data cache — avoid rebuilding every 5s
 _pulse_cache = None
@@ -744,6 +883,114 @@ def transition_job_phase(job_id, new_phase, event_prefix='transitioned', by='Alf
     return job, None
 
 
+
+
+def _next_req_number(jobs):
+    max_num = 0
+    for j in jobs:
+        num_str = (j.get('number') or '')
+        if num_str.startswith('REQ-'):
+            try:
+                max_num = max(max_num, int(num_str[4:]))
+            except ValueError:
+                pass
+    return max_num + 1
+
+
+def _make_alice_job(user_input, request_type, kind_label):
+    import time
+    import random
+    now_ms = int(time.time() * 1000)
+    jobs = load_mission_control_jobs()
+    req_num = _next_req_number(jobs)
+    req = f'REQ-{req_num:03d}'
+    clean_input = re.sub(r'\s+', ' ', (user_input or '').strip())
+    short_input = clean_input[:90] + ('…' if len(clean_input) > 90 else '')
+    is_clip = request_type in ('youtube', 'web')
+    work_label = 'YouTube clipping' if request_type == 'youtube' else 'web clipping' if request_type == 'web' else 'research'
+    title = f'{work_label}: {short_input}'
+    description = (
+        f'{work_label} request created from Mission Control by Sam and assigned to Alice.\n\n'
+        f'Input: {clean_input}\n\n'
+        'Alice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, '
+        'then report completion back to Mission Control with the created/updated path.'
+    )
+    subtasks = [
+        {'id': f'st-{req_num}-1', 'title': 'Capture Sam request and classify research/clipping type', 'status': 'done', 'completedAt': now_ms},
+        {'id': f'st-{req_num}-2', 'title': 'Read vault rules, index, and relevant context', 'status': 'in-progress', 'startedAt': now_ms},
+        {'id': f'st-{req_num}-3', 'title': 'Create or update the vault note', 'status': 'pending'},
+        {'id': f'st-{req_num}-4', 'title': 'Report result back to Mission Control', 'status': 'pending'},
+    ]
+    job = {
+        'id': f'job_{now_ms}_{random.randint(1000,9999):04d}',
+        'number': req,
+        'title': title,
+        'description': description,
+        'details': description,
+        'assignee': 'Alice',
+        'createdBy': 'Sam',
+        'assignedBy': 'Sam',
+        'priority': 'normal',
+        'project': 'Mission Control',
+        'status': 'working',
+        'jobStatus': 'active',
+        'phase': 'working',
+        'source': 'alice-research',
+        'kind': request_type,
+        'logType': 'clipping' if is_clip else 'research',
+        'needsRewrite': False,
+        'activity': 'new',
+        'workers': ['Alice'],
+        'subtasks': subtasks,
+        'history': [
+            {'ts': now_ms, 'event': 'created', 'by': 'Sam'},
+            {'ts': now_ms, 'event': 'transitioned_to_working', 'by': 'Mission Control'},
+            {'ts': now_ms, 'event': f'Alice handoff queued — {kind_label}', 'by': 'Mission Control'},
+        ],
+        'createdAt': now_ms,
+        'updatedAt': now_ms,
+        'startedAt': now_ms,
+        'completedAt': None,
+        'qcResult': None,
+        'aliceInput': clean_input,
+    }
+    jobs.append(job)
+    save_mission_control_jobs(jobs)
+    sync_to_vault('create', job)
+    return job
+
+
+def _complete_alice_job(job_id, payload):
+    import time
+    now_ms = int(time.time() * 1000)
+    job, jobs = find_job_by_id(job_id)
+    if not job:
+        return None, 'Job not found'
+    paths = payload.get('paths') or payload.get('createdPaths') or payload.get('updatedPaths') or []
+    if isinstance(paths, str):
+        paths = [paths]
+    summary = (payload.get('summary') or payload.get('message') or 'Alice completed the request').strip()
+    status = (payload.get('status') or 'done').strip().lower()
+    if 'history' not in job:
+        job['history'] = []
+    for st in job.get('subtasks', []):
+        st['status'] = 'done'
+        st['completedAt'] = st.get('completedAt') or now_ms
+    job['phase'] = 'done' if status != 'failed' else 'qc'
+    job['status'] = job['phase']
+    job['updatedAt'] = now_ms
+    if job['phase'] == 'done':
+        job['completedAt'] = now_ms
+    job['aliceResult'] = {'status': status, 'summary': summary, 'paths': paths, 'timestamp': now_ms}
+    job['qcResult'] = {'status': 'completed' if status != 'failed' else 'needs-review', 'by': 'Alice', 'notes': summary, 'timestamp': now_ms}
+    event = 'Alice completed request' if status != 'failed' else 'Alice reported failure'
+    if paths:
+        event += ' — ' + ', '.join(paths[:3])
+    job['history'].append({'ts': now_ms, 'event': event, 'by': 'Alice', 'summary': summary})
+    save_mission_control_jobs(jobs)
+    sync_to_vault('transition', job)
+    return job, None
+
 def sync_to_vault(action, job):
     """Push job state to Obsidian vault. Best-effort, never blocks.
     Uses direct filesystem writes for REQ notes (CLI can target wrong vault).
@@ -768,8 +1015,10 @@ def sync_to_vault(action, job):
         # Build full note content
         st_lines = ""
         for st in subtasks:
-            icon = {"done": "✓", "in-progress": "●", "pending": "○", "cancelled": "✗"}.get(st.get("status", "pending"), "○")
-            st_lines += f"\n- {icon} {st.get('title', st.get('id', ''))}"
+            status = st.get("status", "pending")
+            checkbox = "[x]" if status == "done" else "[ ]"
+            suffix = " _(in progress)_" if status == "in-progress" else " _(cancelled)_" if status == "cancelled" else ""
+            st_lines += f"\n- {checkbox} {st.get('title', st.get('id', ''))}{suffix}"
         # Determine category from priority/phase/assignee for Dataview
         category = "feature"  # default
         title_lower = title.lower()
@@ -1844,9 +2093,17 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(204)
         self.end_headers()
 
+    def _normalize_mc_path(self, clean_path):
+        """Allow Mission Control to work both at / and behind the /mc funnel prefix."""
+        if clean_path == '/mc':
+            return '/'
+        if clean_path.startswith('/mc/'):
+            return clean_path[3:] or '/'
+        return clean_path
+
     def do_GET(self):
         parsed = self.path.split('?', 1)
-        clean_path = parsed[0].split('#', 1)[0]
+        clean_path = self._normalize_mc_path(parsed[0].split('#', 1)[0])
         query_string = parsed[1] if len(parsed) > 1 else ''
         from urllib.parse import parse_qs
         params = {k: v[0] for k, v in parse_qs(query_string).items()}
@@ -1875,6 +2132,12 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if clean_path == '/api/mission-control-plan':
             self._send_json(200, load_plan_state())
+            return
+        if clean_path == '/api/decision-deck':
+            try:
+                self._send_json(200, {'ok': True, 'decisions': build_decision_deck()})
+            except Exception as e:
+                self._send_json(500, {'ok': False, 'error': str(e), 'decisions': []})
             return
         if clean_path == '/api/pulse-data':
             import time as _time
@@ -1924,16 +2187,18 @@ class Handler(SimpleHTTPRequestHandler):
                     'ext': item.suffix if not is_dir else '',
                     'mtime': mtime_ms,
                 }
-                # Extract source/thumbnail from YouTube clipping frontmatter
-                if not is_dir and item.suffix == '.md' and 'YouTube' in str(rel):
+                # Extract source/thumbnail from clipping frontmatter regardless of folder.
+                # Review clippings live in Clippings/_Inbox Review, so folder name alone
+                # cannot be used to decide whether a note is a YouTube/video clipping.
+                if not is_dir and item.suffix == '.md' and str(rel).startswith('Clippings/'):
                     try:
-                        text = item.read_text(encoding='utf-8')[:2000]
+                        text = item.read_text(encoding='utf-8')[:3000]
                         for line in text.split('\n'):
                             line = line.strip()
                             low = line.lower()
                             if low.startswith('source:') or low.startswith('thumbnail:'):
-                                key = line.split(':')[0].strip().lower()
-                                val = line[len(key)+1:].strip().strip('"').strip("'")
+                                key = line.split(':', 1)[0].strip().lower()
+                                val = line.split(':', 1)[1].strip().strip('"').strip("'")
                                 entry[key] = val
                     except Exception:
                         pass
@@ -2162,6 +2427,9 @@ class Handler(SimpleHTTPRequestHandler):
                 sentences = _re.split(r'[.!?]+', description.strip())
                 sentences = [s.strip() for s in sentences if s.strip()]
                 summary = sentences[-1] if sentences else title
+                log_type = j.get('logType') or ('clipping' if j.get('kind') in ('youtube', 'web') else 'research' if j.get('source') == 'alice-research' else 'job')
+                if log_type in ('research', 'clipping'):
+                    summary = title
                 # Normalize timestamps to int ms
                 created_at = _to_ms(j.get('createdAt'))
                 completed_at = _to_ms(j.get('completedAt'))
@@ -2201,6 +2469,8 @@ class Handler(SimpleHTTPRequestHandler):
                     'assignee': j.get('assignee', ''),
                     'description': description,
                     'subtasks': j.get('subtasks', []),
+                    'kind': j.get('kind', ''),
+                    'logType': log_type,
                 })
             # Sort by createdAt descending (all int ms now, safe to compare)
             log_entries.sort(key=lambda e: e.get('createdAt') or 0, reverse=True)
@@ -2410,7 +2680,150 @@ class Handler(SimpleHTTPRequestHandler):
         return super().translate_path(path)
 
     def do_POST(self):
-        clean_path = self.path.split('?', 1)[0].split('#', 1)[0]
+        clean_path = self._normalize_mc_path(self.path.split('?', 1)[0].split('#', 1)[0])
+
+        if clean_path == '/api/decision-deck/review':
+            length = int(self.headers.get('Content-Length', '0'))
+            raw = self.rfile.read(length or 0)
+            try:
+                payload = json.loads(raw.decode('utf-8')) if length else {}
+                result = review_decision_card(payload.get('path') or payload.get('id'), payload.get('action') or 'approved')
+                self._send_json(200, {'ok': True, 'review': result, 'decisions': build_decision_deck()})
+            except Exception as e:
+                self._send_json(400, {'ok': False, 'error': str(e)})
+            return
+
+        if clean_path == '/api/vault/ingest':
+            length = int(self.headers.get('Content-Length', '0'))
+            raw = self.rfile.read(length or 0)
+            try:
+                payload = json.loads(raw.decode('utf-8')) if length else {}
+                url = (payload.get('url') or payload.get('input') or '').strip()
+                if not re.match(r'^https?://', url, re.I):
+                    raise ValueError('A URL is required for clipping ingestion')
+                if not VAULT_INGEST_SCRIPT.exists():
+                    raise ValueError(f'vault-ingest not found: {VAULT_INGEST_SCRIPT}')
+                cmd = ['/usr/bin/python3', str(VAULT_INGEST_SCRIPT), url, '--write-review', '--synthesize', '--json']
+                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
+                if proc.returncode != 0:
+                    raise ValueError((proc.stderr or proc.stdout or 'vault-ingest failed').strip())
+                data = json.loads(proc.stdout or '{}')
+                self._send_json(200, {'ok': True, 'ingest': data})
+            except subprocess.TimeoutExpired:
+                self._send_json(504, {'ok': False, 'error': 'vault-ingest timed out'})
+            except Exception as e:
+                self._send_json(400, {'ok': False, 'error': str(e)})
+            return
+
+        if clean_path == '/api/alice/complete':
+            length = int(self.headers.get('Content-Length', '0'))
+            raw = self.rfile.read(length or 0)
+            try:
+                payload = json.loads(raw.decode('utf-8')) if length else {}
+                job_id = (payload.get('jobId') or payload.get('id') or '').strip()
+                if not job_id:
+                    raise ValueError('jobId is required')
+                job, err = _complete_alice_job(job_id, payload)
+                if err:
+                    self._send_json(404, {'ok': False, 'error': err})
+                    return
+                self._send_json(200, {'ok': True, 'job': job})
+            except Exception as e:
+                self._send_json(400, {'ok': False, 'error': str(e)})
+            return
+
+        if clean_path == '/api/alice/research':
+            length = int(self.headers.get('Content-Length', '0'))
+            raw = self.rfile.read(length or 0)
+            try:
+                payload = json.loads(raw.decode('utf-8')) if length else {}
+                user_input = (payload.get('input') or payload.get('topic') or payload.get('url') or '').strip()
+                request_type = (payload.get('type') or 'research').strip().lower()
+                if not user_input:
+                    raise ValueError('Input is required')
+                is_url = bool(re.match(r'^https?://', user_input, re.I))
+                is_youtube = bool(re.search(r'(youtube\.com|youtu\.be)', user_input, re.I))
+                if request_type not in ('research', 'clipping', 'youtube', 'web'):
+                    request_type = 'clipping' if is_url else 'research'
+                if request_type == 'clipping':
+                    request_type = 'youtube' if is_youtube else 'web' if is_url else 'research'
+                kind_label = 'YouTube clipping' if request_type == 'youtube' else 'web clipping' if request_type == 'web' else 'research note'
+                job = None if payload.get('dryRun') else _make_alice_job(user_input, request_type, kind_label)
+                req = job.get('number') if job else 'REQ-DRYRUN'
+                job_id = job.get('id') if job else 'dry-run'
+                completion_url = 'http://127.0.0.1:8787/api/alice/complete'
+                prompt = f"""You are Alice, Mission Control's vault researcher and librarian.
+
+Sam triggered this from Mission Control's Research button.
+Mission Control has already created the tracking job. Treat that job as the source of truth.
+
+Job: {req}
+Job ID: {job_id}
+Request type: {kind_label}
+Input: {user_input}
+
+Your job:
+- If this is a research topic/question: search/read the Mission Control vault, synthesize findings, create or update an appropriate note under Research/ using Templates/Research Template.md and Reference/Workflow/Research Intake Standard.md, and update Research/Research Index.md.
+- If this is a YouTube URL: create a finished clipping under Clippings/YouTube/ using Reference/Clipping Format.md, Reference/Alice Mission Control Clipping Rules.md, and Reference/Workflow/Research Intake Standard.md. Include clean YAML, visible thumbnail, Summary, Key Points, Why Saved, Initial Knowledge Delta, Connections with real vault wikilinks, and Transcript / Notes when available. Update Research/Research Index.md if it has research value.
+- If this is a web URL: create a finished clipping under Clippings/Web/ using the same clipping standards. Include source-grounded notes, Initial Knowledge Delta, and useful vault connections. Update Research/Research Index.md if it has research value.
+
+Important workflow rules:
+- You are the front door for MC research/clipping now.
+- Do not rely on Pi for this task.
+- Do not leave temporary scratch files in _Inbox Review unless unavoidable. Prefer writing the finished clipping/research note directly.
+- Do not invent wikilinks. Inspect the vault and link real notes.
+- For every major research note, include Bottom Line, What it means here, Knowledge Delta, Recommended Action, Key Findings, Details, Related Notes, and Sources.
+- Knowledge Delta is the skim/judgement pass against what the vault already owns: Novelty, Alignment, Value, Action, Decision impact.
+- Preserve the source/synthesis split: source evidence in Clippings/, synthesis in Research/, stable truth in Reference/.
+- Keep the result concise and useful to Sam.
+- When done, you must report completion back to Mission Control.
+
+Completion step — mandatory:
+Run this after you have written/updated the vault note(s), replacing the summary and paths with the real result:
+
+curl -sS -X POST {completion_url} \\
+  -H 'content-type: application/json' \\
+  --data '{{"jobId":"{job_id}","status":"done","summary":"Created/updated the requested note.","paths":["Research/or/Clippings/path.md"]}}'
+
+If you cannot complete it, call the same endpoint with "status":"failed" and a concise summary explaining the blocker.
+"""
+                if payload.get('dryRun'):
+                    self._send_json(200, {'ok': True, 'kind': request_type, 'prompt': prompt})
+                    return
+                run_at = (datetime.now(timezone.utc) + timedelta(seconds=3)).isoformat()
+                cmd = [
+                    'openclaw', 'cron', 'add',
+                    '--name', f'Alice — MC {kind_label} {req}',
+                    '--at', run_at,
+                    '--session', 'isolated',
+                    '--message', prompt,
+                    '--timeout-seconds', '0',
+                    '--delete-after-run',
+                    '--no-deliver',
+                    '--json'
+                ]
+                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+                if proc.returncode != 0:
+                    if job:
+                        job['phase'] = 'qc'
+                        job['status'] = 'qc'
+                        job['history'].append({'ts': int(__import__('time').time() * 1000), 'event': 'Alice handoff failed', 'by': 'Mission Control', 'reason': (proc.stderr or proc.stdout or '').strip()})
+                        save_mission_control_jobs(load_mission_control_jobs())
+                    raise ValueError((proc.stderr or proc.stdout or 'Failed to start Alice handoff').strip())
+                try:
+                    data = json.loads(proc.stdout or '{}')
+                except Exception:
+                    data = {'raw': proc.stdout.strip()}
+                if job:
+                    job2, jobs = find_job_by_id(job['id'])
+                    if job2:
+                        job2['aliceCronJobId'] = data.get('id') or data.get('jobId')
+                        job2['history'].append({'ts': int(__import__('time').time() * 1000), 'event': 'Alice started isolated session', 'by': 'Mission Control'})
+                        save_mission_control_jobs(jobs)
+                self._send_json(200, {'ok': True, 'kind': request_type, 'message': f'{req} created; Alice started: {kind_label}', 'job': job, 'handoff': data})
+            except Exception as e:
+                self._send_json(400, {'ok': False, 'error': str(e)})
+            return
 
         if clean_path == '/api/mission-control-plan/annotations':
             length = int(self.headers.get('Content-Length', '0'))
@@ -2554,7 +2967,6 @@ class Handler(SimpleHTTPRequestHandler):
             return
 
         # --- Mission Control Job Actions ---
-        import re
         mc_job_match = re.match(r'^/api/mission-control-jobs/([^/]+)/(.+)$', clean_path)
         if mc_job_match:
             job_id = unquote(mc_job_match.group(1))
@@ -2904,7 +3316,7 @@ class Handler(SimpleHTTPRequestHandler):
         self._send_json(404, {'ok': False, 'error': 'Not found'})
 
     def do_PATCH(self):
-        clean_path = self.path.split('?', 1)[0].split('#', 1)[0]
+        clean_path = self._normalize_mc_path(self.path.split('?', 1)[0].split('#', 1)[0])
         import re
 
         plan_ann_match = re.match(r'^/api/mission-control-plan/annotations/([^/]+)$', clean_path)

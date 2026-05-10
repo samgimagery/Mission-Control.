@@ -195,6 +195,16 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${hour}:${min}`;
   }
 
+  function formatShortDate(ts) {
+    if (!ts) return '';
+    const d = new Date(typeof ts === 'number' ? ts : Date.parse(ts));
+    if (isNaN(d.getTime())) return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = String(d.getFullYear()).slice(-2);
+    return `${day}.${month}.${year}`;
+  }
+
   // ── Format full date+time for activity ──
   function formatFullDate(ts) {
     if (!ts) return '';
@@ -343,18 +353,152 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${cut}…`;
   }
 
+
+  let decisionDeckItems = [];
+  let decisionDeckIndex = 0;
+
+  function decisionChipClass(action) {
+    const safe = String(action || 'keep').toLowerCase().replace(/[^a-z0-9-]/g, '');
+    return `decision-chip action-${safe || 'keep'}`;
+  }
+
+  function decisionDeckEdge(count) {
+    const n = Math.min(12, Math.max(1, count || 1));
+    return Array.from({ length: n }, (_, i) => `<span class="decision-edge-line" style="--i:${i}"></span>`).join('');
+  }
+
+  function decisionDeckQueue(items, active) {
+    return (items || []).slice(0, 5).map((item, i) => `
+      <div class="decision-queue-item${i === active ? ' active' : ''}">
+        <span class="decision-queue-dot"></span>${String(i + 1).padStart(2, '0')} / ${escapeHtml(item.action || 'keep')}
+      </div>`).join('');
+  }
+
+  function renderDecisionDeck(items) {
+    decisionDeckItems = Array.isArray(items) ? items : [];
+    if (!decisionDeckItems.length) return '';
+    decisionDeckIndex = Math.min(decisionDeckIndex, decisionDeckItems.length - 1);
+    const item = decisionDeckItems[decisionDeckIndex];
+    const total = decisionDeckItems.length;
+    const deltas = [
+      ['nov', item.novelty || 'adds'],
+      ['align', item.alignment || 'confirms'],
+      ['val', item.value || 'medium'],
+      ['act', item.action || 'keep'],
+    ];
+    const width = Math.min(100, (total / 12) * 100);
+    return `
+      <section class="decision-deck-module" data-count="${total}">
+        <div class="decision-deck-header">
+          <div class="decision-deck-label">Decision deck</div>
+          <div class="decision-deck-count">${String(total).padStart(2, '0')} pending</div>
+        </div>
+        <div class="decision-deck-grid">
+          <div class="decision-deck-stage">
+            <article class="decision-card" role="button" tabindex="0" data-decision-next="1">
+              <div class="decision-card-top">
+                <div class="decision-chips">
+                  <span class="${decisionChipClass(item.action)}">${escapeHtml(item.action || 'keep')}</span>
+                  <span class="decision-chip">${escapeHtml(item.type || 'research')}</span>
+                  <span class="decision-chip">${escapeHtml(item.impact || 'none')}</span>
+                  <span class="decision-chip">${escapeHtml(item.value || 'medium')} value</span>
+                </div>
+                <div class="decision-card-index">${String(decisionDeckIndex + 1).padStart(2, '0')} <span>/ ${String(total).padStart(2, '0')}</span></div>
+              </div>
+              <h2>${escapeHtml(item.title || 'Untitled decision')}</h2>
+              <p>${escapeHtml(item.bottomLine || 'Open the source note to review this decision.')}</p>
+              <div class="decision-delta-row">
+                ${deltas.map(([label, value]) => `<span class="decision-delta"><small>${label}</small>${escapeHtml(value)}</span>`).join('')}
+              </div>
+              <div class="decision-controls">
+                <button type="button" class="decision-btn primary" data-decision-approve="1">Approve</button>
+                <button type="button" class="decision-btn" data-decision-later="1">Later</button>
+                <button type="button" class="decision-btn" data-decision-open="1">Open</button>
+              </div>
+            </article>
+            <div class="decision-deck-edge">${decisionDeckEdge(total)}</div>
+          </div>
+          <aside class="decision-side-panel">
+            <div class="decision-technical">
+              <div><b>SOURCE</b> / Alice intake</div>
+              <div><b>SCAN</b> / Knowledge Delta</div>
+              <div><b>WRITEBACK</b> / review_status + review_action</div>
+              <div class="decision-meter"><div class="decision-meter-row"><span>deck thickness</span><span>${total}/12</span></div><div class="decision-bar"><span style="width:${width}%"></span></div></div>
+            </div>
+            <div class="decision-queue">${decisionDeckQueue(decisionDeckItems, decisionDeckIndex)}</div>
+          </aside>
+        </div>
+        <div class="decision-footer-hint">click card to cycle · approve writes review metadata</div>
+      </section>`;
+  }
+
+  function wireDecisionDeck(el) {
+    if (!el || !decisionDeckItems.length) return;
+    const rerender = () => {
+      const old = el.querySelector('.decision-deck-module');
+      if (!old) return;
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = renderDecisionDeck(decisionDeckItems);
+      old.replaceWith(wrapper.firstElementChild);
+      wireDecisionDeck(el);
+    };
+    const next = () => {
+      const card = el.querySelector('.decision-card');
+      if (card) card.classList.add('flick');
+      setTimeout(() => {
+        decisionDeckIndex = (decisionDeckIndex + 1) % decisionDeckItems.length;
+        rerender();
+      }, 180);
+    };
+    el.querySelector('[data-decision-next]')?.addEventListener('click', next);
+    el.querySelector('[data-decision-next]')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); next(); }
+    });
+    el.querySelector('[data-decision-later]')?.addEventListener('click', (e) => { e.stopPropagation(); next(); });
+    el.querySelector('[data-decision-open]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const item = decisionDeckItems[decisionDeckIndex];
+      if (item?.obsidianUri) window.open(item.obsidianUri, '_blank');
+    });
+    el.querySelector('[data-decision-approve]')?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const item = decisionDeckItems[decisionDeckIndex];
+      if (!item) return;
+      try {
+        const res = await fetch(apiPath('/api/decision-deck/review'), {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ path: item.path, action: item.action || 'approved' })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Review failed');
+        decisionDeckItems = data.decisions || decisionDeckItems.filter((_, i) => i !== decisionDeckIndex);
+        decisionDeckIndex = Math.min(decisionDeckIndex, Math.max(0, decisionDeckItems.length - 1));
+        rerender();
+      } catch (err) {
+        alert('Could not approve decision: ' + err.message);
+      }
+    });
+  }
+
   async function loadPlanPage() {
     const el = document.getElementById('planContent');
     if (!el) return;
     try {
-      const res = await fetch(apiPath('/api/mission-control-plan'), { cache: 'no-store' });
-      const focus = await res.json();
+      const [planRes, decisionRes] = await Promise.all([
+        fetch(apiPath('/api/mission-control-plan'), { cache: 'no-store' }),
+        fetch(apiPath('/api/decision-deck'), { cache: 'no-store' })
+      ]);
+      const focus = await planRes.json();
+      const decisionData = decisionRes.ok ? await decisionRes.json() : { decisions: [] };
+      const decisionDeckHtml = renderDecisionDeck(decisionData.decisions || []);
       const mission = focus.mission || focus.objective || '';
       const currentFocus = focus.currentFocus || `${focus.activeProject || 'Mission Control'}${focus.activeReq ? ` · ${focus.activeReq}` : ''}`;
       const topFocus = focusLeadSentence(currentFocus) || 'Keep the current mission clear, calm, and actionable.';
       const planItems = focus.plan || focus.nextActions;
       el.innerHTML = `
         <div class="focus-simple">
+          ${decisionDeckHtml}
           <section class="plan-hero focus-hero">
             <div class="focus-title-block">
               <div class="plan-kicker">${escapeHtml(focus.activeProject || 'Mission Control')}</div>
@@ -371,12 +515,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="focus-section-icon">→</span>
             <span>${escapeHtml(focus.nextBestStep || 'Decide the next move, then keep Mission Control as the distilled source of truth.')}</span>
           </section>
-          <div class="focus-insight-grid">
-            ${renderFocusPanel('✓ Proven', focus.recentSuccesses, { list: true })}
-            ${renderFocusPanel('→ Testing Now', focus.recentChallenges, { list: true })}
-            ${renderFocusPanel('? Open Questions', focus.upcomingChallenges, { list: true })}
-          </div>
         </div>`;
+      wireDecisionDeck(el);
       el.querySelector('.focus-title-req')?.addEventListener('click', () => openReqInOverview(focus.activeReq));
     } catch (e) {
       el.innerHTML = '<div class="vault-loading">Focus unavailable</div>';
@@ -1046,7 +1186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Fetch note content from API
-        fetch(`/api/vault-note?name=${encodeURIComponent(node.id)}`)
+        fetch(apiPath(`/api/vault-note?name=${encodeURIComponent(node.id)}`))
           .then(r => r.json())
           .then(data => {
             let html = '';
@@ -1108,6 +1248,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Refresh button
   document.getElementById('vaultGraphRefresh')?.addEventListener('click', () => loadVaultGraph());
 
+  let logsTypeFilter = 'all';
+
+  function updateLogsControls() {
+    const filterBtn = document.getElementById('logsTypeFilter');
+    if (filterBtn) {
+      filterBtn.dataset.filter = logsTypeFilter;
+      filterBtn.textContent = logsTypeFilter === 'all' ? 'All' : (logsTypeFilter === 'job' ? 'Jobs' : (logsTypeFilter === 'research' ? 'Research' : 'Clippings'));
+    }
+  }
+
   // ── Job Logs Panel (Done-section grid style) ──
   async function loadJobLogs() {
     const logsEl = document.getElementById('jobLogsList');
@@ -1121,7 +1271,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const resp = await fetch(apiPath('/api/mission-control-jobs/logs'));
       if (!resp.ok) { logsEl.innerHTML = '<div class="log-empty">No logs yet</div>'; return; }
       const data = await resp.json();
-      const logs = data.logs || [];
+      let logs = data.logs || [];
+      if (logsTypeFilter !== 'all') logs = logs.filter(l => (l.logType || 'job') === logsTypeFilter);
+      logs = [...logs].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       if (logs.length === 0) {
         logsEl.innerHTML = '<div class="log-empty">No logs yet</div>';
         return;
@@ -1130,11 +1282,13 @@ document.addEventListener('DOMContentLoaded', () => {
       let html = '';
       logs.forEach(l => {
         const reqNum = l.number || '';
+        const logType = l.logType || 'job';
+        const refClass = logType === 'research' ? 'log-ref-research' : (logType === 'clipping' ? 'log-ref-clipping' : 'log-ref-job');
         const isExpanded = expandedKeys.has(l.id);
         const summary = l.summary || l.title || '';
         const summaryShort = summary.length > 80 ? summary.substring(0, 77) + '...' : summary;
         const phaseLabel = l.phase === 'done' ? '✓' : l.phase === 'working' ? '►' : '●';
-        const dateStr = l.createdAt ? formatFullDate(l.createdAt) : '';
+        const dateStr = l.createdAt ? formatShortDate(l.createdAt) : '';
         const timeStr = l.createdAt ? formatTimestamp(l.createdAt) : '';
         const logLines = (l.log || []).map(line => `<div class="log-thread-msg">${escapeHtml(line)}</div>`).join('');
         // Add subtask details if available
@@ -1148,10 +1302,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         html += `<div class="log-entry${isExpanded ? ' expanded' : ''}" data-log-id="${l.id}" data-job-id="${l.id}">`;
         html += `<div class="done-item log-entry-row" data-job-id="${l.id}">`;
-        html += `<span class="done-item-date">${dateStr}</span>`;
-        html += `<span class="done-item-ref log-entry-req">${reqNum ? `<span class="task-number">${reqNum}</span>` : ''}</span>`;
-        html += `<span class="done-item-time">${timeStr}</span>`;
+        html += `<span class="done-item-ref log-entry-req">${reqNum ? `<span class="task-number ${refClass}">${reqNum}</span>` : ''}</span>`;
         html += `<span class="done-item-title">${phaseLabel} ${escapeHtml(summaryShort)}</span>`;
+        html += `<span class="done-item-meta"><span class="done-item-date">${dateStr}</span><span class="done-item-time">${timeStr}</span></span>`;
         html += '</div>';
         if (logHtml) {
           html += `<div class="log-entry-thread" style="display:${isExpanded ? 'flex' : 'none'}">${logHtml}</div>`;
@@ -1167,16 +1320,17 @@ document.addEventListener('DOMContentLoaded', () => {
           const jobId = entry?.dataset.jobId;
           if (!jobId) return;
           let job = currentJobs.find(j => j.id === jobId);
-          // If archived job not in currentJobs, fetch it
+          // If done/archived job is not in currentJobs, fetch active + done lists.
           if (!job) {
             try {
-              const resp = await fetch(`/api/mission-control-jobs`);
-              if (resp.ok) {
-                const data = await resp.json();
-                const allJobs = data.jobs || [];
-                // Also check archived
-                job = allJobs.find(j => j.id === jobId);
-              }
+              const [activeResp, doneResp] = await Promise.all([
+                fetch(apiPath('/api/mission-control-jobs'), { cache: 'no-store' }),
+                fetch(apiPath('/api/mission-control-jobs/done'), { cache: 'no-store' })
+              ]);
+              const activeData = activeResp.ok ? await activeResp.json() : { jobs: [] };
+              const doneData = doneResp.ok ? await doneResp.json() : { jobs: [] };
+              const allJobs = [...(activeData.jobs || []), ...(doneData.jobs || [])];
+              job = allJobs.find(j => j.id === jobId);
             } catch(err) {}
           }
           if (job) openCardModal(job);
@@ -1244,6 +1398,15 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
   }
+
+  const logsTypeFilterBtn = document.getElementById('logsTypeFilter');
+  updateLogsControls();
+  logsTypeFilterBtn?.addEventListener('click', () => {
+    const order = ['all', 'job', 'research', 'clipping'];
+    logsTypeFilter = order[(order.indexOf(logsTypeFilter) + 1) % order.length];
+    updateLogsControls();
+    loadJobLogs();
+  });
 
   // Load comms log when Logs view is active
   if (document.getElementById('logs')?.classList.contains('active')) {
@@ -1843,7 +2006,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         const jobId = btn.dataset.jobId;
         // Stop the job and close modal
-        fetch(`/api/mission-control-jobs/${jobId}`, {
+        fetch(apiPath(`/api/mission-control-jobs/${jobId}`), {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jobStatus: 'stopped' })
@@ -1931,7 +2094,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const currentPrio = ['critical', 'high', 'normal', 'low'].find(p => card.classList.contains(`prio-${p}`)) || 'normal';
       const cycle = { 'normal': 'high', 'high': 'critical', 'critical': 'normal' };
       const newPrio = cycle[currentPrio] || 'normal';
-      fetch(`/api/mission-control-jobs/${jobId}`, {
+      fetch(apiPath(`/api/mission-control-jobs/${jobId}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priority: newPrio })
@@ -1948,7 +2111,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (jobCtrlBtn.classList.contains('pause-btn')) newStatus = 'paused';
       else if (jobCtrlBtn.classList.contains('stop-btn')) newStatus = 'stopped';
       else if (jobCtrlBtn.classList.contains('resume-btn')) newStatus = 'active';
-      fetch(`/api/mission-control-jobs/${jobId}`, {
+      fetch(apiPath(`/api/mission-control-jobs/${jobId}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobStatus: newStatus, by: 'Sam' })
@@ -1961,7 +2124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dismissBtn) {
       e.stopPropagation();
       const jobId = dismissBtn.dataset.jobId;
-      fetch(`/api/mission-control-jobs/${jobId}`, {
+      fetch(apiPath(`/api/mission-control-jobs/${jobId}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobStatus: 'stopped', by: 'Sam' })
@@ -2034,7 +2197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const body = { updates: [{ subtaskId, status: newStatus }] };
       if (by) body.updates[0].by = by;
-      const res = await fetch(`/api/mission-control-jobs/${jobId}/subtasks`, {
+      const res = await fetch(apiPath(`/api/mission-control-jobs/${jobId}/subtasks`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -2056,7 +2219,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── API: Transition Job ──
   async function transitionJob(jobId, phase) {
     try {
-      const res = await fetch(`/api/mission-control-jobs/${jobId}/transition`, {
+      const res = await fetch(apiPath(`/api/mission-control-jobs/${jobId}/transition`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phase })
@@ -2075,7 +2238,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── API: Approve Request ──
   async function approveRequest(jobId) {
     try {
-      const res = await fetch(`/api/mission-control-jobs/${jobId}/approve-request`, {
+      const res = await fetch(apiPath(`/api/mission-control-jobs/${jobId}/approve-request`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ by: 'Sam' })
@@ -2094,7 +2257,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── API: Deny Request ──
   async function denyRequest(jobId, reason) {
     try {
-      const res = await fetch(`/api/mission-control-jobs/${jobId}/deny-request`, {
+      const res = await fetch(apiPath(`/api/mission-control-jobs/${jobId}/deny-request`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ by: 'Sam', reason: reason || '' })
@@ -2113,7 +2276,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── API: Approve Job (legacy) ──
   async function approveJob(jobId) {
     try {
-      const res = await fetch(`/api/mission-control-jobs/${jobId}/approve`, {
+      const res = await fetch(apiPath(`/api/mission-control-jobs/${jobId}/approve`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -2131,7 +2294,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── API: Reject Job (legacy) ──
   async function rejectJob(jobId, reason) {
     try {
-      const res = await fetch(`/api/mission-control-jobs/${jobId}/reject`, {
+      const res = await fetch(apiPath(`/api/mission-control-jobs/${jobId}/reject`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: reason || '' })
@@ -2150,7 +2313,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── API: Archive Job ──
   async function archiveJob(jobId) {
     try {
-      const res = await fetch(`/api/mission-control-jobs/${jobId}/archive`, {
+      const res = await fetch(apiPath(`/api/mission-control-jobs/${jobId}/archive`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -2784,7 +2947,7 @@ let clippingsListData = [];
 let referencesListData = [];
 let currentResearchTab = 'research';
 let researchSortMode = 'date';
-let referencesSortMode = 'name';
+let referencesSortMode = 'date';
 
 async function loadResearchList() {
   const listEl = document.getElementById('researchList');
@@ -2827,9 +2990,9 @@ function renderActiveResearchTab() {
   const listEl = document.getElementById('researchList');
   if (!listEl) return;
   if (currentResearchTab === 'clippings') {
-    renderResearchList(listEl, clippingsListData, 'Clippings', null, researchSortMode);
+    renderResearchList(listEl, clippingsListData, 'Clippings', 'researchSearch', researchSortMode);
   } else {
-    renderResearchList(listEl, researchListData, 'Research', null, researchSortMode);
+    renderResearchList(listEl, researchListData, 'Research', 'researchSearch', researchSortMode);
   }
 }
 
@@ -2865,25 +3028,27 @@ function renderResearchList(container, files, category, searchId = 'researchSear
     if (isYouTube && f.source) {
       const videoId = getYouTubeId(f.source);
       const thumbUrl = videoId ? 'https://img.youtube.com/vi/' + videoId + '/mqdefault.jpg' : '';
-      const dateMeta = f.mtime ? ' · ' + formatTimestamp(f.mtime) : '';
+      const dateMeta = f.mtime ? formatShortDate(f.mtime) : '';
+      const timeMeta = f.mtime ? formatTimestamp(f.mtime) : '';
+      const metaHtml = '<div class="research-note-meta">' + (dateMeta ? '<span class="research-note-date">' + dateMeta + '</span>' : '') + (timeMeta ? '<span class="research-note-time">' + timeMeta + '</span>' : '') + '</div>';
       if (thumbUrl) {
         el.innerHTML = '<img class="research-note-thumb" src="' + thumbUrl + '" alt="" loading="lazy" />' +
           '<div class="research-note-info">' +
-            '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' +
-            '<div class="research-note-meta">' + catLabel + ' · ▶ Video' + dateMeta + '</div>' +
+            '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' + metaHtml +
           '</div>';
       } else {
         el.innerHTML =
           '<div class="research-note-info">' +
-            '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' +
-            '<div class="research-note-meta">' + catLabel + ' · ▶ Video' + dateMeta + '</div>' +
+            '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' + metaHtml +
           '</div>';
       }
     } else {
+      const dateMeta = f.mtime ? formatShortDate(f.mtime) : '';
+      const timeMeta = f.mtime ? formatTimestamp(f.mtime) : '';
       el.innerHTML =
         '<div class="research-note-info">' +
           '<div class="research-note-title">' + escapeHtml(displayName) + '</div>' +
-          '<div class="research-note-meta">' + catLabel + (f.mtime ? ' · ' + formatTimestamp(f.mtime) : '') + '</div>' +
+          '<div class="research-note-meta">' + (dateMeta ? '<span class="research-note-date">' + dateMeta + '</span>' : '') + (timeMeta ? '<span class="research-note-time">' + timeMeta + '</span>' : '') + '</div>' +
         '</div>';
     }
     el.addEventListener('click', () => openResearchModal(f.path, f.name, f.source));
@@ -3009,13 +3174,20 @@ const researchCreateSubmit = document.getElementById('researchCreateSubmit');
 const researchCreateClose = document.getElementById('researchCreateClose');
 const researchCreateCancel = document.getElementById('researchCreateCancel');
 let researchCreateType = 'research';
+const researchSearchEl = document.getElementById('researchSearch');
 const referencesSearchEl = document.getElementById('referencesSearch');
-const referencesSortEl = document.getElementById('referencesSort');
+const referencesSortToggle = document.getElementById('referencesSortToggle');
 
 function updateResearchSortToggle() {
   if (!researchSortToggle) return;
   researchSortToggle.dataset.mode = researchSortMode;
   researchSortToggle.textContent = researchSortMode === 'date' ? 'Date' : 'Name';
+}
+
+function updateReferencesSortToggle() {
+  if (!referencesSortToggle) return;
+  referencesSortToggle.dataset.mode = referencesSortMode;
+  referencesSortToggle.textContent = referencesSortMode === 'date' ? 'Date' : 'Name';
 }
 
 if (researchSortToggle) {
@@ -3087,70 +3259,64 @@ if (researchCreateInput) {
   });
 }
 
+if (researchSearchEl) {
+  researchSearchEl.addEventListener('input', renderActiveResearchTab);
+}
+
 if (referencesSearchEl) {
   referencesSearchEl.addEventListener('input', renderReferencesList);
 }
 
-if (referencesSortEl) {
-  referencesSortEl.addEventListener('change', () => {
-    referencesSortMode = referencesSortEl.value || 'name';
+if (referencesSortToggle) {
+  updateReferencesSortToggle();
+  referencesSortToggle.addEventListener('click', () => {
+    referencesSortMode = referencesSortMode === 'date' ? 'name' : 'date';
+    updateReferencesSortToggle();
     renderReferencesList();
   });
 }
 
-async function createResearchJob(topic) {
+async function handoffToAlice(input, type = 'research') {
+  if (researchCreateSubmit) {
+    researchCreateSubmit.disabled = true;
+    researchCreateSubmit.textContent = '⧖ Alice...';
+  }
   try {
-    const res = await fetch(apiPath('/api/mission-control-jobs/create'), {
+    const res = await fetch(apiPath('/api/alice/research'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Research: ' + topic,
-        description: 'Research and synthesize findings on: ' + topic + '. Create a research note in the MC vault with YAML frontmatter, wikilinks, and category tags. Update the Research Index.',
-        priority: 'medium',
-        assignee: 'Alice',
-        assignedBy: 'Sam'
-      })
+      body: JSON.stringify({ input, type })
     });
     const data = await res.json();
     if (data.ok) {
-      const num = data.job?.number || '';
-      showToast(num + ' created: Research ' + topic);
+      showToast(data.message || 'Alice started');
       loadAssetData();
+      setTimeout(() => { loadResearchList(); renderActiveResearchTab(); }, 1500);
     } else {
-      showToast('Error: ' + (data.error || 'Failed to create job'));
+      showToast('Error: ' + (data.error || 'Failed to start Alice'));
     }
   } catch (e) {
-    showToast('Error creating research job');
+    showToast('Error starting Alice');
+  } finally {
+    if (researchCreateSubmit) {
+      researchCreateSubmit.disabled = false;
+      researchCreateSubmit.textContent = 'Send to Alice';
+    }
   }
+}
+
+async function createResearchJob(topic) {
+  await handoffToAlice(topic, 'research');
 }
 
 async function createClippingJob(input) {
   const isYoutube = /youtu\.be|youtube\.com/i.test(input);
   const isWeb = /^https?:\/\//i.test(input);
-  const clippingKind = isYoutube ? 'YouTube' : isWeb ? 'Web' : 'Manual';
-  try {
-    const res = await fetch(apiPath('/api/mission-control-jobs/create'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Clip: ' + input.slice(0, 90),
-        description: 'Create a ' + clippingKind + ' clipping from: ' + input + '. File it in the Mission Control vault under the correct Clippings folder, enrich it with YAML frontmatter, source URL, why saved, transcript or readable extraction when available, and useful wikilinks. If it is YouTube, use the locked YouTube clipping format.',
-        priority: 'medium',
-        assignee: 'Alfred',
-        assignedBy: 'Sam'
-      })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      const num = data.job?.number || '';
-      showToast(num + ' created: ' + clippingKind + ' clipping');
-      loadAssetData();
-    } else {
-      showToast('Error: ' + (data.error || 'Failed to create clipping job'));
-    }
-  } catch (e) {
-    showToast('Error creating clipping job');
+  if (!isWeb) {
+    await handoffToAlice(input, 'research');
+    return;
   }
+  await handoffToAlice(input, isYoutube ? 'youtube' : 'web');
 }
 
 // Load research/reference when tabs are activated

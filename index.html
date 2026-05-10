@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mission Control</title>
-  <link rel="stylesheet" href="./styles.css?v=20260509researchsortorder" />
+  <link rel="stylesheet" href="./styles.css?v=20260510alicejobs" />
 </head>
 <body class="dark">
   <script>/* Force dark immediately — prevent light flash on iPhone */
@@ -13,7 +13,7 @@
 
   <div class="mobile-header"><span class="mobile-title">Mission Control</span><button id="addTaskBtnMobile" class="fab-mobile" title="Add new job">+</button></div>
   <div class="mobile-tabs">
-    <button class="mobile-tab active" data-view="plan">Focus</button>
+    <button class="mobile-tab active" data-view="plan">Home</button>
     <button class="mobile-tab" data-view="research">Research</button>
     <button class="mobile-tab" data-view="references">References</button>
     <button class="mobile-tab" data-view="logs">Logs</button>
@@ -26,7 +26,7 @@
       </div>
 
       <div class="nav-section">
-        <button class="nav-item active" data-view="plan">Focus</button>
+        <button class="nav-item active" data-view="plan">Home</button>
         <button class="nav-item" data-view="research">Research</button>
         <button class="nav-item" data-view="references">References</button>
         <button class="nav-item" data-view="logs">Logs</button>
@@ -47,13 +47,12 @@
           <header class="page-header">
             <div class="page-header-row">
               <div>
-                <h1 class="page-title">Focus</h1>
-                <p class="page-subtitle">Mission, current focus, recent truth, next best step</p>
+                <h1 class="page-title">Home</h1>
               </div>
             </div>
           </header>
           <div id="planContent" class="plan-shell">
-            <div class="vault-loading">Loading focus...</div>
+            <div class="vault-loading">Loading home...</div>
           </div>
         </section>
 
@@ -65,13 +64,13 @@
             <p class="page-subtitle">Job History</p>
           </header>
 
-          <div class="logs-container">
-            <div class="log-header">
-              <span class="log-date">Date</span>
-              <span class="log-ref">REF</span>
-              <span class="log-time">Time</span>
-              <span class="log-desc">Description</span>
+          <div class="research-tabs research-tabs-row logs-tabs-row">
+            <div class="research-tab-actions">
+              <button id="logsTypeFilter" class="research-sort-toggle logs-type-filter" data-filter="all" title="Filter logs: All / Jobs / Research / Clippings">All</button>
             </div>
+          </div>
+
+          <div class="logs-container">
             <div id="jobLogsList" class="log-list">
               <div class="log-empty">Loading logs...</div>
             </div>
@@ -85,13 +84,13 @@
             <p class="page-subtitle">Knowledge & Investigation</p>
           </header>
           <div class="research-tabs research-tabs-row">
-            <input type="text" id="researchSearch" class="research-search research-inline-search" placeholder="Filter research notes..." />
             <div class="research-tab-actions">
               <button class="research-tab active" data-tab="research">Research</button>
               <button class="research-tab" data-tab="clippings">Clippings</button>
               <button id="researchSortToggle" class="research-sort-toggle" data-mode="date" title="Toggle sort: Date / Name">Date</button>
               <button id="researchCreateBtn" class="research-plus-btn" title="Create research or clipping">+</button>
             </div>
+            <input type="text" id="researchSearch" class="research-search research-inline-search" placeholder="Filter research notes..." />
           </div>
           <div class="research-list" id="researchList">
             <div class="vault-loading">Loading research...</div>
@@ -105,10 +104,10 @@
             <p class="page-subtitle">Operating manuals, product notes & system truth</p>
           </header>
           <div class="research-tabs research-tabs-row references-tabs-row">
-            <input type="text" id="referencesSearch" class="research-search research-inline-search" placeholder="Filter reference notes..." />
             <div class="research-tab-actions">
               <button id="referencesSortToggle" class="research-sort-toggle" data-mode="date" title="Toggle sort: Date / Name">Date</button>
             </div>
+            <input type="text" id="referencesSearch" class="research-search research-inline-search" placeholder="Filter reference notes..." />
           </div>
           <div class="research-list" id="referencesList">
             <div class="vault-loading">Loading references...</div>
@@ -120,15 +119,15 @@
           <div class="modal-card research-create-modal">
             <button class="modal-close" id="researchCreateClose" title="Close">×</button>
             <h2 class="research-create-title">Add to the vault</h2>
-            <p class="research-create-subtitle">Choose what Alfred should file, then give the topic, URL, or clipping instruction.</p>
+            <p class="research-create-subtitle">Choose what Alice should research or clip, then give the topic, URL, or instruction.</p>
             <div class="research-create-choice" role="group" aria-label="Vault add type">
               <button class="research-create-type active" data-type="research">Research</button>
               <button class="research-create-type" data-type="clipping">Clipping</button>
             </div>
             <textarea id="researchCreateInput" class="research-create-input" rows="5" placeholder="Topic, URL, YouTube link, or clipping instruction..."></textarea>
             <div class="research-create-actions">
-              <button id="researchCreateCancel" class="research-create-cancel">Cancel</button>
-              <button id="researchCreateSubmit" class="research-create-submit">Create</button>
+              <button id="researchCreateCancel" class="research-create-cancel">× Cancel</button>
+              <button id="researchCreateSubmit" class="research-create-submit">Send to Alice</button>
             </div>
           </div>
         </div>
@@ -137,8 +136,8 @@
           <div class="modal-card research-modal">
             <button class="modal-close" id="researchModalClose" title="Close">×</button>
             <div class="research-modal-actions">
-              <a class="vault-obsidian-link modal-obsidian-link research-action-btn" id="researchModalObsidian" href="#" title="Open in Obsidian">⧄ Open in Obsidian</a>
-              <button class="vault-obsidian-link research-action-btn research-action-button read-btn" id="researchModalRead" title="Open as beautiful reader">▱ Read</button>
+              <a class="vault-obsidian-link modal-obsidian-link research-action-btn" id="researchModalObsidian" href="#" title="Open in Obsidian">⧉ Obsidian</a>
+              <button class="vault-obsidian-link research-action-btn research-action-button read-btn" id="researchModalRead" title="Open as beautiful reader"><span class="sheet-icon" aria-hidden="true"></span> Read</button>
               <button class="vault-obsidian-link research-action-btn research-action-button" id="researchModalMarp" title="Open as Marp presentation">▶ Present</button>
             </div>
             <div class="research-modal-breadcrumb" id="researchModalBreadcrumb"></div>
@@ -158,6 +157,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260509researchsortorder"></script>
+  <script src="./app.js?v=20260510alicejobs"></script>
 </body>
 </html>
