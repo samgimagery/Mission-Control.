@@ -3057,6 +3057,7 @@ If you cannot complete it, call the same endpoint with "status":"failed" and a c
                 run_at = (datetime.now(timezone.utc) + timedelta(seconds=3)).isoformat()
                 cmd = [
                     'openclaw', 'cron', 'add',
+                    '--agent', 'main',
                     '--name', f'Alice — MC {kind_label} {req}',
                     '--at', run_at,
                     '--session', 'isolated',

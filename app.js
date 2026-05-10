@@ -407,13 +407,23 @@ document.addEventListener('DOMContentLoaded', () => {
     return clean;
   }
 
-  function decisionCardPrompt(item) {
+  function decisionCardSummary(item) {
+    const source = item?.bottomLine || item?.summary || item?.description || item?.knowledgeDelta || '';
+    const clean = String(source || '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, '$2')
+      .replace(/\[\[([^\]]+)\]\]/g, '$1')
+      .replace(/^[-*>#\s]+/gm, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (clean) {
+      const max = 165;
+      return clean.length > max ? `${clean.slice(0, max).replace(/\s+\S*$/, '').trim()}…` : clean;
+    }
     const type = String(item?.type || '').toLowerCase();
-    const action = String(item?.action || 'keep').toLowerCase();
-    const recommendation = decisionActionLabel(action);
-    if (type === 'clipping') return 'Research starts Alice. Keep clipping marks this source reviewed as keep.';
-    if (type === 'research') return `Recommendation: ${recommendation}. This records the decision; it does not move files yet.`;
-    return `Recommendation: ${recommendation}. This records the decision.`;
+    return type === 'clipping'
+      ? 'Source clipping awaiting review and routing into research if it adds useful product knowledge.'
+      : 'Research note awaiting review for what should be kept, merged, promoted, archived, or discarded.';
   }
 
   function decisionPrimaryAction(item) {
@@ -467,11 +477,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <article class="decision-card">
             <div class="decision-card-top">
               <div class="decision-card-index">${current}<span>/${count}</span></div>
-              <div class="decision-deck-count">${count} cards</div>
             </div>
             <div class="decision-card-main">
               <h2>${escapeHtml(item.title || 'Untitled decision')}</h2>
-              <p>${escapeHtml(decisionCardPrompt(item))}</p>
+              <p>${escapeHtml(decisionCardSummary(item))}</p>
             </div>
             <div class="decision-card-bottom">
               <div class="decision-delta-row">
@@ -484,7 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button type="button" class="decision-btn primary" data-decision-approve="1" data-decision-action="${escapeHtml(primary.value)}">${escapeHtml(primary.label)}</button>
                 ${secondary ? `<button type="button" class="decision-btn" data-decision-approve="1" data-decision-action="${escapeHtml(secondary.value)}">${escapeHtml(secondary.label)}</button>` : ''}
                 <button type="button" class="decision-btn" data-decision-open="1">File</button>
-                <button type="button" class="decision-next-btn" data-decision-next="1" aria-label="Next decision card">→</button>
+                <button type="button" class="decision-nav-btn" data-decision-prev="1" aria-label="Previous decision card" ${decisionDeckIndex <= 0 ? 'disabled' : ''}>←</button>
+                <button type="button" class="decision-nav-btn" data-decision-next="1" aria-label="Next decision card">→</button>
               </div>
             </div>
           </article>
@@ -522,6 +532,22 @@ document.addEventListener('DOMContentLoaded', () => {
         rerender();
       }, 190);
     };
+    const prev = () => {
+      const card = el.querySelector('.decision-card');
+      if (!card) return;
+      if (decisionDeckIndex <= 0) {
+        card.classList.remove('start-bump');
+        void card.offsetWidth;
+        card.classList.add('start-bump');
+        return;
+      }
+      card.classList.add('flick-back');
+      setTimeout(() => {
+        decisionDeckIndex -= 1;
+        rerender();
+      }, 190);
+    };
+    el.querySelector('[data-decision-prev]')?.addEventListener('click', (e) => { e.stopPropagation(); prev(); });
     el.querySelector('[data-decision-next]')?.addEventListener('click', (e) => { e.stopPropagation(); next(); });
     el.querySelector('[data-decision-open]')?.addEventListener('click', (e) => {
       e.stopPropagation();
