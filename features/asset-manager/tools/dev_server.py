@@ -7,8 +7,9 @@ import os
 import re
 import tempfile
 import html as _html
+import mimetypes
 from datetime import datetime, timedelta, timezone
-from urllib.parse import unquote
+from urllib.parse import unquote, quote
 
 ROOT = Path('/Users/samg/AI/OpenClaw')
 UI_ROOT = ROOT / 'dev' / 'mission-control'
@@ -32,6 +33,118 @@ def _frontmatter_value(front, key):
     if not m:
         return ''
     return m.group(1).strip().strip('"\'')
+
+
+def _frontmatter_bool(front, key):
+    value = (_frontmatter_value(front, key) or '').strip().lower()
+    return value in ('true', 'yes', '1', 'on')
+
+def _vault_path_from_value(value):
+    raw = (value or '').strip().strip('"\'')
+    if not raw:
+        return None
+    raw = os.path.expanduser(raw)
+    p = Path(raw)
+    if not p.is_absolute():
+        p = VAULT_DIR / raw
+    try:
+        return p.resolve()
+    except Exception:
+        return p
+
+def _is_inside(child, parent):
+    try:
+        child = Path(child).resolve()
+        parent = Path(parent).resolve()
+        return child == parent or str(child).startswith(str(parent) + os.sep)
+    except Exception:
+        return False
+
+def _safe_download_script(path):
+    if not path:
+        return False
+    try:
+        p = Path(path).resolve()
+    except Exception:
+        return False
+    return (
+        p.exists()
+        and p.is_file()
+        and p.suffix == '.sh'
+        and p.name.startswith('download')
+        and any(str(part).lower() == 'assets' for part in p.parts)
+        and _is_inside(p, VAULT_DIR)
+    )
+
+def _human_size(num_bytes):
+    size = float(num_bytes or 0)
+    for unit in ('B', 'K', 'M', 'G'):
+        if size < 1024 or unit == 'G':
+            return f"{size:.0f}{unit}" if unit == 'B' else f"{size:.1f}{unit}".replace('.0', '')
+        size /= 1024
+
+def _asset_dir_stats(path):
+    p = Path(path) if path else None
+    if not p or not p.exists() or not p.is_dir() or not _is_inside(p, VAULT_DIR):
+        return 0, '0B'
+    count = 0
+    total = 0
+    for f in p.rglob('*'):
+        if f.is_file() and f.name != '.DS_Store':
+            if f.suffix.lower() in ('.sh', '.md', '.txt'):
+                continue
+            count += 1
+            try:
+                total += f.stat().st_size
+            except Exception:
+                pass
+    return count, _human_size(total)
+
+def _enrich_visual_job_metadata(job):
+    """Attach transient visual/download metadata from matching REQ frontmatter."""
+    try:
+        number = job.get('number') or ''
+        if not number:
+            return job
+        req_path = VAULT_DIR / 'REQ' / f'{number}.md'
+        if not req_path.exists():
+            return job
+        front, _body = _split_frontmatter(req_path.read_text(encoding='utf-8'))
+        visual = _frontmatter_bool(front, 'visual')
+        download_script = _frontmatter_value(front, 'download_script') or _frontmatter_value(front, 'downloadScript')
+        assets_path = _frontmatter_value(front, 'assets_path') or _frontmatter_value(front, 'assetsPath')
+        if visual:
+            job['visual'] = True
+        if download_script and not job.get('downloadScript'):
+            job['downloadScript'] = download_script
+        if assets_path and not job.get('assetsPath'):
+            job['assetsPath'] = assets_path
+        if job.get('assetsPath'):
+            assets_dir = _vault_path_from_value(job.get('assetsPath'))
+            count, size = _asset_dir_stats(assets_dir)
+            if count > 0 and not job.get('assetsReady'):
+                job['assetsReady'] = True
+                job['assetCount'] = count
+                job['assetSize'] = size
+    except Exception:
+        pass
+    return job
+
+
+def _vault_asset_url(rel_path):
+    raw = (rel_path or '').strip().strip('"\'')
+    if not raw or re.match(r'^(https?:|data:|/api/)', raw, re.I):
+        return raw
+    # Obsidian embed aliases use path|caption. The asset path is always before the pipe.
+    raw = raw.split('|', 1)[0].strip()
+    return '../api/vault/asset?path=' + quote(raw)
+
+def _obsidian_image_embed_to_html(match):
+    inner = (match.group(1) or '').strip()
+    path, _, alias = inner.partition('|')
+    src = _html.escape(_vault_asset_url(path), quote=True)
+    alt = _html.escape(alias or Path(path).name)
+    return f'<figure class="reader-media"><img src="{src}" alt="{alt}" loading="lazy" /></figure>'
 
 def _section_text(text, heading):
     pat = rf'^##\s+{re.escape(heading)}\s*$'
@@ -511,6 +624,7 @@ def _chunk_slide_lines(lines, max_lines=7, max_chars=680):
 def _deck_markdown(title, markdown):
     """Convert a full vault note into a Mind Vault-styled Marp deck."""
     body = re.sub(r"^---[\s\S]*?---", "", markdown or "", count=1).strip()
+    body = re.sub(r"!\[\[([^\]]+)\]\]", _obsidian_image_embed_to_html, body)
     body = _plain_wikilinks(body)
     body = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", body)
     body = re.sub(r"^#\s+.+\n+", "", body, count=1).strip()
@@ -550,6 +664,7 @@ def _deck_markdown(title, markdown):
 def _reader_markdown_to_html(markdown):
     """Small, dependency-free markdown renderer for fast research reading."""
     body = re.sub(r"^---[\s\S]*?---", "", markdown or "", count=1).strip()
+    body = re.sub(r"!\[\[([^\]]+)\]\]", _obsidian_image_embed_to_html, body)
     body = _plain_wikilinks(body)
     body = re.sub(r"^#\s+.+\n+", "", body, count=1).strip()
 
@@ -570,6 +685,10 @@ def _reader_markdown_to_html(markdown):
         if not line.strip():
             i += 1
             continue
+        if line.strip().startswith('<figure class="reader-media">'):
+            blocks.append(line.strip())
+            i += 1
+            continue
         if line.startswith('```'):
             lang = line.strip('`').strip()
             code = []
@@ -582,7 +701,8 @@ def _reader_markdown_to_html(markdown):
         img_match = re.match(r"^!\[([^\]]*)\]\(([^)]+)\)\s*$", line.strip())
         if img_match:
             alt = _html.escape(img_match.group(1) or "")
-            src = _html.escape(img_match.group(2), quote=True)
+            src_raw = img_match.group(2)
+            src = _html.escape(_vault_asset_url(src_raw), quote=True)
             blocks.append(f'<figure class="reader-media"><img src="{src}" alt="{alt}" loading="lazy" /></figure>')
             i += 1
             continue
@@ -637,19 +757,15 @@ def _reader_html(note_path, title, markdown):
     note_label = "Reference note" if str(note_path).startswith("Reference/") else "Research note"
     safe_label = _html.escape(note_label)
     css = r"""
-:root{color-scheme:dark;--font-heading:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;--font-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#0b0a09;--paper-edge:#24211d;--text:#f3ecdf;--text-secondary:#e2d8c8;--muted:#a79d8f;--soft:#d6cabb;--glass-bg:rgba(12,11,10,.78);--glass-border:rgba(255,255,255,.16);--glass-shadow:0 20px 64px rgba(0,0,0,.42);--divider:#28241f;--table-head:#161310;--table-row:rgba(255,255,255,.035);--code-bg:rgba(255,255,255,.07);--progress:#f3ecdf}[data-theme=light]{color-scheme:light;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#fbfaf6;--paper-edge:#e2ddd2;--text:#11100f;--text-secondary:#292622;--muted:#6d665d;--soft:#2f2b27;--glass-bg:rgba(255,255,255,.88);--glass-border:rgba(255,255,255,.28);--glass-shadow:0 22px 76px rgba(0,0,0,.34);--divider:#ddd6ca;--table-head:#ebe6dc;--table-row:rgba(0,0,0,.026);--code-bg:rgba(0,0,0,.05);--progress:#fbfaf6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--bg-radial);background-color:#050505;color:var(--text);font:17px/1.68 var(--font-body);transition:color .35s ease}.reader-progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:10;background:linear-gradient(90deg,var(--progress),#b9b1a4);box-shadow:0 0 18px rgba(243,240,232,.25)}.reader-shell{width:min(980px,calc(100vw - 32px));margin:0 auto;padding:calc(env(safe-area-inset-top) + 24px) 0 78px}.reader-top{position:sticky;top:calc(env(safe-area-inset-top) + 10px);z-index:6;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:34px;color:#d9d2c7;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.reader-actions{display:flex;gap:10px;align-items:center}.reader-pill{appearance:none;color:#f3ecdf;text-decoration:none;border:1px solid rgba(243,236,223,.82);border-radius:10px;padding:9px 13px;background:rgba(12,11,10,.44);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:none;font:700 12px/1 var(--font-body);letter-spacing:.02em;text-transform:none;cursor:pointer}.reader-pill:hover{background:rgba(243,236,223,.10);border-color:#f3ecdf;color:#fff8ec}.theme-toggle{width:38px;height:34px;display:grid;place-items:center;font-size:15px;color:#f3ecdf}.theme-toggle .sun{display:none}[data-theme=light] .theme-toggle .moon{display:none}[data-theme=light] .theme-toggle .sun{display:inline}article{position:relative;background:var(--paper);border:1px solid var(--paper-edge);border-radius:5px;padding:clamp(34px,5vw,72px);box-shadow:var(--glass-shadow);overflow:hidden}header{position:relative;margin-bottom:38px;padding-bottom:24px;border-bottom:1px solid var(--divider)}.eyebrow{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px}.kicker{margin-top:18px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.015em;word-break:break-word}h1{font-family:var(--font-heading);font-weight:500;font-style:normal;font-size:clamp(48px,9vw,104px);line-height:1.02;letter-spacing:-.03em;margin:0;color:var(--text);max-width:15ch}h1 em{font-style:normal;color:var(--text)}.reader-content{position:relative;max-width:790px}.reader-content>p:first-of-type{font-size:clamp(18px,2.3vw,23px);line-height:1.48;color:var(--text-secondary);font-weight:650}h2{margin:2em 0 .62em;font-family:var(--font-heading);font-weight:520;font-style:normal;font-size:clamp(34px,5.4vw,58px);line-height:.98;letter-spacing:-.025em;color:var(--text)}h3{margin:1.55em 0 .45em;font:520 clamp(25px,3.2vw,34px)/1.08 var(--font-body);letter-spacing:-.015em;color:var(--text-secondary)}p{margin:0 0 1.05em}a{color:var(--text);text-decoration-color:color-mix(in srgb,var(--text) 32%,transparent);text-underline-offset:3px}strong{color:var(--text);font-weight:900}em{color:var(--text-secondary);font-style:normal}code{font:.9em 'SF Mono',ui-monospace,monospace;background:var(--code-bg);border:1px solid var(--divider);padding:.13em .36em;border-radius:3px}pre{overflow:auto;background:color-mix(in srgb,var(--paper) 88%,var(--text) 8%);border:1px solid var(--divider);border-radius:4px;padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}pre code{background:transparent;border:0;padding:0}ul,ol{padding-left:1.18em;margin:0 0 1.22em}li{margin:.34em 0;padding-left:.08em}li::marker{color:var(--muted)}blockquote{margin:1.45em 0;padding:18px 22px;border-left:3px solid var(--soft);background:color-mix(in srgb,var(--text) 6%,transparent);border-radius:0 4px 4px 0;color:var(--text-secondary);font-weight:650;font-size:1.03em}.reader-media{margin:0 0 1.6em}.reader-media img{display:block;max-width:min(100%,720px);height:auto;border-radius:4px;border:1px solid var(--divider);box-shadow:0 16px 48px rgba(0,0,0,.22)}.reader-table-wrap{width:100%;overflow:auto;margin:1.2em 0 1.65em;border:1px solid var(--divider);border-radius:4px;background:color-mix(in srgb,var(--paper) 92%,var(--text) 5%)}table{width:100%;border-collapse:collapse;min-width:620px;font-size:14px;line-height:1.35}th,td{padding:11px 13px;border-bottom:1px solid var(--divider);vertical-align:top}th{position:sticky;top:0;background:var(--table-head);color:var(--text);text-align:left;font-weight:900}tr:nth-child(even) td{background:var(--table-row)}@media(max-width:640px){.reader-shell{width:min(100vw - 18px,980px);padding-top:calc(env(safe-area-inset-top) + 12px)}.reader-top{top:calc(env(safe-area-inset-top) + 6px);margin-bottom:18px;letter-spacing:.07em}.reader-actions{gap:6px}.reader-pill{padding:9px 10px}.theme-toggle{width:35px}article{border-radius:4px;padding:27px 20px 44px}body{font-size:16px}h1{font-size:clamp(45px,15vw,78px)}table{font-size:13px}}
+:root{color-scheme:dark;--font-heading:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;--font-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#0b0a09;--paper-edge:#24211d;--text:#f3ecdf;--text-secondary:#e2d8c8;--muted:#a79d8f;--soft:#d6cabb;--glass-bg:rgba(12,11,10,.78);--glass-border:rgba(255,255,255,.16);--glass-shadow:0 20px 64px rgba(0,0,0,.42);--divider:#28241f;--table-head:#161310;--table-row:rgba(255,255,255,.035);--code-bg:rgba(255,255,255,.07);--progress:#f3ecdf}[data-theme=light]{color-scheme:light;--bg:#050505;--bg-radial:radial-gradient(circle at 50% 0%,#171513 0%,#080807 42%,#020202 100%);--paper:#fbfaf6;--paper-edge:#e2ddd2;--text:#11100f;--text-secondary:#292622;--muted:#6d665d;--soft:#2f2b27;--glass-bg:rgba(255,255,255,.88);--glass-border:rgba(255,255,255,.28);--glass-shadow:0 22px 76px rgba(0,0,0,.34);--divider:#ddd6ca;--table-head:#ebe6dc;--table-row:rgba(0,0,0,.026);--code-bg:rgba(0,0,0,.05);--progress:#fbfaf6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--bg-radial);background-color:#050505;color:var(--text);font:17px/1.68 var(--font-body);transition:color .35s ease}.reader-progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:10;background:linear-gradient(90deg,var(--progress),#b9b1a4);box-shadow:0 0 18px rgba(243,240,232,.25)}.reader-shell{width:min(980px,calc(100vw - 32px));margin:0 auto;padding:calc(env(safe-area-inset-top) + 24px) 0 78px}.reader-top{position:sticky;top:calc(env(safe-area-inset-top) + 10px);z-index:6;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:34px;color:#d9d2c7;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.reader-actions{display:flex;gap:10px;align-items:center}.reader-pill{appearance:none;color:#f3ecdf;text-decoration:none;border:1px solid rgba(243,236,223,.82);border-radius:10px;padding:9px 13px;background:rgba(12,11,10,.44);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:none;font:700 12px/1 var(--font-body);letter-spacing:.02em;text-transform:none;cursor:pointer}.reader-pill:hover{background:rgba(243,236,223,.10);border-color:#f3ecdf;color:#fff8ec}article{position:relative;background:var(--paper);border:1px solid var(--paper-edge);border-radius:5px;padding:clamp(34px,5vw,72px);box-shadow:var(--glass-shadow);overflow:hidden}header{position:relative;margin-bottom:38px;padding-bottom:24px;border-bottom:1px solid var(--divider)}.eyebrow{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px}.kicker{margin-top:18px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.015em;word-break:break-word}h1{font-family:var(--font-heading);font-weight:500;font-style:normal;font-size:clamp(48px,9vw,104px);line-height:1.02;letter-spacing:-.03em;margin:0;color:var(--text);max-width:15ch}h1 em{font-style:normal;color:var(--text)}.reader-content{position:relative;max-width:790px}.reader-content>p:first-of-type{font-size:clamp(18px,2.3vw,23px);line-height:1.48;color:var(--text-secondary);font-weight:650}h2{margin:2em 0 .62em;font-family:var(--font-heading);font-weight:520;font-style:normal;font-size:clamp(34px,5.4vw,58px);line-height:.98;letter-spacing:-.025em;color:var(--text)}h3{margin:1.55em 0 .45em;font:520 clamp(25px,3.2vw,34px)/1.08 var(--font-body);letter-spacing:-.015em;color:var(--text-secondary)}p{margin:0 0 1.05em}a{color:var(--text);text-decoration-color:color-mix(in srgb,var(--text) 32%,transparent);text-underline-offset:3px}strong{color:var(--text);font-weight:900}em{color:var(--text-secondary);font-style:normal}code{font:.9em 'SF Mono',ui-monospace,monospace;background:var(--code-bg);border:1px solid var(--divider);padding:.13em .36em;border-radius:3px}pre{overflow:auto;background:color-mix(in srgb,var(--paper) 88%,var(--text) 8%);border:1px solid var(--divider);border-radius:4px;padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}pre code{background:transparent;border:0;padding:0}ul,ol{padding-left:1.18em;margin:0 0 1.22em}li{margin:.34em 0;padding-left:.08em}li::marker{color:var(--muted)}blockquote{margin:1.45em 0;padding:18px 22px;border-left:3px solid var(--soft);background:color-mix(in srgb,var(--text) 6%,transparent);border-radius:0 4px 4px 0;color:var(--text-secondary);font-weight:650;font-size:1.03em}.reader-media{margin:0 0 1.6em}.reader-media img{display:block;max-width:min(100%,720px);height:auto;border-radius:4px;border:1px solid var(--divider);box-shadow:0 16px 48px rgba(0,0,0,.22)}.reader-table-wrap{width:100%;overflow:auto;margin:1.2em 0 1.65em;border:1px solid var(--divider);border-radius:4px;background:color-mix(in srgb,var(--paper) 92%,var(--text) 5%)}table{width:100%;border-collapse:collapse;min-width:620px;font-size:14px;line-height:1.35}th,td{padding:11px 13px;border-bottom:1px solid var(--divider);vertical-align:top}th{position:sticky;top:0;background:var(--table-head);color:var(--text);text-align:left;font-weight:900}tr:nth-child(even) td{background:var(--table-row)}.reader-top{position:fixed;top:max(12px,calc(env(safe-area-inset-top) + 10px));right:max(12px,calc(env(safe-area-inset-right) + 10px));left:auto;z-index:2147483647;display:block;margin:0;color:transparent;letter-spacing:0;text-transform:none;pointer-events:none}.reader-top>div:first-child{display:none}.reader-actions{display:flex;gap:10px;align-items:center;pointer-events:auto}.reader-pill{appearance:none;border:1px solid rgba(255,255,255,.28);border-radius:10px;background:rgba(255,255,255,.88);color:#11100F;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);font:700 12px/1 -apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;letter-spacing:.02em;text-transform:none;text-decoration:none;padding:9px 13px;min-height:34px;box-shadow:0 8px 28px rgba(0,0,0,.18);touch-action:manipulation;cursor:pointer}.reader-pill:hover{border-color:rgba(255,255,255,.36);background:rgba(255,255,255,.94);color:#11100F}@media(max-width:640px){.reader-shell{width:min(100vw - 18px,980px);padding-top:calc(env(safe-area-inset-top) + 12px)}.reader-top{top:calc(env(safe-area-inset-top) + 6px);margin-bottom:18px;letter-spacing:.07em}.reader-actions{gap:6px}.reader-pill{padding:9px 10px}article{border-radius:4px;padding:27px 20px 44px}body{font-size:16px}h1{font-size:clamp(45px,15vw,78px)}table{font-size:13px}}
 """
     script = r"""
-const root=document.documentElement;
-const saved=localStorage.getItem('mc-reader-theme');
-if(saved) root.dataset.theme=saved;
 const bar=document.getElementById('readerProgress');
 const tick=()=>{const max=document.documentElement.scrollHeight-innerHeight;bar.style.width=(max>0?(scrollY/max)*100:0)+'%'};
 addEventListener('scroll',tick,{passive:true});addEventListener('resize',tick,{passive:true});tick();
-document.getElementById('themeToggle')?.addEventListener('click',()=>{const next=root.dataset.theme==='light'?'dark':'light';root.dataset.theme=next;localStorage.setItem('mc-reader-theme',next)});
 document.getElementById('doneBtn')?.addEventListener('click',(e)=>{e.preventDefault();try{window.close()}catch(_){};setTimeout(()=>{if(history.length>1)history.back();else location.href=(location.pathname.startsWith('/mc/')?'/mc/':'/')},120)});
 """
-    return f"""<!doctype html><html lang=\"en\" data-theme=\"dark\"><head><meta charset=\"utf-8\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\" /><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&display=swap\" rel=\"stylesheet\"><title>{safe_title}</title><style>{css}</style></head><body><div class=\"reader-progress\" id=\"readerProgress\"></div><main class=\"reader-shell\"><nav class=\"reader-top\"><div>Mission Control / Read</div><div class=\"reader-actions\"><button class=\"reader-pill theme-toggle\" id=\"themeToggle\" title=\"Toggle light/dark\"><span class=\"moon\">☾</span><span class=\"sun\">☀</span></button><a class=\"reader-pill\" href=\"obsidian://open?vault=Mission%20Control&file={safe_obs_path}\">⧉ Obsidian</a><a class=\"reader-pill\" id=\"doneBtn\" href=\"/\">× Done</a></div></nav><article><header><div class=\"eyebrow\">{safe_label}</div><h1>{safe_title}</h1><div class=\"kicker\">{safe_path}</div></header><section class=\"reader-content\">{content}</section></article></main><script>{script}</script></body></html>"""
+    return f"""<!doctype html><html lang=\"en\" data-theme=\"dark\"><head><meta charset=\"utf-8\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\" /><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&display=swap\" rel=\"stylesheet\"><title>{safe_title}</title><style>{css}</style></head><body><div class=\"reader-progress\" id=\"readerProgress\"></div><main class=\"reader-shell\"><nav class=\"reader-top\"><div>Mission Control / Read</div><div class=\"reader-actions\"><a class=\"reader-pill\" href=\"obsidian://open?vault=Mission%20Control&file={safe_obs_path}\">⧉ Obsidian</a><a class=\"reader-pill\" id=\"doneBtn\" href=\"/\">× Done</a></div></nav><article><header><div class=\"eyebrow\">{safe_label}</div><h1>{safe_title}</h1><div class=\"kicker\">{safe_path}</div></header><section class=\"reader-content\">{content}</section></article></main><script>{script}</script></body></html>"""
 
 # Pulse data cache — avoid rebuilding every 5s
 _pulse_cache = None
@@ -798,6 +914,8 @@ def load_mission_control_jobs():
                             st[ts_field] = int(dt.timestamp() * 1000)
                         except Exception:
                             st[ts_field] = 0
+        for j in data:
+            _enrich_visual_job_metadata(j)
         return data
     except Exception:
         return []
@@ -2457,6 +2575,45 @@ class Handler(SimpleHTTPRequestHandler):
             self._send_json(200, {'ok': True, 'files': result})
             return
 
+        if clean_path.startswith('/api/vault/asset'):
+            import urllib.parse as _up
+            query = _up.parse_qs(self.path.split('?', 1)[-1]) if '?' in self.path else {}
+            file_path = query.get('path', [''])[0]
+            if not file_path:
+                self._send_json(400, {'ok': False, 'error': 'Missing path parameter'})
+                return
+            full_path = (VAULT_DIR / file_path).resolve()
+            if not _is_inside(full_path, VAULT_DIR):
+                self._send_json(403, {'ok': False, 'error': 'Access denied'})
+                return
+            if not full_path.exists() or not full_path.is_file():
+                self._send_json(404, {'ok': False, 'error': 'File not found'})
+                return
+            if full_path.suffix.lower() not in ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'):
+                self._send_json(415, {'ok': False, 'error': 'Unsupported asset type'})
+                return
+            try:
+                data = full_path.read_bytes()
+                if data.startswith(b'RIFF') and data[8:12] == b'WEBP':
+                    content_type = 'image/webp'
+                elif data.startswith(b'\x89PNG'):
+                    content_type = 'image/png'
+                elif data.startswith(b'\xff\xd8\xff'):
+                    content_type = 'image/jpeg'
+                elif data[:6] in (b'GIF87a', b'GIF89a'):
+                    content_type = 'image/gif'
+                else:
+                    content_type = mimetypes.guess_type(str(full_path))[0] or 'application/octet-stream'
+                self.send_response(200)
+                self.send_header('Content-Type', content_type)
+                self.send_header('Content-Length', str(len(data)))
+                self.send_header('Cache-Control', 'public, max-age=300')
+                self.end_headers()
+                self.wfile.write(data)
+            except Exception as e:
+                self._send_json(500, {'ok': False, 'error': str(e)})
+            return
+
         if clean_path.startswith('/api/vault/file'):
             # Return a single vault file's content
             import urllib.parse as _up
@@ -3277,6 +3434,99 @@ If you cannot complete it, call the same endpoint with "status":"failed" and a c
                 self._send_json(400, {'ok': False, 'error': 'Use POST /api/mission-control-jobs/create'})
                 return
 
+            if action == 'run-download':
+                import time as _time_download
+                job, jobs = find_job_by_id(job_id)
+                if not job:
+                    self._send_json(404, {'ok': False, 'error': 'Job not found'})
+                    return
+
+                _enrich_visual_job_metadata(job)
+                script_value = (
+                    job.get('downloadScript')
+                    or job.get('download_script')
+                    or payload.get('downloadScript')
+                    or payload.get('download_script')
+                )
+
+                # Last-resort detection from job text for already-created Alice notes.
+                if not script_value:
+                    haystack = '\n'.join(str(job.get(k) or '') for k in ('description', 'details', 'aliceInput'))
+                    m = re.search(r'([^\n`"\']*assets/[^\n`"\']*download[^\n`"\']*\.sh)', haystack)
+                    if m:
+                        script_value = m.group(1).strip()
+
+                script_path = _vault_path_from_value(script_value)
+                if not _safe_download_script(script_path):
+                    self._send_json(400, {'ok': False, 'error': 'Download script must be a download*.sh file inside a vault assets/ folder'})
+                    return
+
+                assets_value = job.get('assetsPath') or job.get('assets_path') or payload.get('assetsPath') or payload.get('assets_path')
+                assets_dir = _vault_path_from_value(assets_value) if assets_value else None
+
+                try:
+                    result = subprocess.run(
+                        ['/bin/bash', str(script_path)],
+                        cwd=str(script_path.parent),
+                        capture_output=True,
+                        text=True,
+                        timeout=240,
+                    )
+                except subprocess.TimeoutExpired:
+                    self._send_json(504, {'ok': False, 'error': 'Download script timed out'})
+                    return
+
+                output = ((result.stdout or '') + '\n' + (result.stderr or '')).strip()
+                if result.returncode != 0:
+                    self._send_json(500, {'ok': False, 'error': 'Download script failed', 'output': output[-4000:]})
+                    return
+
+                if not assets_dir:
+                    loc = re.search(r'Location:\s*(.+)', output)
+                    if loc:
+                        assets_dir = _vault_path_from_value(loc.group(1).strip())
+                if not assets_dir:
+                    candidate_dirs = [d for d in script_path.parent.iterdir() if d.is_dir() and d.name != '__pycache__']
+                    assets_dir = max(candidate_dirs, key=lambda d: d.stat().st_mtime) if candidate_dirs else script_path.parent
+
+                if not _is_inside(assets_dir, VAULT_DIR):
+                    self._send_json(400, {'ok': False, 'error': 'Resolved assets path is outside the vault'})
+                    return
+
+                files, size = _asset_dir_stats(assets_dir)
+                now_ms_download = int(_time_download.time() * 1000)
+                job['visual'] = True
+                job['downloadScript'] = str(script_path.relative_to(VAULT_DIR))
+                job['assetsPath'] = str(Path(assets_dir).resolve().relative_to(VAULT_DIR))
+                job['assetsReady'] = files > 0
+                job['assetCount'] = files
+                job['assetSize'] = size
+                job['updatedAt'] = now_ms_download
+                if 'history' not in job:
+                    job['history'] = []
+                job['history'].append({
+                    'ts': now_ms_download,
+                    'event': 'assets downloaded',
+                    'by': payload.get('by', 'Sam'),
+                    'files': files,
+                    'size': size,
+                })
+                save_mission_control_jobs(jobs)
+                try:
+                    sync_to_vault('update', job)
+                except Exception:
+                    pass
+                self._send_json(200, {
+                    'ok': True,
+                    'job': job,
+                    'files': files,
+                    'size': size,
+                    'path': str(Path(assets_dir).resolve()),
+                    'script': str(script_path),
+                    'output': output[-4000:],
+                })
+                return
+
             if action == 'snapshot':
                 # Snapshot endpoint is now a no-op
                 self._send_json(200, {'ok': True, 'message': 'Snapshots are temporarily disabled'})
@@ -3478,6 +3728,13 @@ If you cannot complete it, call the same endpoint with "status":"failed" and a c
                     'completedAt': None,
                     'qcResult': None,
                 }
+                for meta_field in ('visual', 'downloadScript', 'download_script', 'assetsPath', 'assets_path', 'assetsReady', 'assetCount', 'assetSize'):
+                    if meta_field in payload:
+                        new_job[meta_field] = payload[meta_field]
+                if new_job.get('download_script') and not new_job.get('downloadScript'):
+                    new_job['downloadScript'] = new_job.get('download_script')
+                if new_job.get('assets_path') and not new_job.get('assetsPath'):
+                    new_job['assetsPath'] = new_job.get('assets_path')
                 jobs.append(new_job)
                 save_mission_control_jobs(jobs)
                 # Sync to Obsidian vault
@@ -3630,7 +3887,7 @@ If you cannot complete it, call the same endpoint with "status":"failed" and a c
                 return
 
             # Allowed fields to patch
-            _allowed_fields = ('priority', 'assignee', 'title', 'description', 'dueDate', 'jobStatus', 'assignedBy', 'needsRewrite', 'phase')
+            _allowed_fields = ('priority', 'assignee', 'title', 'description', 'dueDate', 'jobStatus', 'assignedBy', 'needsRewrite', 'phase', 'visual', 'downloadScript', 'download_script', 'assetsPath', 'assets_path', 'assetsReady', 'assetCount', 'assetSize')
             _ignored = [k for k in payload if k not in _allowed_fields and k not in ('subtasks', 'addSubtasks', 'by') and not k.startswith('_')]
             for field in _allowed_fields:
                 if field in payload:

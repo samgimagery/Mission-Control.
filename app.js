@@ -477,6 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <article class="decision-card">
             <div class="decision-card-top">
               <div class="decision-card-index">${current}<span>/${count}</span></div>
+              <div class="decision-deck-count">${count} cards</div>
             </div>
             <div class="decision-card-main">
               <h2>${escapeHtml(item.title || 'Untitled decision')}</h2>
@@ -493,8 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button type="button" class="decision-btn primary" data-decision-approve="1" data-decision-action="${escapeHtml(primary.value)}">${escapeHtml(primary.label)}</button>
                 ${secondary ? `<button type="button" class="decision-btn" data-decision-approve="1" data-decision-action="${escapeHtml(secondary.value)}">${escapeHtml(secondary.label)}</button>` : ''}
                 <button type="button" class="decision-btn" data-decision-open="1">File</button>
-                <button type="button" class="decision-nav-btn" data-decision-prev="1" aria-label="Previous decision card" ${decisionDeckIndex <= 0 ? 'disabled' : ''}>←</button>
-                <button type="button" class="decision-nav-btn" data-decision-next="1" aria-label="Next decision card">→</button>
+                <button type="button" class="decision-next-btn" data-decision-next="1" aria-label="Next decision card">→</button>
               </div>
             </div>
           </article>
@@ -532,22 +532,6 @@ document.addEventListener('DOMContentLoaded', () => {
         rerender();
       }, 190);
     };
-    const prev = () => {
-      const card = el.querySelector('.decision-card');
-      if (!card) return;
-      if (decisionDeckIndex <= 0) {
-        card.classList.remove('start-bump');
-        void card.offsetWidth;
-        card.classList.add('start-bump');
-        return;
-      }
-      card.classList.add('flick-back');
-      setTimeout(() => {
-        decisionDeckIndex -= 1;
-        rerender();
-      }, 190);
-    };
-    el.querySelector('[data-decision-prev]')?.addEventListener('click', (e) => { e.stopPropagation(); prev(); });
     el.querySelector('[data-decision-next]')?.addEventListener('click', (e) => { e.stopPropagation(); next(); });
     el.querySelector('[data-decision-open]')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1794,6 +1778,17 @@ document.addEventListener('DOMContentLoaded', () => {
       cardHtml += `<span class="card-worker-badge">${escapeHtml(displayWorker)}</span>`;
     }
 
+    // Visual asset download status/action
+    const downloadScript = job.downloadScript || job.download_script || '';
+    const isVisualJob = job.visual === true || job.visual === 'true' || !!downloadScript;
+    if (!isDone && isVisualJob && downloadScript) {
+      if (job.assetsReady) {
+        cardHtml += `<div class="asset-status done">📦 ${Number(job.assetCount || 0)} images · ${escapeHtml(job.assetSize || '')}</div>`;
+      } else {
+        cardHtml += `<button class="btn-download-assets" data-job-id="${job.id}">📥 Download Assets</button>`;
+      }
+    }
+
     // Due date — skip if today or if job is actively being worked on
     if (job.dueDate && job.phase !== 'working') {
       const overdue = job.dueDate && job.phase !== 'done' && job.phase !== 'completed' && job.phase !== 'archived' && isDueDateOverdue(job.dueDate);
@@ -2217,6 +2212,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Visual asset download button
+    const downloadBtn = e.target.closest('.btn-download-assets');
+    if (downloadBtn) {
+      e.stopPropagation();
+      runDownloadAssets(downloadBtn.dataset.jobId, downloadBtn);
+      return;
+    }
+
     // Job status controls (pause / resume / start)
     const jobCtrlBtn = e.target.closest('.job-ctrl-btn');
     if (jobCtrlBtn) {
@@ -2328,6 +2331,36 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error('[MC] Subtask update error:', err);
+    }
+  }
+
+  // ── API: Run Visual Asset Download ──
+  async function runDownloadAssets(jobId, btn) {
+    if (!jobId) return;
+    const originalText = btn ? btn.textContent : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Downloading...';
+    }
+    try {
+      const res = await fetch(apiPath(`/api/mission-control-jobs/${jobId}/run-download`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ by: 'Sam' })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Download failed');
+      }
+      showToast(`Downloaded ${data.files || 0} assets · ${data.size || ''}`, 4000);
+      loadAssetData();
+    } catch (err) {
+      console.error('[MC] Asset download failed:', err);
+      showToast(`Download failed: ${err.message}`, 5000);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = originalText || '📥 Download Assets';
+      }
     }
   }
 
@@ -2461,88 +2494,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ── Add Task Button ──
-  document.getElementById('addTaskBtn')?.addEventListener('click', async () => {
-    const existingForm = document.getElementById('inlineTaskForm');
-    if (existingForm) {
-      existingForm.remove();
-      return;
-    }
-
-    const container = document.querySelector('.main-viewport');
-    if (!container) return;
-
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-
-    const form = document.createElement('div');
-    form.id = 'inlineTaskForm';
-    form.className = 'inline-task-form-overlay';
-    form.innerHTML = `
-      <div class="inline-task-form-card">
-        <h3>New Job</h3>
-        <input type="text" id="newTaskTitle" placeholder="What needs to be done?" class="inline-input" style="width:100%;margin-bottom:8px" />
-        <textarea id="newTaskDetails" placeholder="Extra details (optional)" class="inline-input" style="width:100%;min-height:40px;resize:vertical;margin-bottom:8px"></textarea>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <select id="newTaskPriority" class="inline-select" style="flex:1">
-            <option value="normal" selected>Normal</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-          <input type="date" id="newTaskDueDate" class="inline-input" style="flex:1" min="${today}" value="${today}" placeholder="Due date" />
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button id="cancelTaskBtn" class="btn btn-secondary" style="font-size:13px;padding:6px 14px;">Cancel</button>
-          <button id="submitTaskBtn" class="btn btn-primary" style="font-size:13px;padding:6px 14px;">Create Job</button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(form);
-
-    // Close on overlay click
-    form.addEventListener('click', (e) => {
-      if (e.target === form) form.remove();
-    });
-
-    document.getElementById('newTaskTitle')?.focus();
-
-
-    document.getElementById('cancelTaskBtn')?.addEventListener('click', () => {
-      form.remove();
-    });
-
-    document.getElementById('submitTaskBtn')?.addEventListener('click', async () => {
-      const rawTask = document.getElementById('newTaskTitle')?.value.trim();
-      if (!rawTask) return;
-      const title = rawTask.length > 50 ? rawTask.substring(0, 47) + '...' : rawTask;
-      const details = document.getElementById('newTaskDetails')?.value.trim() || '';
-      const description = rawTask + (details ? '\n\n' + details : '');
-      const assignee = 'Unassigned';
-      const priority = document.getElementById('newTaskPriority')?.value || 'normal';
-      const createdBy = 'Sam';
-      const dueDate = document.getElementById('newTaskDueDate')?.value || '';
-      const project = 'Mission Control';
-
-      try {
-        const res = await fetch(apiPath('/api/mission-control-jobs/create'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, description, details: description, assignee, priority, createdBy, dueDate, project, addSubtasks: [{ title: rawTask, status: 'pending' }] })
-        });
-        const data = await res.json();
-        if (data.ok) {
-          const overlay = document.getElementById('inlineTaskForm');
-          if (overlay) overlay.remove();
-          loadAssetData();
-        } else {
-          console.error('[MC] Create failed:', data.error);
-        }
-      } catch (err) {
-        console.error('[MC] Create error:', err);
-      }
-    });
-  });
+  // ── Global Create Button ──
+  document.getElementById('addTaskBtn')?.addEventListener('click', () => openResearchCreateModal('job'));
+  document.getElementById('addTaskBtnMobile')?.addEventListener('click', () => openResearchCreateModal('job'));
 
   // ── Pulse Metrics (now in Overview) ──
 
@@ -2805,14 +2759,6 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('[MC] Unified Workspace initialized');
 
 
-  // Mobile FAB — triggers same add flow
-  const mobileFab = document.getElementById('addTaskBtnMobile');
-  if (mobileFab) {
-    mobileFab.addEventListener('click', () => {
-      document.getElementById('addTaskBtn')?.click();
-    });
-  }
-
 // ── Vault Browser ──
 let vaultTreeData = [];
 let vaultCurrentFile = null;
@@ -2942,6 +2888,21 @@ function renderBreadcrumb(path) {
   return html;
 }
 
+
+function vaultAssetUrl(path) {
+  const raw = String(path || '').trim().replace(/^['"]|['"]$/g, '');
+  if (!raw) return '';
+  if (/^(https?:|data:|\/api\/)/i.test(raw)) return raw;
+  const clean = raw.split('|')[0].trim();
+  return apiPath('/api/vault/asset?path=' + encodeURIComponent(clean));
+}
+
+function renderVaultImage(path, alt = '') {
+  const cleanPath = String(path || '').split('|')[0].trim();
+  const cleanAlt = alt || cleanPath.split('/').pop() || 'Vault image';
+  return `<figure class="vault-media"><img src="${escapeHtml(vaultAssetUrl(cleanPath))}" alt="${escapeHtml(cleanAlt)}" loading="lazy" /></figure>`;
+}
+
 function renderVaultMarkdown(md) {
   if (!md) return '';
   let html = md;
@@ -2977,7 +2938,11 @@ function renderVaultMarkdown(md) {
     }
   }
 
-  // Wikilinks
+  // Obsidian image embeds + wikilinks
+  html = html.replace(/!\[\[([^\]]+)\]\]/g, (match, inner) => {
+    const [path, alias] = String(inner || '').split('|');
+    return renderVaultImage(path, alias || '');
+  });
   html = html.replace(/\[\[([^\]]+)\]\]/g, '<span class="wikilink">[[$1]]</span>');
 
   // Tables (GFM pipe tables)
@@ -3013,7 +2978,7 @@ function renderVaultMarkdown(md) {
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
   // Images (must come before links)
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />');
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => renderVaultImage(src, alt));
 
   // Links
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
@@ -3037,7 +3002,7 @@ function renderVaultMarkdown(md) {
     if (!trimmed) { result += '\n'; continue; }
     if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('<li') ||
         trimmed.startsWith('<pre') || trimmed.startsWith('<blockquote') || trimmed.startsWith('<hr') ||
-        trimmed.startsWith('<div') || trimmed.startsWith('<table') || trimmed.startsWith('<thead') ||
+        trimmed.startsWith('<div') || trimmed.startsWith('<figure') || trimmed.startsWith('<table') || trimmed.startsWith('<thead') ||
         trimmed.startsWith('<tbody') || trimmed.startsWith('<tr') || trimmed.startsWith('<th') ||
         trimmed.startsWith('<td') || trimmed.startsWith('</')) {
       result += line + '\n';
@@ -3282,13 +3247,15 @@ document.addEventListener('keydown', (e) => {
 
 // Research create modal + sort toggle
 const researchSortToggle = document.getElementById('researchSortToggle');
-const researchCreateBtn = document.getElementById('researchCreateBtn');
 const researchCreateModal = document.getElementById('researchCreateModal');
 const researchCreateInput = document.getElementById('researchCreateInput');
+const researchCreateTitle = document.getElementById('researchCreateTitle');
+const researchCreateSubtitle = document.getElementById('researchCreateSubtitle');
+const jobCreateOptions = document.getElementById('jobCreateOptions');
 const researchCreateSubmit = document.getElementById('researchCreateSubmit');
 const researchCreateClose = document.getElementById('researchCreateClose');
 const researchCreateCancel = document.getElementById('researchCreateCancel');
-let researchCreateType = 'research';
+let researchCreateType = 'job';
 const researchSearchEl = document.getElementById('researchSearch');
 const referencesSearchEl = document.getElementById('referencesSearch');
 const referencesSortToggle = document.getElementById('referencesSortToggle');
@@ -3314,18 +3281,50 @@ if (researchSortToggle) {
   });
 }
 
-function openResearchCreateModal(type = currentResearchTab === 'clippings' ? 'clipping' : 'research') {
-  if (!researchCreateModal) return;
-  researchCreateType = type;
+function updateCreateModalMode() {
   document.querySelectorAll('.research-create-type').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.type === researchCreateType);
   });
-  if (researchCreateInput) {
-    researchCreateInput.value = '';
-    researchCreateInput.placeholder = researchCreateType === 'clipping'
-      ? 'Paste a URL, YouTube link, or describe what to clip...'
-      : 'Research topic or question...';
+  const createCopy = {
+    job: {
+      title: 'New Job',
+      subtitle: 'Create a Mission Control job. Alfred will rewrite and break it into subtasks.',
+      placeholder: 'What needs to be done? Add details if useful.',
+      submit: 'Create Job'
+    },
+    research: {
+      title: 'New Research',
+      subtitle: 'Send a topic or question to Alice for a vault-ready research note.',
+      placeholder: 'Research topic or question...',
+      submit: 'Send to Alice'
+    },
+    clipping: {
+      title: 'New Clipping',
+      subtitle: 'Send a URL, YouTube link, or clipping instruction to Alice.',
+      placeholder: 'Paste a URL, YouTube link, or describe what to clip...',
+      submit: 'Send to Alice'
+    }
+  };
+  const copy = createCopy[researchCreateType] || createCopy.job;
+  if (researchCreateTitle) researchCreateTitle.textContent = copy.title;
+  if (researchCreateSubtitle) researchCreateSubtitle.textContent = copy.subtitle;
+  if (researchCreateInput) researchCreateInput.placeholder = copy.placeholder;
+  if (researchCreateSubmit) researchCreateSubmit.textContent = copy.submit;
+  if (jobCreateOptions) jobCreateOptions.style.display = researchCreateType === 'job' ? 'flex' : 'none';
+}
+
+function openResearchCreateModal(type = 'job') {
+  if (!researchCreateModal) return;
+  researchCreateType = type;
+  if (researchCreateInput) researchCreateInput.value = '';
+  const now = new Date();
+  const due = document.getElementById('newTaskDueDate');
+  if (due) {
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    due.min = today;
+    due.value = today;
   }
+  updateCreateModalMode();
   researchCreateModal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   setTimeout(() => researchCreateInput?.focus(), 0);
@@ -3337,7 +3336,6 @@ function closeResearchCreateModal() {
   document.body.style.overflow = '';
 }
 
-if (researchCreateBtn) researchCreateBtn.addEventListener('click', () => openResearchCreateModal());
 if (researchCreateClose) researchCreateClose.addEventListener('click', closeResearchCreateModal);
 if (researchCreateCancel) researchCreateCancel.addEventListener('click', closeResearchCreateModal);
 if (researchCreateModal) {
@@ -3347,20 +3345,16 @@ if (researchCreateModal) {
 }
 document.querySelectorAll('.research-create-type').forEach(btn => {
   btn.addEventListener('click', () => {
-    researchCreateType = btn.dataset.type || 'research';
-    document.querySelectorAll('.research-create-type').forEach(t => t.classList.toggle('active', t === btn));
-    if (researchCreateInput) {
-      researchCreateInput.placeholder = researchCreateType === 'clipping'
-        ? 'Paste a URL, YouTube link, or describe what to clip...'
-        : 'Research topic or question...';
-    }
+    researchCreateType = btn.dataset.type || 'job';
+    updateCreateModalMode();
   });
 });
 if (researchCreateSubmit) {
   researchCreateSubmit.addEventListener('click', async () => {
     const value = (researchCreateInput?.value || '').trim();
     if (!value) { researchCreateInput?.focus(); return; }
-    if (researchCreateType === 'clipping') await createClippingJob(value);
+    if (researchCreateType === 'job') await createManualJob(value);
+    else if (researchCreateType === 'clipping') await createClippingJob(value);
     else await createResearchJob(value);
     closeResearchCreateModal();
   });
@@ -3417,6 +3411,43 @@ async function handoffToAlice(input, type = 'research') {
       researchCreateSubmit.disabled = false;
       researchCreateSubmit.textContent = 'Send to Alice';
     }
+  }
+}
+
+async function createManualJob(input) {
+  const lines = String(input || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const rawTitle = lines[0] || String(input || '').trim();
+  const title = rawTitle.length > 70 ? rawTitle.substring(0, 67) + '...' : rawTitle;
+  const description = String(input || '').trim();
+  const priority = document.getElementById('newTaskPriority')?.value || 'normal';
+  const dueDate = document.getElementById('newTaskDueDate')?.value || '';
+  try {
+    const res = await fetch(apiPath('/api/mission-control-jobs/create'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        description,
+        details: description,
+        assignee: 'Unassigned',
+        priority,
+        createdBy: 'Sam',
+        assignedBy: 'Sam',
+        dueDate,
+        project: 'Mission Control',
+        subtasks: [{ id: `manual-${Date.now()}-1`, title: rawTitle, status: 'pending' }]
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast(`${data.job?.number || 'Job'} created`, 3000);
+      loadAssetData();
+    } else {
+      showToast('Error: ' + (data.error || 'Failed to create job'));
+    }
+  } catch (e) {
+    console.error('[MC] Create job error:', e);
+    showToast('Error creating job');
   }
 }
 

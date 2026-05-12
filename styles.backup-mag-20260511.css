@@ -1733,20 +1733,3 @@ body.dark .research-create-submit{
 .decision-deck-module.decision-deck-complete{opacity:.42;filter:saturate(.72);pointer-events:none;transition:opacity .22s ease,filter .22s ease}
 .decision-deck-module.decision-deck-complete .decision-card{box-shadow:0 16px 42px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.76)}
 .decision-deck-module.decision-deck-complete .decision-controls{opacity:.35}
-
-/* ── Visual asset download action ── */
-.btn-download-assets{display:inline-flex;align-items:center;gap:6px;width:max-content;margin-top:8px;padding:8px 14px;border:1px solid rgba(59,130,246,.45);border-radius:8px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-size:12px;font-weight:650;cursor:pointer;transition:all .15s ease;box-shadow:0 4px 14px rgba(37,99,235,.18)}
-.btn-download-assets:hover{background:linear-gradient(135deg,#1e40af,#1d4ed8);transform:translateY(-1px)}
-.btn-download-assets:disabled{opacity:.62;cursor:not-allowed;transform:none}
-.asset-status{font-size:12px;color:var(--muted);margin-top:8px;font-weight:600}
-.asset-status.done{color:#22c55e}
-
-/* ── Unified create modal job options ── */
-.job-create-options{display:flex;gap:8px;margin-top:10px}
-.job-create-select,.job-create-date{flex:1;min-width:0}
-@media(max-width:768px){.job-create-options{flex-direction:column}}
-
-/* ── Vault note image embeds ── */
-.vault-media{margin:14px 0 18px}
-.vault-media img{display:block;max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);box-shadow:0 12px 36px rgba(0,0,0,.28);background:rgba(255,255,255,.03)}
-.research-modal .vault-media img{max-height:70vh;object-fit:contain}
