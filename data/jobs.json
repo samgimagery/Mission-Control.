@@ -15686,5 +15686,774 @@
     "startedAt": null,
     "completedAt": 1778581037591,
     "qcResult": null
+  },
+  {
+    "id": "job_1778582152761_5882",
+    "number": "REQ-230",
+    "title": "Update Alice project filing map and compare Mind Vault bases",
+    "description": "Give Alice clear local-project filing rules and compare the OpenClaw dev Mind Vault against the iCloud Mind Vault copy so Sam can choose the right base for the next rebuild/prototype pass.",
+    "details": "Sam wants Alice to calmly understand the local project structure under /Users/samg/AI/OpenClaw/dev and related iCloud project copies, with links to compare Mind Vault versions back to back.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-230-1",
+        "title": "Inspect Mind Vault dev and iCloud project copies",
+        "status": "done",
+        "completedAt": 1778582594201,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-230-2",
+        "title": "Create links/portals for Alice and Sam comparison",
+        "status": "done",
+        "completedAt": 1778582594201,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-230-3",
+        "title": "Document local project filing rules for Alice",
+        "status": "done",
+        "completedAt": 1778582594201,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-230-4",
+        "title": "Recommend best starting point for next Mind Vault build",
+        "status": "done",
+        "completedAt": 1778582594201,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778582152761,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778582152791,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778582594201,
+        "event": "subtask st-230-1 done \u2014 Inspect Mind Vault dev and iCloud project copies",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778582594201,
+        "event": "subtask st-230-2 done \u2014 Create links/portals for Alice and Sam comparison",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778582594201,
+        "event": "subtask st-230-3 done \u2014 Document local project filing rules for Alice",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778582594201,
+        "event": "subtask st-230-4 done \u2014 Recommend best starting point for next Mind Vault build",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778582594224,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1778582152761,
+    "updatedAt": 1778582594224,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1778582594224,
+    "qcResult": null
+  },
+  {
+    "id": "job_1778583203898_1092",
+    "number": "REQ-231",
+    "title": "Tidy Mission Control vault after Alice fix",
+    "description": "Clean up Mission Control vault state after the Alice fix: find loose Alice/research/clipping artifacts, normalize misplaced or stale notes, update indexes and work logs, and leave the vault in a clear checkpoint state.",
+    "details": "Sam asked for the vault tidy-up now after Alice was fixed and worried context was lost. Treat this as a practical cleanup pass, not a redesign.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-231-1",
+        "title": "Audit recent Alice, Research, Clippings, Reference, and index changes for loose ends",
+        "status": "done",
+        "completedAt": 1778589226912,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-231-2",
+        "title": "Normalize or relocate any misplaced vault artifacts and stale references",
+        "status": "done",
+        "completedAt": 1778589226912,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-231-3",
+        "title": "Update Research Index, Focus/current notes, work log, and memory checkpoint",
+        "status": "done",
+        "completedAt": 1778589226912,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-231-4",
+        "title": "Verify vault structure and Alice mirror/portal state after tidy",
+        "status": "done",
+        "completedAt": 1778589226912,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778583203898,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778583218847,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778589226912,
+        "event": "subtask st-231-1 done \u2014 Audit recent Alice, Research, Clippings, Reference, and index changes for loose ends",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778589226912,
+        "event": "subtask st-231-2 done \u2014 Normalize or relocate any misplaced vault artifacts and stale references",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778589226912,
+        "event": "subtask st-231-3 done \u2014 Update Research Index, Focus/current notes, work log, and memory checkpoint",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778589226912,
+        "event": "subtask st-231-4 done \u2014 Verify vault structure and Alice mirror/portal state after tidy",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778589226930,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1778583203898,
+    "updatedAt": 1778589226930,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1778589226930,
+    "qcResult": null
+  },
+  {
+    "id": "job_1778584189519_2953",
+    "number": "REQ-232",
+    "title": "research: So do you think a blender approach is better if we want in the future to actually have min\u2026",
+    "description": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: So do you think a blender approach is better if we want in the future to actually have mind vault running with another display with a metahuman live that is running the mind vault - see? So should it be 3d from the get go is what im saying. If yes - Can we do some research on UI design in blender for animating a UI in 3D.\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "details": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: So do you think a blender approach is better if we want in the future to actually have mind vault running with another display with a metahuman live that is running the mind vault - see? So should it be 3d from the get go is what im saying. If yes - Can we do some research on UI design in blender for animating a UI in 3D.\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "assignee": "Alice",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "alice-research",
+    "kind": "research",
+    "logType": "research",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [
+      "Alice"
+    ],
+    "subtasks": [
+      {
+        "id": "st-232-1",
+        "title": "Capture Sam request and classify research/clipping type",
+        "status": "done",
+        "completedAt": 1778584189519
+      },
+      {
+        "id": "st-232-2",
+        "title": "Read vault rules, index, and relevant context",
+        "status": "done",
+        "startedAt": 1778584189519,
+        "completedAt": 1778584511120
+      },
+      {
+        "id": "st-232-3",
+        "title": "Create or update the vault note",
+        "status": "done",
+        "completedAt": 1778584511120
+      },
+      {
+        "id": "st-232-4",
+        "title": "Report result back to Mission Control",
+        "status": "done",
+        "completedAt": 1778584511120
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778584189519,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778584189519,
+        "event": "transitioned_to_working",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778584189519,
+        "event": "Alice handoff queued \u2014 research note",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778584190433,
+        "event": "Alice started isolated session",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778584511120,
+        "event": "Alice completed request \u2014 verified \u2014 Research/Knowledge Architecture/Blender Spatial UI Pipeline for Mind Vault.md, Research/Research Index.md",
+        "by": "Mission Control",
+        "summary": "Created REQ-232 research note recommending a spatial/3D-from-the-start Mind Vault design approach: Blender as UI motion/previs lab, web/WebGL as first runtime, Unreal reserved for MetaHuman/high-fidelity embodied stage. Updated Research Index.",
+        "warnings": []
+      }
+    ],
+    "createdAt": 1778584189519,
+    "updatedAt": 1778584511120,
+    "startedAt": 1778584189519,
+    "completedAt": 1778584511120,
+    "qcResult": {
+      "status": "completed",
+      "by": "Mission Control",
+      "notes": "Created REQ-232 research note recommending a spatial/3D-from-the-start Mind Vault design approach: Blender as UI motion/previs lab, web/WebGL as first runtime, Unreal reserved for MetaHuman/high-fidelity embodied stage. Updated Research Index.",
+      "timestamp": 1778584511120
+    },
+    "aliceInput": "So do you think a blender approach is better if we want in the future to actually have mind vault running with another display with a metahuman live that is running the mind vault - see? So should it be 3d from the get go is what im saying. If yes - Can we do some research on UI design in blender for animating a UI in 3D.",
+    "aliceCronJobId": "6f4eca1b-d666-4bab-ba16-de98dae5f281",
+    "aliceResult": {
+      "status": "done",
+      "summary": "Created REQ-232 research note recommending a spatial/3D-from-the-start Mind Vault design approach: Blender as UI motion/previs lab, web/WebGL as first runtime, Unreal reserved for MetaHuman/high-fidelity embodied stage. Updated Research Index.",
+      "paths": [
+        "Research/Knowledge Architecture/Blender Spatial UI Pipeline for Mind Vault.md",
+        "Research/Research Index.md"
+      ],
+      "verification": {
+        "ok": true,
+        "warnings": [],
+        "paths": [
+          "Research/Knowledge Architecture/Blender Spatial UI Pipeline for Mind Vault.md",
+          "Research/Research Index.md"
+        ],
+        "reportedPaths": [
+          "Research/Knowledge Architecture/Blender Spatial UI Pipeline for Mind Vault.md",
+          "Research/Research Index.md"
+        ]
+      },
+      "timestamp": 1778584511120
+    }
+  },
+  {
+    "id": "job_1778587562808_7649",
+    "number": "REQ-233",
+    "title": "Define Mind Vault spatial grammar v0",
+    "description": "Active focus: define Mind Vault Spatial Prototype v0. Establish the spatial grammar first \u2014 vault field, stage plane, peripheral lanes, compare table, summoned controls, material surfaces, and motion rules \u2014 then use Blender for the motion bible and WebGL for the live vault/Marp vertical slice.",
+    "details": "Sam is installing Blender. Alfred should start with spatial grammar, not code: define verbs, control principles, coordinate/depth model, animation rules, content surfaces, and the first prototype slice.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "high",
+    "project": "Mind Vault",
+    "status": "working",
+    "jobStatus": "active",
+    "phase": "working",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-233-1",
+        "title": "Read current Swan Song, Territory, gesture, and floating stack references",
+        "status": "done",
+        "completedAt": 1778587699645,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-233-2",
+        "title": "Draft Mind Vault spatial grammar v0 with Vision Pro-aware interaction rules",
+        "status": "done",
+        "completedAt": 1778587699645,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-233-3",
+        "title": "Define first Blender motion-study set and WebGL prototype slice",
+        "status": "done",
+        "completedAt": 1778587699645,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-233-4",
+        "title": "Save work log and next-focus checkpoint",
+        "status": "pending"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778587562808,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778587562833,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778587699645,
+        "event": "subtask st-233-1 done \u2014 Read current Swan Song, Territory, gesture, and floating stack references",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778587699645,
+        "event": "subtask st-233-2 done \u2014 Draft Mind Vault spatial grammar v0 with Vision Pro-aware interaction rules",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778587699645,
+        "event": "subtask st-233-3 done \u2014 Define first Blender motion-study set and WebGL prototype slice",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778587699645,
+        "event": "subtask st-233-4 pending \u2014 Save work log and next-focus checkpoint",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1778587562808,
+    "updatedAt": 1778589543624,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": null,
+    "qcResult": null
+  },
+  {
+    "id": "job_1778590626684_3711",
+    "number": "REQ-234",
+    "title": "Polish Mission Control tab controls and search layout",
+    "description": "Unify Mission Control tab/filter controls: Research/Clippings switcher, Date/Name sort buttons, Logs filters, and search fields. Buttons should be dark, same width per group, centered labels, white outline on hover/active, with search fields aligned right and placeholder \u201csearch...\u201d.",
+    "details": "Sam wants Research tab buttons same size/switch-state, search expanded to the Date button, Reference Date/Name dark not white, Logs All/Jobs/Research/Clippings same button treatment, and Logs search field matching other tabs. Keep alignment consistent across tabs.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-234-1",
+        "title": "Inspect current Research, Reference, and Logs controls",
+        "status": "done",
+        "completedAt": 1778591218453,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-234-2",
+        "title": "Patch HTML/JS/CSS for unified dark buttons and search layouts",
+        "status": "done",
+        "completedAt": 1778591218453,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-234-3",
+        "title": "Run syntax checks and inspect changed selectors",
+        "status": "done",
+        "completedAt": 1778591218453,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-234-4",
+        "title": "Update cache buster and report result",
+        "status": "done",
+        "completedAt": 1778591218453,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778590626684,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778590626711,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778591218453,
+        "event": "subtask st-234-1 done \u2014 Inspect current Research, Reference, and Logs controls",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778591218453,
+        "event": "subtask st-234-2 done \u2014 Patch HTML/JS/CSS for unified dark buttons and search layouts",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778591218453,
+        "event": "subtask st-234-3 done \u2014 Run syntax checks and inspect changed selectors",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778591218453,
+        "event": "subtask st-234-4 done \u2014 Update cache buster and report result",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778591240700,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1778590626684,
+    "updatedAt": 1778591240700,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1778591240700,
+    "qcResult": null
+  },
+  {
+    "id": "job_1778591967297_2908",
+    "number": "REQ-235",
+    "title": "Refine MC filter outlines and Research switcher",
+    "description": "Change Research/Clippings into a single cycling button and apply the bright selected-nav outline treatment permanently to all filter buttons and search fields.",
+    "details": "Sam wants Research and Clippings to be one same-size button whose word changes on click. All filter buttons should carry the bright outline like the selected page in the left panel, permanently, with matching white outline on search fields.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-235-1",
+        "title": "Replace Research/Clippings paired buttons with one cycling filter control",
+        "status": "done",
+        "completedAt": 1778592056646,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-235-2",
+        "title": "Apply permanent bright outline treatment to filters and search inputs",
+        "status": "done",
+        "completedAt": 1778592056646,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-235-3",
+        "title": "Run JS/CSS checks and update cache buster",
+        "status": "done",
+        "completedAt": 1778592056646,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778591967297,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778591967315,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592056646,
+        "event": "subtask st-235-1 done \u2014 Replace Research/Clippings paired buttons with one cycling filter control",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592056646,
+        "event": "subtask st-235-2 done \u2014 Apply permanent bright outline treatment to filters and search inputs",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592056646,
+        "event": "subtask st-235-3 done \u2014 Run JS/CSS checks and update cache buster",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592056659,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1778591967297,
+    "updatedAt": 1778592056659,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1778592056659,
+    "qcResult": null
+  },
+  {
+    "id": "job_1778592332139_9628",
+    "number": "REQ-236",
+    "title": "Polish MC filter hover state",
+    "description": "Make MC filter buttons keep dark resting state but lighten slightly on hover, matching left sidebar menu hover/active feel with bright edge.",
+    "details": "Make MC filter buttons keep dark resting state but lighten slightly on hover, matching left sidebar menu hover/active feel with bright edge.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-1",
+        "title": "Patch filter hover CSS",
+        "status": "done",
+        "completedAt": 1778592607872,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-2",
+        "title": "Run CSS/JS checks and bump cache buster",
+        "status": "done",
+        "completedAt": 1778592607872,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778592332139,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778592332174,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592607872,
+        "event": "subtask st-1 done \u2014 Patch filter hover CSS",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592607872,
+        "event": "subtask st-2 done \u2014 Run CSS/JS checks and bump cache buster",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592607898,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1778592332139,
+    "updatedAt": 1778592607898,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1778592607898,
+    "qcResult": null
+  },
+  {
+    "id": "job_1778592332210_9826",
+    "number": "REQ-237",
+    "title": "Fix Claire current-student first-turn routing",
+    "description": "When caller says they are a student and gives level, Claire should not dump the level course sales info unless specifically asked; she should switch to student-support mode and ask what help they need, listing common student services.",
+    "details": "When caller says they are a student and gives level, Claire should not dump the level course sales info unless specifically asked; she should switch to student-support mode and ask what help they need, listing common student services.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-1",
+        "title": "Find Claire student-routing prompt/logic",
+        "status": "done",
+        "completedAt": 1778592607921,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-2",
+        "title": "Patch student response line/guard",
+        "status": "done",
+        "completedAt": 1778592607921,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-3",
+        "title": "Run targeted Claire checks",
+        "status": "done",
+        "completedAt": 1778592607921,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778592332210,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778592332250,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592607921,
+        "event": "subtask st-1 done \u2014 Find Claire student-routing prompt/logic",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592607921,
+        "event": "subtask st-2 done \u2014 Patch student response line/guard",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592607921,
+        "event": "subtask st-3 done \u2014 Run targeted Claire checks",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778592607944,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1778592332210,
+    "updatedAt": 1778592607944,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1778592607944,
+    "qcResult": null
+  },
+  {
+    "id": "job_1778593317425_1093",
+    "number": "REQ-238",
+    "title": "Make MC filters permanently selected-style",
+    "description": "Make all MC filter buttons/search fields look like the selected/hovered left-panel menu state at rest: brighter background plus white outline.",
+    "details": "Sam wants every filter to look both hovered and selected permanently. Research Clippings/Name should both show white outline and brighter background. Match left panel selected menu style.",
+    "assignee": "Alfred",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "manual",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [],
+    "subtasks": [
+      {
+        "id": "st-1",
+        "title": "Patch final filter rest-state CSS",
+        "status": "done",
+        "completedAt": 1778593356599,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-2",
+        "title": "Bump cache buster and validate",
+        "status": "done",
+        "completedAt": 1778593356599,
+        "completedBy": "Alfred"
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778593317425,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778593317446,
+        "event": "transitioned_to_working",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778593356599,
+        "event": "subtask st-1 done \u2014 Patch final filter rest-state CSS",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778593356599,
+        "event": "subtask st-2 done \u2014 Bump cache buster and validate",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778593356618,
+        "event": "transitioned_to_done",
+        "by": "Alfred"
+      }
+    ],
+    "createdAt": 1778593317425,
+    "updatedAt": 1778593356618,
+    "dueDate": null,
+    "startedAt": null,
+    "completedAt": 1778593356618,
+    "qcResult": null
   }
 ]

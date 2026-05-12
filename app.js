@@ -1340,6 +1340,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('vaultGraphRefresh')?.addEventListener('click', () => loadVaultGraph());
 
   let logsTypeFilter = 'all';
+  let logsSearchQuery = '';
 
   function updateLogsControls() {
     const filterBtn = document.getElementById('logsTypeFilter');
@@ -1364,6 +1365,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await resp.json();
       let logs = data.logs || [];
       if (logsTypeFilter !== 'all') logs = logs.filter(l => (l.logType || 'job') === logsTypeFilter);
+      if (logsSearchQuery) {
+        logs = logs.filter(l => {
+          const haystack = [
+            l.number || '',
+            l.title || '',
+            l.summary || '',
+            l.phase || '',
+            l.logType || 'job',
+            ...(l.log || []),
+            ...((l.subtasks || []).map(st => `${st.title || ''} ${st.id || ''} ${st.status || ''}`))
+          ].join(' ').toLowerCase();
+          return haystack.includes(logsSearchQuery);
+        });
+      }
       logs = [...logs].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       if (logs.length === 0) {
         logsEl.innerHTML = '<div class="log-empty">No logs yet</div>';
@@ -1491,11 +1506,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const logsTypeFilterBtn = document.getElementById('logsTypeFilter');
+  const logsSearchEl = document.getElementById('logsSearch');
   updateLogsControls();
   logsTypeFilterBtn?.addEventListener('click', () => {
     const order = ['all', 'job', 'research', 'clipping'];
     logsTypeFilter = order[(order.indexOf(logsTypeFilter) + 1) % order.length];
     updateLogsControls();
+    loadJobLogs();
+  });
+  logsSearchEl?.addEventListener('input', () => {
+    logsSearchQuery = (logsSearchEl.value || '').trim().toLowerCase();
     loadJobLogs();
   });
 
@@ -3259,11 +3279,18 @@ let researchCreateType = 'job';
 const researchSearchEl = document.getElementById('researchSearch');
 const referencesSearchEl = document.getElementById('referencesSearch');
 const referencesSortToggle = document.getElementById('referencesSortToggle');
+const researchTypeToggle = document.getElementById('researchTypeToggle');
 
 function updateResearchSortToggle() {
   if (!researchSortToggle) return;
   researchSortToggle.dataset.mode = researchSortMode;
   researchSortToggle.textContent = researchSortMode === 'date' ? 'Date' : 'Name';
+}
+
+function updateResearchTypeToggle() {
+  if (!researchTypeToggle) return;
+  researchTypeToggle.dataset.tab = currentResearchTab;
+  researchTypeToggle.textContent = currentResearchTab === 'clippings' ? 'Clippings' : 'Research';
 }
 
 function updateReferencesSortToggle() {
@@ -3277,6 +3304,15 @@ if (researchSortToggle) {
   researchSortToggle.addEventListener('click', () => {
     researchSortMode = researchSortMode === 'date' ? 'name' : 'date';
     updateResearchSortToggle();
+    renderActiveResearchTab();
+  });
+}
+
+if (researchTypeToggle) {
+  updateResearchTypeToggle();
+  researchTypeToggle.addEventListener('click', () => {
+    currentResearchTab = currentResearchTab === 'research' ? 'clippings' : 'research';
+    updateResearchTypeToggle();
     renderActiveResearchTab();
   });
 }
@@ -3478,12 +3514,13 @@ document.querySelectorAll('.nav-item[data-view="references"], .mobile-tab[data-v
   });
 });
 
-// Research/Clippings tab toggle
+// Research/Clippings tab toggle (legacy paired buttons, if present)
 document.querySelectorAll('.research-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.research-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     currentResearchTab = tab.dataset.tab;
+    updateResearchTypeToggle();
     renderActiveResearchTab();
   });
 });

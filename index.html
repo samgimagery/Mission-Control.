@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mission Control</title>
-  <link rel="stylesheet" href="./styles.css?v=20260512assets" />
+  <link rel="stylesheet" href="./styles.css?v=20260512filterselected" />
 </head>
 <body class="dark">
   <script>/* Force dark immediately — prevent light flash on iPhone */
@@ -68,6 +68,7 @@
             <div class="research-tab-actions">
               <button id="logsTypeFilter" class="research-sort-toggle logs-type-filter" data-filter="all" title="Filter logs: All / Jobs / Research / Clippings">All</button>
             </div>
+            <input type="text" id="logsSearch" class="research-search research-inline-search" placeholder="search..." />
           </div>
 
           <div class="logs-container">
@@ -85,11 +86,10 @@
           </header>
           <div class="research-tabs research-tabs-row">
             <div class="research-tab-actions">
-              <button class="research-tab active" data-tab="research">Research</button>
-              <button class="research-tab" data-tab="clippings">Clippings</button>
+              <button id="researchTypeToggle" class="research-sort-toggle research-type-toggle" data-tab="research" title="Toggle: Research / Clippings">Research</button>
               <button id="researchSortToggle" class="research-sort-toggle" data-mode="date" title="Toggle sort: Date / Name">Date</button>
             </div>
-            <input type="text" id="researchSearch" class="research-search research-inline-search" placeholder="Filter research notes..." />
+            <input type="text" id="researchSearch" class="research-search research-inline-search" placeholder="search..." />
           </div>
           <div class="research-list" id="researchList">
             <div class="vault-loading">Loading research...</div>
@@ -106,7 +106,7 @@
             <div class="research-tab-actions">
               <button id="referencesSortToggle" class="research-sort-toggle" data-mode="date" title="Toggle sort: Date / Name">Date</button>
             </div>
-            <input type="text" id="referencesSearch" class="research-search research-inline-search" placeholder="Filter reference notes..." />
+            <input type="text" id="referencesSearch" class="research-search research-inline-search" placeholder="search..." />
           </div>
           <div class="research-list" id="referencesList">
             <div class="vault-loading">Loading references...</div>
@@ -165,6 +165,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260512assets"></script>
+  <script src="./app.js?v=20260512filterselected"></script>
 </body>
 </html>
