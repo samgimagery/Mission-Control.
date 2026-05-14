@@ -2261,7 +2261,7 @@ body.dark .research-create-submit{
 #plan .plan-hero h2{
   color:#0f0b07!important;
   font-size:clamp(48px,5.6vw,86px)!important;
-  font-weight:760!important;
+  font-weight:500!important;
   line-height:.95!important;
   letter-spacing:-.055em!important;
   text-shadow:0 1px 0 rgba(255,255,255,.8),0 18px 40px rgba(77,55,29,.18);
