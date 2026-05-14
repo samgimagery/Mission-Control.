@@ -60,6 +60,54 @@ def _is_inside(child, parent):
     except Exception:
         return False
 
+def _archive_vault_note(rel_path):
+    raw = (rel_path or '').strip().lstrip('/')
+    if not raw:
+        raise ValueError('Missing path')
+    if not (raw.startswith('Research/') or raw.startswith('Clippings/')):
+        raise ValueError('Only Research and Clippings notes can be archived here')
+    if raw == 'Research/Research Index.md':
+        raise ValueError('Research Index cannot be archived from this control')
+    src = (VAULT_DIR / raw).resolve()
+    if not _is_inside(src, VAULT_DIR):
+        raise ValueError('Access denied')
+    if not src.exists() or not src.is_file() or src.suffix.lower() != '.md':
+        raise ValueError('Markdown note not found')
+
+    archive_rel = Path('Archive') / raw
+    dest = (VAULT_DIR / archive_rel).resolve()
+    if not _is_inside(dest, VAULT_DIR / 'Archive'):
+        raise ValueError('Archive destination denied')
+    if dest.exists():
+        stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        dest = dest.with_name(f'{dest.stem}-{stamp}{dest.suffix}')
+        archive_rel = dest.relative_to(VAULT_DIR)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    text = src.read_text(encoding='utf-8')
+    today = datetime.now().strftime('%Y-%m-%d')
+    front, body = _split_frontmatter(text)
+    additions = {
+        'status': 'archived',
+        'archived': today,
+        'archived_reason': 'user_archived_from_mission_control',
+        'original_path': raw,
+    }
+    if front:
+        lines = front.split('\n')
+        present = {line.split(':', 1)[0].strip() for line in lines if ':' in line}
+        for key, value in additions.items():
+            if key not in present:
+                lines.append(f'{key}: "{value}"')
+        text = '---\n' + '\n'.join(lines).rstrip() + '\n---\n' + body.lstrip('\n')
+    else:
+        fm = '\n'.join(f'{key}: "{value}"' for key, value in additions.items())
+        text = f'---\n{fm}\n---\n\n{text}'
+    src.write_text(text, encoding='utf-8')
+    src.replace(dest)
+    return {'originalPath': raw, 'archivePath': str(archive_rel)}
+
+
 def _safe_download_script(path):
     if not path:
         return False
@@ -2830,11 +2878,14 @@ class Handler(SimpleHTTPRequestHandler):
                 # Include done/archived in logs
                 number = j.get('number', '')
                 title = j.get('title', '')
-                description = j.get('description', j.get('details', ''))
-                # Extract last sentence from description
-                sentences = _re.split(r'[.!?]+', description.strip())
-                sentences = [s.strip() for s in sentences if s.strip()]
-                summary = sentences[-1] if sentences else title
+                description = j.get('description') or j.get('details') or ''
+                # Logs should show the job description itself, not a fragile
+                # punctuation-split fragment. Descriptions can contain quoted
+                # strings like placeholder “search...”; splitting on periods
+                # made the summary collapse to a lone closing quote.
+                summary = _re.sub(r'\s+', ' ', description).strip() or title
+                if _re.fullmatch(r'["“”‘’\'`\s]+', summary or ''):
+                    summary = title
                 log_type = j.get('logType') or ('clipping' if j.get('kind') in ('youtube', 'web') else 'research' if j.get('source') == 'alice-research' else 'job')
                 if log_type in ('research', 'clipping'):
                     summary = title
@@ -3243,6 +3294,17 @@ If you cannot complete it, call the same endpoint with "status":"failed" and a c
                         job2['history'].append({'ts': int(__import__('time').time() * 1000), 'event': 'Alice started isolated session', 'by': 'Mission Control'})
                         save_mission_control_jobs(jobs)
                 self._send_json(200, {'ok': True, 'kind': request_type, 'message': f'{req} created; Alice started: {kind_label}', 'job': job, 'handoff': data})
+            except Exception as e:
+                self._send_json(400, {'ok': False, 'error': str(e)})
+            return
+
+        if clean_path == '/api/vault/archive':
+            length = int(self.headers.get('Content-Length', '0'))
+            raw = self.rfile.read(length or 0)
+            try:
+                payload = json.loads(raw.decode('utf-8')) if length else {}
+                result = _archive_vault_note(payload.get('path') or '')
+                self._send_json(200, {'ok': True, **result})
             except Exception as e:
                 self._send_json(400, {'ok': False, 'error': str(e)})
             return

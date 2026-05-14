@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mission Control</title>
-  <link rel="stylesheet" href="./styles.css?v=20260512filterselected" />
+  <link rel="stylesheet" href="./styles.css?v=20260514polish8" />
 </head>
 <body class="dark">
   <script>/* Force dark immediately — prevent light flash on iPhone */
@@ -61,7 +61,6 @@
         <section id="logs" class="view">
           <header class="page-header">
             <h1 class="page-title">Logs</h1>
-            <p class="page-subtitle">Job History</p>
           </header>
 
           <div class="research-tabs research-tabs-row logs-tabs-row">
@@ -82,7 +81,6 @@
         <section id="research" class="view">
           <header class="page-header">
             <h1 class="page-title">Research</h1>
-            <p class="page-subtitle">Knowledge & Investigation</p>
           </header>
           <div class="research-tabs research-tabs-row">
             <div class="research-tab-actions">
@@ -100,7 +98,6 @@
         <section id="references" class="view">
           <header class="page-header">
             <h1 class="page-title">References</h1>
-            <p class="page-subtitle">Operating manuals, product notes & system truth</p>
           </header>
           <div class="research-tabs research-tabs-row references-tabs-row">
             <div class="research-tab-actions">
@@ -150,6 +147,10 @@
             </div>
             <div class="research-modal-breadcrumb" id="researchModalBreadcrumb"></div>
             <div class="research-modal-content" id="researchModalContent"></div>
+            <div class="research-modal-footer" id="researchModalFooter">
+              <button class="research-archive-btn" id="researchModalArchive" type="button">Archive note</button>
+              <p class="research-archive-note">Moves this note to Archive and hides it from active Research / Clippings.</p>
+            </div>
           </div>
         </div>
 
@@ -165,6 +166,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260512filterselected"></script>
+  <script src="./app.js?v=20260514polish8"></script>
 </body>
 </html>

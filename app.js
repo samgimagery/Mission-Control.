@@ -356,6 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let decisionDeckItems = [];
   let decisionDeckIndex = 0;
+  let decisionDeckAddressed = [];
 
   function decisionChipClass(action) {
     const safe = String(action || 'keep').toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -426,37 +427,52 @@ document.addEventListener('DOMContentLoaded', () => {
       : 'Research note awaiting review for what should be kept, merged, promoted, archived, or discarded.';
   }
 
-  function decisionPrimaryAction(item) {
+  function decisionKeepAction(item) {
+    const type = String(item?.type || '').toLowerCase();
+    return { label: type === 'clipping' ? 'Keep clipping' : 'Keep', value: 'keep' };
+  }
+
+  function decisionFileAction(item) {
     const type = String(item?.type || '').toLowerCase();
     const action = String(item?.action || 'keep').toLowerCase();
     if (type === 'clipping') return { label: 'Research', value: 'research' };
-    if (action === 'promote') return { label: 'Record: promote', value: 'promote' };
-    if (action === 'merge') return { label: 'Record: merge', value: 'merge' };
-    if (action === 'archive') return { label: 'Record: archive', value: 'archive' };
-    if (action === 'discard') return { label: 'Record: discard', value: 'discard' };
-    if (action === 'keep') return { label: 'Keep / mark reviewed', value: 'keep' };
-    return { label: `Record: ${action || 'reviewed'}`, value: action || 'keep' };
+    if (!action || action === 'keep') return null;
+    return { label: `File: ${decisionActionLabel(action)}`, value: action };
   }
 
-  function decisionSecondaryAction(item) {
+  function decisionDiscardAction(item) {
     const type = String(item?.type || '').toLowerCase();
-    if (type === 'clipping') return { label: 'Keep clipping', value: 'keep' };
-    return null;
+    return { label: type === 'clipping' ? 'Discard clipping' : 'Discard', value: 'discard' };
   }
 
   function renderDecisionTrail(items, active) {
     const trail = [];
-    for (let n = 1; n <= 3; n++) {
+    const addressed = decisionDeckAddressed.slice(-4).reverse();
+    addressed.forEach((item, i) => {
+      const originalIndex = Math.max(0, decisionDeckAddressed.length - 1 - i);
+      const title = escapeHtml(item.title || 'Untitled');
+      trail.push(`<button type="button" class="decision-trail-card slate addressed addressed-${i + 1}" data-addressed-open="${originalIndex}" data-title="${title}" title="${title}" aria-label="Review addressed card: ${title}"></button>`);
+    });
+    for (let n = 1; n <= 5; n++) {
       const idx = active + n;
       if (idx >= items.length) break;
-      trail.push(`<span class="decision-trail-card trail-${n}" aria-hidden="true"></span>`);
+      const title = escapeHtml(items[idx]?.title || 'Untitled');
+      trail.push(`<button type="button" class="decision-trail-card slate trail-${n}" data-pending-index="${idx}" data-title="${title}" title="${title}" aria-label="Bring card forward: ${title}"></button>`);
     }
     return trail.join('');
   }
 
   function renderDecisionDeck(items) {
     decisionDeckItems = Array.isArray(items) ? items : [];
-    if (!decisionDeckItems.length) return '';
+    if (!decisionDeckItems.length) {
+      if (!decisionDeckAddressed.length) return '';
+      return `
+        <section class="decision-deck-module decision-deck-complete" data-count="0" aria-label="Addressed card stack">
+          <div class="decision-deck-stage">
+            <div class="decision-trail">${renderDecisionTrail([], 0)}</div>
+          </div>
+        </section>`;
+    }
     decisionDeckIndex = Math.min(decisionDeckIndex, decisionDeckItems.length - 1);
     const item = decisionDeckItems[decisionDeckIndex];
     const total = decisionDeckItems.length;
@@ -468,8 +484,9 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     const current = String(decisionDeckIndex + 1).padStart(2, '0');
     const count = String(total).padStart(2, '0');
-    const primary = decisionPrimaryAction(item);
-    const secondary = decisionSecondaryAction(item);
+    const keepAction = decisionKeepAction(item);
+    const fileAction = decisionFileAction(item);
+    const discardAction = decisionDiscardAction(item);
     return `
       <section class="decision-deck-module" data-count="${total}">
         <div class="decision-deck-stage">
@@ -491,10 +508,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).join('')}
               </div>
               <div class="decision-controls">
-                <button type="button" class="decision-btn primary" data-decision-approve="1" data-decision-action="${escapeHtml(primary.value)}">${escapeHtml(primary.label)}</button>
-                ${secondary ? `<button type="button" class="decision-btn" data-decision-approve="1" data-decision-action="${escapeHtml(secondary.value)}">${escapeHtml(secondary.label)}</button>` : ''}
-                <button type="button" class="decision-btn" data-decision-open="1">File</button>
-                <button type="button" class="decision-next-btn" data-decision-next="1" aria-label="Next decision card">→</button>
+                <span class="decision-nav-pair">
+                  <button type="button" class="decision-next-btn prev" data-decision-prev="1" aria-label="Previous decision card">←</button>
+                  <button type="button" class="decision-next-btn" data-decision-next="1" aria-label="Next decision card">→</button>
+                </span>
+                <button type="button" class="decision-btn review" data-decision-open="1">Review</button>
+                <button type="button" class="decision-btn primary" data-decision-approve="1" data-decision-action="${escapeHtml(keepAction.value)}">${escapeHtml(keepAction.label)}</button>
+                ${fileAction ? `<button type="button" class="decision-btn" data-decision-approve="1" data-decision-action="${escapeHtml(fileAction.value)}">${escapeHtml(fileAction.label)}</button>` : ''}
+                <button type="button" class="decision-btn discard" data-decision-approve="1" data-decision-action="${escapeHtml(discardAction.value)}">${escapeHtml(discardAction.label)}</button>
               </div>
             </div>
           </article>
@@ -503,15 +524,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function wireDecisionDeck(el) {
-    if (!el || !decisionDeckItems.length) return;
+    if (!el || (!decisionDeckItems.length && !decisionDeckAddressed.length)) return;
     const rerender = () => {
       const old = el.querySelector('.decision-deck-module');
       if (!old) return;
-      if (!decisionDeckItems.length) {
-        old.classList.add('decision-deck-complete');
-        old.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
-        return;
-      }
       const wrapper = document.createElement('div');
       wrapper.innerHTML = renderDecisionDeck(decisionDeckItems);
       old.replaceWith(wrapper.firstElementChild);
@@ -532,11 +548,41 @@ document.addEventListener('DOMContentLoaded', () => {
         rerender();
       }, 190);
     };
+    const prev = () => {
+      const card = el.querySelector('.decision-card');
+      if (!card) return;
+      if (decisionDeckIndex <= 0) {
+        card.classList.remove('end-bump');
+        void card.offsetWidth;
+        card.classList.add('end-bump');
+        return;
+      }
+      card.classList.add('flick-back');
+      setTimeout(() => {
+        decisionDeckIndex -= 1;
+        rerender();
+      }, 190);
+    };
     el.querySelector('[data-decision-next]')?.addEventListener('click', (e) => { e.stopPropagation(); next(); });
+    el.querySelector('[data-decision-prev]')?.addEventListener('click', (e) => { e.stopPropagation(); prev(); });
+    el.querySelectorAll('[data-addressed-open]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = Number(e.currentTarget.dataset.addressedOpen || -1);
+      const item = decisionDeckAddressed[idx];
+      if (item?.path) openResearchModal(item.path, item.title || item.path.split('/').pop(), item.source || '');
+    }));
+    el.querySelectorAll('[data-pending-index]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = Number(e.currentTarget.dataset.pendingIndex || decisionDeckIndex);
+      if (!Number.isFinite(idx) || idx < 0 || idx >= decisionDeckItems.length) return;
+      decisionDeckIndex = idx;
+      rerender();
+    }));
     el.querySelector('[data-decision-open]')?.addEventListener('click', (e) => {
       e.stopPropagation();
       const item = decisionDeckItems[decisionDeckIndex];
-      if (item?.obsidianUri) window.open(item.obsidianUri, '_blank');
+      if (item?.path) openResearchModal(item.path, item.title || item.path.split('/').pop(), item.source || '');
+      else if (item?.obsidianUri) window.open(item.obsidianUri, '_blank');
     });
     el.querySelectorAll('[data-decision-approve]').forEach(btn => btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -563,7 +609,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || 'Review failed');
-        decisionDeckItems = data.decisions || decisionDeckItems.filter((_, i) => i !== decisionDeckIndex);
+        decisionDeckAddressed.push({ ...item, resolvedAction: reviewAction });
+        decisionDeckItems = decisionDeckItems.filter((_, i) => i !== decisionDeckIndex);
         decisionDeckIndex = Math.min(decisionDeckIndex, Math.max(0, decisionDeckItems.length - 1));
         rerender();
       } catch (err) {
@@ -3048,6 +3095,8 @@ let referencesListData = [];
 let currentResearchTab = 'research';
 let researchSortMode = 'date';
 let referencesSortMode = 'date';
+let currentResearchModalPath = '';
+let researchArchiveConfirmPath = '';
 
 async function loadResearchList() {
   const listEl = document.getElementById('researchList');
@@ -3062,6 +3111,7 @@ async function loadResearchList() {
     }
     researchListData = data.files.filter(f => f.path.startsWith('Research/') && !f.isDir && f.path !== 'Research/Research Index.md');
     clippingsListData = data.files.filter(f => f.path.startsWith('Clippings/') && !f.isDir);
+    researchArchiveConfirmPath = '';
     renderActiveResearchTab();
   } catch (e) {
     listEl.innerHTML = '<div class="vault-loading">Error loading</div>';
@@ -3169,7 +3219,20 @@ async function openResearchModal(path, name, source) {
   const obsLink = document.getElementById('researchModalObsidian');
   const marpBtn = document.getElementById('researchModalMarp');
   const readBtn = document.getElementById('researchModalRead');
+  const archiveBtn = document.getElementById('researchModalArchive');
+  const archiveFooter = document.getElementById('researchModalFooter');
   if (!modal || !content) return;
+
+  currentResearchModalPath = path;
+  researchArchiveConfirmPath = '';
+  const canArchive = path.startsWith('Research/') || path.startsWith('Clippings/');
+  if (archiveFooter) archiveFooter.style.display = canArchive ? 'flex' : 'none';
+  if (archiveBtn) {
+    archiveBtn.dataset.notePath = path;
+    archiveBtn.textContent = 'Archive note';
+    archiveBtn.classList.remove('confirm', 'working');
+    archiveBtn.disabled = false;
+  }
 
   const displayName = name.endsWith('.md') ? name.slice(0, -3) : name;
   const isYouTube = source && (source.includes('youtube.com') || source.includes('youtu.be'));
@@ -3224,6 +3287,8 @@ function closeResearchModal() {
     modal.style.display = 'none';
     document.body.style.overflow = '';
   }
+  currentResearchModalPath = '';
+  researchArchiveConfirmPath = '';
 }
 
 // Research modal close handlers
@@ -3249,6 +3314,40 @@ if (researchModalMarp) {
     const notePath = researchModalMarp.dataset.notePath || '';
     if (notePath) {
       window.open(apiPath('/api/marp?path=' + encodeURIComponent(notePath)), '_blank');
+    }
+  });
+}
+
+const researchModalArchive = document.getElementById('researchModalArchive');
+if (researchModalArchive) {
+  researchModalArchive.addEventListener('click', async () => {
+    const notePath = researchModalArchive.dataset.notePath || currentResearchModalPath || '';
+    if (!notePath) return;
+    if (researchArchiveConfirmPath !== notePath) {
+      researchArchiveConfirmPath = notePath;
+      researchModalArchive.textContent = 'Confirm archive';
+      researchModalArchive.classList.add('confirm');
+      return;
+    }
+    researchModalArchive.textContent = 'Archiving...';
+    researchModalArchive.classList.add('working');
+    researchModalArchive.disabled = true;
+    try {
+      const res = await fetch(apiPath('/api/vault/archive'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: notePath })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Archive failed');
+      closeResearchModal();
+      await loadResearchList();
+    } catch (e) {
+      researchArchiveConfirmPath = '';
+      researchModalArchive.textContent = 'Archive note';
+      researchModalArchive.classList.remove('confirm', 'working');
+      researchModalArchive.disabled = false;
+      alert(e.message || 'Archive failed');
     }
   });
 }
@@ -3342,6 +3441,7 @@ function updateCreateModalMode() {
     }
   };
   const copy = createCopy[researchCreateType] || createCopy.job;
+  document.querySelector('.research-create-modal')?.setAttribute('data-mode', researchCreateType);
   if (researchCreateTitle) researchCreateTitle.textContent = copy.title;
   if (researchCreateSubtitle) researchCreateSubtitle.textContent = copy.subtitle;
   if (researchCreateInput) researchCreateInput.placeholder = copy.placeholder;

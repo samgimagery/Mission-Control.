@@ -14063,7 +14063,7 @@
     "id": "job_1778397855629_2150",
     "number": "REQ-215",
     "title": "Harden Claire price-objection and pricing-context flow",
-    "description": "Fix the next-pass failure from live testing: Claire stayed good through the early plan-list checks, but got lost around \u201cit\u2019s too expensive\u201d / price follow-up handling. Lock deterministic budget-objection handling, prevent cross-level price context drift, keep price routes cached where possible, and retest the remaining Mission Control plan items before moving to prerecorded long blocks.",
+    "description": "Finish Claire live-call hardening: budget objection, cross-level pricing, \u00e0-la-carte lane discipline, nearest-campus detours, hours-vs-price routing, cached main-road audio, and final presentation validation.",
     "details": "Sam asked to listen to the last voice log, update Mission Control with a new REQ/title because previous focus updates were getting confusing, and make the next pass about the \u201ctoo expensive\u201d failure after the otherwise-good test run.",
     "assignee": "Alfred",
     "createdBy": "Sam",
@@ -14087,27 +14087,40 @@
       },
       {
         "id": "st-215-2",
-        "title": "Fix \u201ctoo expensive\u201d / budget objection so it responds with payment options and a calm close without drifting into RAG",
-        "status": "pending"
+        "title": "Fix \u201ctoo expensive\u201d / budget objection so it uses AAA/off-ramp immediately, without drifting into RAG",
+        "status": "done",
+        "completedAt": 1778726487227,
+        "completedBy": "Alfred"
       },
       {
         "id": "st-215-3",
         "title": "Fix cross-level pricing context so \u201cprix du Niveau 1\u201d inside a Niveau 2 context returns Niveau 1 pricing, not Niveau 2",
-        "status": "pending"
+        "status": "done",
+        "completedAt": 1778746537043,
+        "completedBy": "Alfred"
       },
       {
         "id": "st-215-4",
-        "title": "Harden generic price phrasing such as \u201ccomment \u00e7a co\u00fbte\u201d, \u201cles prix\u201d, and malformed STT variants to deterministic cached pricing paths",
-        "status": "pending"
+        "title": "Harden generic/malformed price phrasing and STT variants to deterministic cached pricing paths",
+        "status": "done",
+        "completedAt": 1778726487227,
+        "completedBy": "Alfred"
       },
       {
         "id": "st-215-5",
-        "title": "Retest remaining plan list: phone handoff, repeat number, wait/hold, sorry/repeat, Niveau 1\u21922\u21923, and \u00e0-la-carte spa flow",
+        "title": "Live-validate remaining main path: cross-level pricing, phone handoff, repeat number, wait/hold, sorry-repeat, Niveau 1\u21922\u21923, \u00e0-la-carte, nearest campus",
         "status": "pending"
       },
       {
         "id": "st-215-6",
-        "title": "Generate/cache any missing objection or pricing clips, restart services, and close after live validation",
+        "title": "Generate/cache objection, hum/loading, \u00e0-la-carte, and handoff clips; restart services after patches",
+        "status": "done",
+        "completedAt": 1778726487227,
+        "completedBy": "Alfred"
+      },
+      {
+        "id": "st-215-7",
+        "title": "Polish hum/loading variety and end-of-flow behavior after main lines stabilize",
         "status": "pending"
       }
     ],
@@ -14126,10 +14139,20 @@
         "ts": 1778397855629,
         "event": "subtask st-215-1 done \u2014 Capture latest live-log findings and update Current Focus with REQ-215 as the active next pass",
         "by": "Alfred"
+      },
+      {
+        "ts": 1778746537043,
+        "event": "subtask st-215-3 done \u2014 explicit cross-level price asks now beat current session context",
+        "by": "Alfred"
+      },
+      {
+        "ts": 1778746537043,
+        "event": "focus updated \u2014 lane discipline and hours-vs-price checkpoint saved to vault and Home state",
+        "by": "Alfred"
       }
     ],
     "createdAt": 1778397855629,
-    "updatedAt": 1778397855629,
+    "updatedAt": 1778746537043,
     "dueDate": null,
     "startedAt": 1778397855629,
     "completedAt": null,
@@ -16455,5 +16478,580 @@
     "startedAt": null,
     "completedAt": 1778593356618,
     "qcResult": null
+  },
+  {
+    "id": "job_1778634457283_2453",
+    "number": "REQ-239",
+    "title": "research: Check out the new computer use feature of codex from OpenAI and check how it could help dr\u2026",
+    "description": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: Check out the new computer use feature of codex from OpenAI and check how it could help drive blender to design our mind vault visual tiles.\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "details": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: Check out the new computer use feature of codex from OpenAI and check how it could help drive blender to design our mind vault visual tiles.\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "assignee": "Alice",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "alice-research",
+    "kind": "research",
+    "logType": "research",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [
+      "Alice"
+    ],
+    "subtasks": [
+      {
+        "id": "st-239-1",
+        "title": "Capture Sam request and classify research/clipping type",
+        "status": "done",
+        "completedAt": 1778634457283
+      },
+      {
+        "id": "st-239-2",
+        "title": "Read vault rules, index, and relevant context",
+        "status": "done",
+        "startedAt": 1778634457283,
+        "completedAt": 1778634604489
+      },
+      {
+        "id": "st-239-3",
+        "title": "Create or update the vault note",
+        "status": "done",
+        "completedAt": 1778634604489
+      },
+      {
+        "id": "st-239-4",
+        "title": "Report result back to Mission Control",
+        "status": "done",
+        "completedAt": 1778634604489
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778634457283,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778634457283,
+        "event": "transitioned_to_working",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778634457283,
+        "event": "Alice handoff queued \u2014 research note",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778634458319,
+        "event": "Alice started isolated session",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778634604489,
+        "event": "Alice completed request \u2014 verified \u2014 Research/Agentic Engineering/Codex Computer Use for Blender-Driven Mind Vault Tiles.md, Research/Research Index.md",
+        "by": "Mission Control",
+        "summary": "Created research note on Codex Computer Use as a scoped Blender GUI/operator layer for Mind Vault visual tiles, with recommendation to keep Blender Python as deterministic source of truth and use Computer Use for visual inspection/tuning/render QA. Updated Research Index.",
+        "warnings": []
+      }
+    ],
+    "createdAt": 1778634457283,
+    "updatedAt": 1778634604489,
+    "startedAt": 1778634457283,
+    "completedAt": 1778634604489,
+    "qcResult": {
+      "status": "completed",
+      "by": "Mission Control",
+      "notes": "Created research note on Codex Computer Use as a scoped Blender GUI/operator layer for Mind Vault visual tiles, with recommendation to keep Blender Python as deterministic source of truth and use Computer Use for visual inspection/tuning/render QA. Updated Research Index.",
+      "timestamp": 1778634604489
+    },
+    "aliceInput": "Check out the new computer use feature of codex from OpenAI and check how it could help drive blender to design our mind vault visual tiles.",
+    "aliceCronJobId": "6d836c82-4684-4514-b0e6-4d052ff6161b",
+    "aliceResult": {
+      "status": "done",
+      "summary": "Created research note on Codex Computer Use as a scoped Blender GUI/operator layer for Mind Vault visual tiles, with recommendation to keep Blender Python as deterministic source of truth and use Computer Use for visual inspection/tuning/render QA. Updated Research Index.",
+      "paths": [
+        "Research/Agentic Engineering/Codex Computer Use for Blender-Driven Mind Vault Tiles.md",
+        "Research/Research Index.md"
+      ],
+      "verification": {
+        "ok": true,
+        "warnings": [],
+        "paths": [
+          "Research/Agentic Engineering/Codex Computer Use for Blender-Driven Mind Vault Tiles.md",
+          "Research/Research Index.md"
+        ],
+        "reportedPaths": [
+          "Research/Agentic Engineering/Codex Computer Use for Blender-Driven Mind Vault Tiles.md",
+          "Research/Research Index.md"
+        ]
+      },
+      "timestamp": 1778634604489
+    }
+  },
+  {
+    "id": "job_1778648100941_8427",
+    "number": "REQ-240",
+    "title": "research: Can you check this if correct and can we think of using this or not https://youtube.com/sh\u2026",
+    "description": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: Can you check this if correct and can we think of using this or not https://youtube.com/shorts/6qwoxJEOcu4?si=XXG7M2rXkx3bB7CN\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "details": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: Can you check this if correct and can we think of using this or not https://youtube.com/shorts/6qwoxJEOcu4?si=XXG7M2rXkx3bB7CN\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "assignee": "Alice",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "alice-research",
+    "kind": "research",
+    "logType": "research",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [
+      "Alice"
+    ],
+    "subtasks": [
+      {
+        "id": "st-240-1",
+        "title": "Capture Sam request and classify research/clipping type",
+        "status": "done",
+        "completedAt": 1778648100941
+      },
+      {
+        "id": "st-240-2",
+        "title": "Read vault rules, index, and relevant context",
+        "status": "done",
+        "startedAt": 1778648100941,
+        "completedAt": 1778648343890
+      },
+      {
+        "id": "st-240-3",
+        "title": "Create or update the vault note",
+        "status": "done",
+        "completedAt": 1778648343890
+      },
+      {
+        "id": "st-240-4",
+        "title": "Report result back to Mission Control",
+        "status": "done",
+        "completedAt": 1778648343890
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778648100941,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778648100941,
+        "event": "transitioned_to_working",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778648100941,
+        "event": "Alice handoff queued \u2014 research note",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778648102219,
+        "event": "Alice started isolated session",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778648343890,
+        "event": "Alice completed request \u2014 verified \u2014 Clippings/YouTube/Edward Sturm Gmail Animated Profile Picture Hack.md, Research/Gmail Animated Profile Picture Marketing Hack.md, Research/Research Index.md",
+        "by": "Mission Control",
+        "summary": "Created a YouTube clipping and research claim-check for the Gmail animated profile picture marketing tactic. Recommendation: plausible as a small A/B experiment, but claims are unproven and client support must be tested before use.",
+        "warnings": []
+      }
+    ],
+    "createdAt": 1778648100941,
+    "updatedAt": 1778648343890,
+    "startedAt": 1778648100941,
+    "completedAt": 1778648343890,
+    "qcResult": {
+      "status": "completed",
+      "by": "Mission Control",
+      "notes": "Created a YouTube clipping and research claim-check for the Gmail animated profile picture marketing tactic. Recommendation: plausible as a small A/B experiment, but claims are unproven and client support must be tested before use.",
+      "timestamp": 1778648343890
+    },
+    "aliceInput": "Can you check this if correct and can we think of using this or not https://youtube.com/shorts/6qwoxJEOcu4?si=XXG7M2rXkx3bB7CN",
+    "aliceCronJobId": "23ce7eec-00f5-4c6f-922e-a3086ea9c861",
+    "aliceResult": {
+      "status": "done",
+      "summary": "Created a YouTube clipping and research claim-check for the Gmail animated profile picture marketing tactic. Recommendation: plausible as a small A/B experiment, but claims are unproven and client support must be tested before use.",
+      "paths": [
+        "Clippings/YouTube/Edward Sturm Gmail Animated Profile Picture Hack.md",
+        "Research/Gmail Animated Profile Picture Marketing Hack.md",
+        "Research/Research Index.md"
+      ],
+      "verification": {
+        "ok": true,
+        "warnings": [],
+        "paths": [
+          "Clippings/YouTube/Edward Sturm Gmail Animated Profile Picture Hack.md",
+          "Research/Gmail Animated Profile Picture Marketing Hack.md",
+          "Research/Research Index.md"
+        ],
+        "reportedPaths": [
+          "Clippings/YouTube/Edward Sturm Gmail Animated Profile Picture Hack.md",
+          "Research/Gmail Animated Profile Picture Marketing Hack.md",
+          "Research/Research Index.md"
+        ]
+      },
+      "timestamp": 1778648343890
+    }
+  },
+  {
+    "id": "job_1778715977568_7089",
+    "number": "REQ-241",
+    "title": "YouTube clipping: https://youtu.be/qGS9Ghnq1RU?si=lDWFsX90vVYXAylr",
+    "description": "YouTube clipping request created from Mission Control by Sam and assigned to Alice.\n\nInput: https://youtu.be/qGS9Ghnq1RU?si=lDWFsX90vVYXAylr\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "details": "YouTube clipping request created from Mission Control by Sam and assigned to Alice.\n\nInput: https://youtu.be/qGS9Ghnq1RU?si=lDWFsX90vVYXAylr\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "assignee": "Alice",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "alice-research",
+    "kind": "youtube",
+    "logType": "clipping",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [
+      "Alice"
+    ],
+    "subtasks": [
+      {
+        "id": "st-241-1",
+        "title": "Capture Sam request and classify research/clipping type",
+        "status": "done",
+        "completedAt": 1778715977568
+      },
+      {
+        "id": "st-241-2",
+        "title": "Read vault rules, index, and relevant context",
+        "status": "done",
+        "startedAt": 1778715977568,
+        "completedAt": 1778716165499
+      },
+      {
+        "id": "st-241-3",
+        "title": "Create or update the vault note",
+        "status": "done",
+        "completedAt": 1778716165499
+      },
+      {
+        "id": "st-241-4",
+        "title": "Report result back to Mission Control",
+        "status": "done",
+        "completedAt": 1778716165499
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778715977568,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778715977568,
+        "event": "transitioned_to_working",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778715977568,
+        "event": "Alice handoff queued \u2014 YouTube clipping",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778715978697,
+        "event": "Alice started isolated session",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778716165499,
+        "event": "Alice completed request \u2014 verified \u2014 Clippings/YouTube/Build Hour GPT-Realtime-2.md, Research/Research Index.md",
+        "by": "Mission Control",
+        "summary": "Created YouTube clipping for OpenAI Build Hour: GPT-Realtime-2 and updated the Research Index with its voice-agent relevance.",
+        "warnings": []
+      }
+    ],
+    "createdAt": 1778715977568,
+    "updatedAt": 1778716165499,
+    "startedAt": 1778715977568,
+    "completedAt": 1778716165499,
+    "qcResult": {
+      "status": "completed",
+      "by": "Mission Control",
+      "notes": "Created YouTube clipping for OpenAI Build Hour: GPT-Realtime-2 and updated the Research Index with its voice-agent relevance.",
+      "timestamp": 1778716165499
+    },
+    "aliceInput": "https://youtu.be/qGS9Ghnq1RU?si=lDWFsX90vVYXAylr",
+    "aliceCronJobId": "145cf76b-cc2a-4c7e-9e42-c2c61b41823b",
+    "aliceResult": {
+      "status": "done",
+      "summary": "Created YouTube clipping for OpenAI Build Hour: GPT-Realtime-2 and updated the Research Index with its voice-agent relevance.",
+      "paths": [
+        "Clippings/YouTube/Build Hour GPT-Realtime-2.md",
+        "Research/Research Index.md"
+      ],
+      "verification": {
+        "ok": true,
+        "warnings": [],
+        "paths": [
+          "Clippings/YouTube/Build Hour GPT-Realtime-2.md",
+          "Research/Research Index.md"
+        ],
+        "reportedPaths": [
+          "Clippings/YouTube/Build Hour GPT-Realtime-2.md",
+          "Research/Research Index.md"
+        ]
+      },
+      "timestamp": 1778716165499
+    }
+  },
+  {
+    "id": "job_1778716316362_3226",
+    "number": "REQ-242",
+    "title": "research: Create a deeper Research/ synthesis from this vault clipping: Clippings/YouTube/Build Hour\u2026",
+    "description": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: Create a deeper Research/ synthesis from this vault clipping: Clippings/YouTube/Build Hour GPT-Realtime-2.md. Read the clipping, inspect connected Mission Control vault context, follow the Research Intake Standard, and update Research/Research Index.md.\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "details": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: Create a deeper Research/ synthesis from this vault clipping: Clippings/YouTube/Build Hour GPT-Realtime-2.md. Read the clipping, inspect connected Mission Control vault context, follow the Research Intake Standard, and update Research/Research Index.md.\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "assignee": "Alice",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "alice-research",
+    "kind": "research",
+    "logType": "research",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [
+      "Alice"
+    ],
+    "subtasks": [
+      {
+        "id": "st-242-1",
+        "title": "Capture Sam request and classify research/clipping type",
+        "status": "done",
+        "completedAt": 1778716316362
+      },
+      {
+        "id": "st-242-2",
+        "title": "Read vault rules, index, and relevant context",
+        "status": "done",
+        "startedAt": 1778716316362,
+        "completedAt": 1778716470900
+      },
+      {
+        "id": "st-242-3",
+        "title": "Create or update the vault note",
+        "status": "done",
+        "completedAt": 1778716458280
+      },
+      {
+        "id": "st-242-4",
+        "title": "Report result back to Mission Control",
+        "status": "done",
+        "completedAt": 1778716458280
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778716316362,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778716316362,
+        "event": "transitioned_to_working",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778716316362,
+        "event": "Alice handoff queued \u2014 research note",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778716317642,
+        "event": "Alice started isolated session",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778716458280,
+        "event": "Alice completion needs review \u2014 Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md, Research/Research Index.md, Clippings/YouTube/Build Hour GPT-Realtime-2.md",
+        "by": "Mission Control",
+        "summary": "Created Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md from the Build Hour clipping and updated Research Index.",
+        "warnings": [
+          "Source clipping missing backlink to Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md"
+        ]
+      },
+      {
+        "ts": 1778716470900,
+        "event": "Alice completed request \u2014 verified \u2014 Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md, Research/Research Index.md, Clippings/YouTube/Build Hour GPT-Realtime-2.md",
+        "by": "Mission Control",
+        "summary": "Created Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md, updated Research Index, and added the source clipping backlink.",
+        "warnings": []
+      }
+    ],
+    "createdAt": 1778716316362,
+    "updatedAt": 1778716470900,
+    "startedAt": 1778716316362,
+    "completedAt": 1778716470900,
+    "qcResult": {
+      "status": "completed",
+      "by": "Mission Control",
+      "notes": "Created Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md, updated Research Index, and added the source clipping backlink.",
+      "timestamp": 1778716470900
+    },
+    "aliceInput": "Create a deeper Research/ synthesis from this vault clipping: Clippings/YouTube/Build Hour GPT-Realtime-2.md. Read the clipping, inspect connected Mission Control vault context, follow the Research Intake Standard, and update Research/Research Index.md.",
+    "aliceCronJobId": "bff8198e-a35e-4c74-89dc-ea11e9031688",
+    "aliceResult": {
+      "status": "done",
+      "summary": "Created Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md, updated Research Index, and added the source clipping backlink.",
+      "paths": [
+        "Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md",
+        "Research/Research Index.md",
+        "Clippings/YouTube/Build Hour GPT-Realtime-2.md"
+      ],
+      "verification": {
+        "ok": true,
+        "warnings": [],
+        "paths": [
+          "Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md",
+          "Research/Research Index.md",
+          "Clippings/YouTube/Build Hour GPT-Realtime-2.md"
+        ],
+        "reportedPaths": [
+          "Research/Voice/GPT-Realtime-2 Production Voice Agent Lessons.md",
+          "Research/Research Index.md",
+          "Clippings/YouTube/Build Hour GPT-Realtime-2.md"
+        ]
+      },
+      "timestamp": 1778716470900
+    }
+  },
+  {
+    "id": "job_1778754972084_6509",
+    "number": "REQ-243",
+    "title": "research: investigate what's missing in our system to have Claire text info to a customer using a li\u2026",
+    "description": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: investigate what's missing in our system to have Claire text info to a customer using a line if customer wanted info via text. would be great and what's needed behind the scene to have that happen.\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "details": "research request created from Mission Control by Sam and assigned to Alice.\n\nInput: investigate what's missing in our system to have Claire text info to a customer using a line if customer wanted info via text. would be great and what's needed behind the scene to have that happen.\n\nAlice must follow the vault rules, create or update the appropriate Research/ or Clippings/ note, then report completion back to Mission Control with the created/updated path.",
+    "assignee": "Alice",
+    "createdBy": "Sam",
+    "assignedBy": "Sam",
+    "priority": "normal",
+    "project": "Mission Control",
+    "status": "done",
+    "jobStatus": "active",
+    "phase": "done",
+    "source": "alice-research",
+    "kind": "research",
+    "logType": "research",
+    "needsRewrite": false,
+    "activity": "new",
+    "workers": [
+      "Alice"
+    ],
+    "subtasks": [
+      {
+        "id": "st-243-1",
+        "title": "Capture Sam request and classify research/clipping type",
+        "status": "done",
+        "completedAt": 1778754972084
+      },
+      {
+        "id": "st-243-2",
+        "title": "Read vault rules, index, and relevant context",
+        "status": "done",
+        "startedAt": 1778754972084,
+        "completedAt": 1778755258252
+      },
+      {
+        "id": "st-243-3",
+        "title": "Create or update the vault note",
+        "status": "done",
+        "completedAt": 1778755258252
+      },
+      {
+        "id": "st-243-4",
+        "title": "Report result back to Mission Control",
+        "status": "done",
+        "completedAt": 1778755258252
+      }
+    ],
+    "history": [
+      {
+        "ts": 1778754972084,
+        "event": "created",
+        "by": "Sam"
+      },
+      {
+        "ts": 1778754972084,
+        "event": "transitioned_to_working",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778754972084,
+        "event": "Alice handoff queued \u2014 research note",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778754973255,
+        "event": "Alice started isolated session",
+        "by": "Mission Control"
+      },
+      {
+        "ts": 1778755258252,
+        "event": "Alice completed request \u2014 verified \u2014 Research/Product/Claire SMS Text Follow-Up Gap.md, Research/Research Index.md",
+        "by": "Mission Control",
+        "summary": "Created Research/Product/Claire SMS Text Follow-Up Gap.md and updated Research/Research Index.md. The note concludes Claire needs a real SMS channel adapter plus verified sender line, consent/compliance, STOP/HELP handling, phone-number capture, approved templates, delivery/inbound webhooks, logging, and approval gates before it can truthfully text info to customers.",
+        "warnings": []
+      }
+    ],
+    "createdAt": 1778754972084,
+    "updatedAt": 1778755258252,
+    "startedAt": 1778754972084,
+    "completedAt": 1778755258252,
+    "qcResult": {
+      "status": "completed",
+      "by": "Mission Control",
+      "notes": "Created Research/Product/Claire SMS Text Follow-Up Gap.md and updated Research/Research Index.md. The note concludes Claire needs a real SMS channel adapter plus verified sender line, consent/compliance, STOP/HELP handling, phone-number capture, approved templates, delivery/inbound webhooks, logging, and approval gates before it can truthfully text info to customers.",
+      "timestamp": 1778755258252
+    },
+    "aliceInput": "investigate what's missing in our system to have Claire text info to a customer using a line if customer wanted info via text. would be great and what's needed behind the scene to have that happen.",
+    "aliceCronJobId": "ba735270-4a16-4531-898b-a2d9c741c5a0",
+    "aliceResult": {
+      "status": "done",
+      "summary": "Created Research/Product/Claire SMS Text Follow-Up Gap.md and updated Research/Research Index.md. The note concludes Claire needs a real SMS channel adapter plus verified sender line, consent/compliance, STOP/HELP handling, phone-number capture, approved templates, delivery/inbound webhooks, logging, and approval gates before it can truthfully text info to customers.",
+      "paths": [
+        "Research/Product/Claire SMS Text Follow-Up Gap.md",
+        "Research/Research Index.md"
+      ],
+      "verification": {
+        "ok": true,
+        "warnings": [],
+        "paths": [
+          "Research/Product/Claire SMS Text Follow-Up Gap.md",
+          "Research/Research Index.md"
+        ],
+        "reportedPaths": [
+          "Research/Product/Claire SMS Text Follow-Up Gap.md",
+          "Research/Research Index.md"
+        ]
+      },
+      "timestamp": 1778755258252
+    }
   }
 ]
