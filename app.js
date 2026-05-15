@@ -474,63 +474,58 @@ document.addEventListener('DOMContentLoaded', () => {
     return trail.join('');
   }
 
-  function renderDecisionDeck(items) {
-    decisionDeckItems = Array.isArray(items) ? items : [];
-    if (!decisionDeckItems.length) {
-      if (!decisionDeckAddressed.length) return '';
-      return `
-        <section class="decision-deck-module decision-deck-complete" data-count="0" aria-label="Addressed card stack">
-          <div class="decision-deck-stage">
-            <div class="decision-trail">${renderDecisionTrail([], 0)}</div>
-          </div>
-        </section>`;
-    }
-    decisionDeckIndex = Math.min(decisionDeckIndex, decisionDeckItems.length - 1);
-    const item = decisionDeckItems[decisionDeckIndex];
-    const total = decisionDeckItems.length;
+  function renderDecisionCard(item, index, total) {
     const deltas = [
       ['nov', item.novelty || 'adds'],
       ['align', item.alignment || 'confirms'],
       ['val', item.value || 'medium'],
       ['act', item.action || 'keep'],
     ];
-    const current = String(decisionDeckIndex + 1).padStart(2, '0');
+    const current = String(index + 1).padStart(2, '0');
     const count = String(total).padStart(2, '0');
     const keepAction = decisionKeepAction(item);
     const fileAction = decisionFileAction(item);
     const discardAction = decisionDiscardAction(item);
     return `
+      <article class="decision-card" data-decision-card-index="${index}">
+        <div class="decision-card-top">
+          <div class="decision-card-index">${current}<span>/${count}</span></div>
+          <div class="decision-deck-count">Needs review</div>
+        </div>
+        <div class="decision-card-main">
+          <h2>${escapeHtml(item.title || 'Untitled decision')}</h2>
+          <p class="decision-summary">${escapeHtml(decisionCardSummary(item)).replace(/`([^`]+)`/g, '<code>$1</code>')}</p>
+        </div>
+        <div class="decision-card-bottom">
+          <div class="decision-delta-row">
+            ${deltas.map(([label, value]) => {
+              const direction = decisionDeltaDirection(label, value);
+              return `<span class="decision-delta ${direction}"><small>${label}</small><b title="${escapeHtml(value)}">${escapeHtml(value)}</b><i>${decisionDeltaArrow(direction)}</i></span>`;
+            }).join('')}
+          </div>
+          <div class="decision-controls">
+            <button type="button" class="decision-btn review" data-decision-open="1" data-decision-index="${index}">Review</button>
+            <button type="button" class="decision-btn primary" data-decision-approve="1" data-decision-index="${index}" data-decision-action="${escapeHtml(keepAction.value)}">${escapeHtml(keepAction.label)}</button>
+            ${fileAction ? `<button type="button" class="decision-btn" data-decision-approve="1" data-decision-index="${index}" data-decision-action="${escapeHtml(fileAction.value)}">${escapeHtml(fileAction.label)}</button>` : ''}
+            <button type="button" class="decision-btn discard" data-decision-approve="1" data-decision-index="${index}" data-decision-action="${escapeHtml(discardAction.value)}">${escapeHtml(discardAction.label)}</button>
+          </div>
+        </div>
+      </article>`;
+  }
+
+  function renderDecisionDeck(items) {
+    decisionDeckItems = Array.isArray(items) ? items : [];
+    decisionDeckIndex = Math.min(decisionDeckIndex, Math.max(0, decisionDeckItems.length - 1));
+    if (!decisionDeckItems.length) return '';
+    const total = decisionDeckItems.length;
+    return `
       <section class="decision-deck-module" data-count="${total}">
-        <div class="decision-deck-stage">
-          <div class="decision-trail">${renderDecisionTrail(decisionDeckItems, decisionDeckIndex)}</div>
-          <article class="decision-card">
-            <div class="decision-card-top">
-              <div class="decision-card-index">${current}<span>/${count}</span></div>
-              <div class="decision-deck-count">${count} cards</div>
-            </div>
-            <div class="decision-card-main">
-              <h2>${escapeHtml(item.title || 'Untitled decision')}</h2>
-              <p class="decision-summary">${escapeHtml(decisionCardSummary(item)).replace(/`([^`]+)`/g, '<code>$1</code>')}</p>
-            </div>
-            <div class="decision-card-bottom">
-              <div class="decision-delta-row">
-                ${deltas.map(([label, value]) => {
-                  const direction = decisionDeltaDirection(label, value);
-                  return `<span class="decision-delta ${direction}"><small>${label}</small><b>${escapeHtml(value)}</b><i>${decisionDeltaArrow(direction)}</i></span>`;
-                }).join('')}
-              </div>
-              <div class="decision-controls">
-                <span class="decision-nav-pair">
-                  <button type="button" class="decision-next-btn prev" data-decision-prev="1" aria-label="Previous decision card">←</button>
-                  <button type="button" class="decision-next-btn" data-decision-next="1" aria-label="Next decision card">→</button>
-                </span>
-                <button type="button" class="decision-btn review" data-decision-open="1">Review</button>
-                <button type="button" class="decision-btn primary" data-decision-approve="1" data-decision-action="${escapeHtml(keepAction.value)}">${escapeHtml(keepAction.label)}</button>
-                ${fileAction ? `<button type="button" class="decision-btn" data-decision-approve="1" data-decision-action="${escapeHtml(fileAction.value)}">${escapeHtml(fileAction.label)}</button>` : ''}
-                <button type="button" class="decision-btn discard" data-decision-approve="1" data-decision-action="${escapeHtml(discardAction.value)}">${escapeHtml(discardAction.label)}</button>
-              </div>
-            </div>
-          </article>
+        <div class="decision-deck-header">
+          <div class="decision-deck-label">Decisions to address</div>
+          <div class="decision-deck-count">${total} ${total === 1 ? 'card' : 'cards'}</div>
+        </div>
+        <div class="decision-card-list">
+          ${decisionDeckItems.map((item, index) => renderDecisionCard(item, index, total)).join('')}
         </div>
       </section>`;
   }
@@ -545,38 +540,6 @@ document.addEventListener('DOMContentLoaded', () => {
       old.replaceWith(wrapper.firstElementChild);
       wireDecisionDeck(el);
     };
-    const next = () => {
-      const card = el.querySelector('.decision-card');
-      if (!card) return;
-      if (decisionDeckIndex >= decisionDeckItems.length - 1) {
-        card.classList.remove('end-bump');
-        void card.offsetWidth;
-        card.classList.add('end-bump');
-        return;
-      }
-      card.classList.add('flick');
-      setTimeout(() => {
-        decisionDeckIndex += 1;
-        rerender();
-      }, 190);
-    };
-    const prev = () => {
-      const card = el.querySelector('.decision-card');
-      if (!card) return;
-      if (decisionDeckIndex <= 0) {
-        card.classList.remove('end-bump');
-        void card.offsetWidth;
-        card.classList.add('end-bump');
-        return;
-      }
-      card.classList.add('flick-back');
-      setTimeout(() => {
-        decisionDeckIndex -= 1;
-        rerender();
-      }, 190);
-    };
-    el.querySelector('[data-decision-next]')?.addEventListener('click', (e) => { e.stopPropagation(); next(); });
-    el.querySelector('[data-decision-prev]')?.addEventListener('click', (e) => { e.stopPropagation(); prev(); });
     el.querySelectorAll('[data-addressed-open]').forEach(btn => btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const idx = Number(e.currentTarget.dataset.addressedOpen || -1);
@@ -590,15 +553,17 @@ document.addEventListener('DOMContentLoaded', () => {
       decisionDeckIndex = idx;
       rerender();
     }));
-    el.querySelector('[data-decision-open]')?.addEventListener('click', (e) => {
+    el.querySelectorAll('[data-decision-open]').forEach(btn => btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const item = decisionDeckItems[decisionDeckIndex];
+      const idx = Number(e.currentTarget.dataset.decisionIndex || 0);
+      const item = decisionDeckItems[idx];
       if (item?.path) openResearchModal(item.path, item.title || item.path.split('/').pop(), item.source || '');
       else if (item?.obsidianUri) window.open(item.obsidianUri, '_blank');
-    });
+    }));
     el.querySelectorAll('[data-decision-approve]').forEach(btn => btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const item = decisionDeckItems[decisionDeckIndex];
+      const idx = Number(e.currentTarget.dataset.decisionIndex || 0);
+      const item = decisionDeckItems[idx];
       if (!item) return;
       const action = e.currentTarget.dataset.decisionAction || item.action || 'approved';
       try {
@@ -622,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || 'Review failed');
         decisionDeckAddressed.push({ ...item, resolvedAction: reviewAction });
-        decisionDeckItems = decisionDeckItems.filter((_, i) => i !== decisionDeckIndex);
+        decisionDeckItems = decisionDeckItems.filter((_, i) => i !== idx);
         decisionDeckIndex = Math.min(decisionDeckIndex, Math.max(0, decisionDeckItems.length - 1));
         rerender();
       } catch (err) {
