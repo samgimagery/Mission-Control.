@@ -408,9 +408,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return clean;
   }
 
+  function decisionTextValue(source) {
+    if (Array.isArray(source)) return source.map(decisionTextValue).filter(Boolean).join(' ');
+    if (source && typeof source === 'object') {
+      return decisionTextValue(source.bottomLine || source.summary || source.description || source.text || Object.values(source).filter(v => typeof v === 'string'));
+    }
+    const raw = String(source || '').trim();
+    if (raw.startsWith('[') || raw.startsWith('{')) {
+      try { return decisionTextValue(JSON.parse(raw)); } catch (_) {}
+    }
+    return raw;
+  }
+
   function decisionCardSummary(item) {
-    const source = item?.bottomLine || item?.summary || item?.description || item?.knowledgeDelta || '';
-    const clean = String(source || '')
+    const source = decisionTextValue(item?.bottomLine || item?.summary || item?.description || item?.knowledgeDelta || '');
+    const clean = source
       .replace(/\*\*([^*]+)\*\*/g, '$1')
       .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, '$2')
       .replace(/\[\[([^\]]+)\]\]/g, '$1')
@@ -418,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/\s+/g, ' ')
       .trim();
     if (clean) {
-      const max = 165;
+      const max = 220;
       return clean.length > max ? `${clean.slice(0, max).replace(/\s+\S*$/, '').trim()}…` : clean;
     }
     const type = String(item?.type || '').toLowerCase();
@@ -498,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="decision-card-main">
               <h2>${escapeHtml(item.title || 'Untitled decision')}</h2>
-              <p>${escapeHtml(decisionCardSummary(item))}</p>
+              <p class="decision-summary">${escapeHtml(decisionCardSummary(item)).replace(/`([^`]+)`/g, '<code>$1</code>')}</p>
             </div>
             <div class="decision-card-bottom">
               <div class="decision-delta-row">
