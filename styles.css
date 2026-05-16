@@ -2325,7 +2325,12 @@ body.dark .research-create-submit{
 }
 
 #plan .focus-next-line{
-  padding:24px 28px!important;
+  width:min(820px,100%);
+  margin:-6px auto 2px!important;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding:18px 28px!important;
   font-size:17px!important;
 }
 

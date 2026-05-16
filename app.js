@@ -622,13 +622,13 @@ document.addEventListener('DOMContentLoaded', () => {
               ${mission ? `<p class="focus-hero-mission">${escapeHtml(mission)}</p>` : ''}
             </div>
           </section>
-          <section class="focus-book plan-panel plan-panel-wide">
-            <h3>Plan</h3>
-            ${renderFocusPlan(planItems)}
-          </section>
           <section class="focus-next-line">
             <span class="focus-section-icon">→</span>
             <span>${escapeHtml(focus.nextBestStep || 'Decide the next move, then keep Mission Control as the distilled source of truth.')}</span>
+          </section>
+          <section class="focus-book plan-panel plan-panel-wide">
+            <h3>Plan</h3>
+            ${renderFocusPlan(planItems)}
           </section>
         </div>`;
       wireDecisionDeck(el);
